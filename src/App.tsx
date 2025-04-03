@@ -1,105 +1,203 @@
-import { Route, Routes } from 'react-router-dom'
+import React from 'react'
+import { Routes, Route } from 'react-router-dom'
+import Layout from './components/layout/Layout'
+import Dashboard from './pages/dashboard/Dashboard'
+import MyPage from './pages/profile/MyPage'
+import { AdminMain } from './pages/admin'
 import {
-  AccountListPage,
-  AdminMainPage,
-  ArticlePage,
-  CompanyListPage,
-  CompanyPage,
-  CreateAccountPage,
-  CreateArticlePage,
-  CreateCompanyPage,
-  CreateProjectPage,
-  EditArticlePage,
-  EditCompanyPage,
-  EditProjectPage,
-  LoginPage,
-  ProjectListPage,
-  ProjectPage,
-  UserMainPage,
-  UserProjectListPage,
-  UserProjectPage
-} from './pages'
+  ProjectList,
+  Project,
+  EditProject,
+  CreateProject
+} from './pages/admin/projects'
+import { AccountList, CreateAccount } from './pages/admin/accounts'
+import {
+  CompanyList,
+  Company,
+  CreateCompany,
+  EditCompany
+} from './pages/admin/companies'
+import { UserMain } from './pages/user'
+import { UserProjectList, UserProject } from './pages/user/projects'
+import { Article, CreateArticle, EditArticle } from './pages/article'
+import { Login, ResetPassword, UserInfo } from './pages/auth'
 
-export default function App() {
+const App: React.FC = () => {
   return (
     <Routes>
-      {/* 메인 페이지(로그인 페이지) */}
+      {/* Auth routes without layout */}
       <Route
-        path=""
-        element={<LoginPage />}
+        path="/login"
+        element={<Login />}
+      />
+      <Route
+        path="/reset-password"
+        element={<ResetPassword />}
+      />
+      <Route
+        path="/user-info"
+        element={<UserInfo />}
+      />
+
+      {/* Routes with layout */}
+      <Route
+        path="/"
+        element={
+          <Layout>
+            <Dashboard />
+          </Layout>
+        }
+      />
+      <Route
+        path="/mypage"
+        element={
+          <Layout>
+            <MyPage />
+          </Layout>
+        }
       />
 
       {/* 관리자 페이지 */}
       <Route
         path="/admin"
-        element={<AdminMainPage />}
+        element={
+          <Layout>
+            <AdminMain />
+          </Layout>
+        }
       />
       <Route
         path="/admin/projects"
-        element={<ProjectListPage />}
+        element={
+          <Layout>
+            <ProjectList />
+          </Layout>
+        }
       />
       <Route
         path="/admin/projects/create"
-        element={<CreateProjectPage />}
+        element={
+          <Layout>
+            <CreateProject />
+          </Layout>
+        }
       />
       <Route
         path="/admin/projects/:id"
-        element={<ProjectPage />}
+        element={
+          <Layout>
+            <Project />
+          </Layout>
+        }
       />
       <Route
         path="/admin/projects/:id/edit"
-        element={<EditProjectPage />}
+        element={
+          <Layout>
+            <EditProject />
+          </Layout>
+        }
       />
       <Route
         path="/admin/accounts"
-        element={<AccountListPage />}
+        element={
+          <Layout>
+            <AccountList />
+          </Layout>
+        }
       />
       <Route
         path="/admin/accounts/create"
-        element={<CreateAccountPage />}
+        element={
+          <Layout>
+            <CreateAccount />
+          </Layout>
+        }
       />
       <Route
         path="/admin/companies"
-        element={<CompanyListPage />}
+        element={
+          <Layout>
+            <CompanyList />
+          </Layout>
+        }
       />
       <Route
         path="/admin/companies/:id"
-        element={<CompanyPage />}
+        element={
+          <Layout>
+            <Company />
+          </Layout>
+        }
       />
       <Route
         path="/admin/companies/create"
-        element={<CreateCompanyPage />}
+        element={
+          <Layout>
+            <CreateCompany />
+          </Layout>
+        }
       />
       <Route
         path="/admin/companies/:id/edit"
-        element={<EditCompanyPage />}
+        element={
+          <Layout>
+            <EditCompany />
+          </Layout>
+        }
       />
 
       {/* 고객사/개발사 */}
       <Route
         path="/user"
-        element={<UserMainPage />}
+        element={
+          <Layout>
+            <UserMain />
+          </Layout>
+        }
       />
       <Route
         path="/user/projects"
-        element={<UserProjectListPage />}
+        element={
+          <Layout>
+            <UserProjectList />
+          </Layout>
+        }
       />
       <Route
         path="/user/projects/:id"
-        element={<UserProjectPage />}
+        element={
+          <Layout>
+            <UserProject />
+          </Layout>
+        }
       />
       <Route
         path="/article/create"
-        element={<CreateArticlePage />}
+        element={
+          <Layout>
+            <CreateArticle />
+          </Layout>
+        }
       />
       <Route
         path="/article/:id"
-        element={<ArticlePage />}
+        element={
+          <Layout>
+            <Article />
+          </Layout>
+        }
       />
       <Route
         path="/article/:id/edit"
-        element={<EditArticlePage />}
+        element={
+          <Layout>
+            <EditArticle />
+          </Layout>
+        }
       />
     </Routes>
   )
 }
+
+export default App
