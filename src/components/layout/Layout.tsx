@@ -1,16 +1,37 @@
 import React from 'react'
+import { Box } from '@mui/material'
+import { useLocation } from 'react-router-dom'
 import Header from './Header'
+import Sidebar from './Sidebar'
+import UserSidebar from './UserSidebar'
 
 interface LayoutProps {
   children: React.ReactNode
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const location = useLocation()
+  const isAdminRoute = location.pathname.startsWith('/admin')
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Header />
-      <main className="container mx-auto px-4 py-8">{children}</main>
-    </div>
+      <Box sx={{ display: 'flex', flex: 1 }}>
+        {isAdminRoute ? <Sidebar /> : <UserSidebar />}
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            p: 3,
+            backgroundColor: '#F9FAFB',
+            minHeight: 'calc(100vh - 64px)',
+            ml: '280px',
+            mt: '64px'
+          }}>
+          {children}
+        </Box>
+      </Box>
+    </Box>
   )
 }
 
