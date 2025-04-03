@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Bell, User, LogOut, ChevronDown } from 'lucide-react'
 import {
   Badge,
@@ -29,6 +29,7 @@ interface UserProfile {
 
 const Header: React.FC = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const [notificationAnchor, setNotificationAnchor] =
     useState<null | HTMLElement>(null)
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null)
@@ -57,6 +58,11 @@ const Header: React.FC = () => {
   ]
 
   const unreadNotifications = notifications.filter(n => !n.isRead).length
+
+  const handleLogoClick = () => {
+    const isAdminRoute = location.pathname.startsWith('/admin')
+    navigate(isAdminRoute ? '/admin' : '/user')
+  }
 
   const handleNotificationClick = (event: React.MouseEvent<HTMLElement>) => {
     setNotificationAnchor(event.currentTarget)
@@ -104,7 +110,7 @@ const Header: React.FC = () => {
         <Typography
           variant="h6"
           component="div"
-          onClick={() => navigate('/')}
+          onClick={handleLogoClick}
           sx={{
             cursor: 'pointer',
             fontWeight: 'bold',
