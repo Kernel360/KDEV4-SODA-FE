@@ -7,109 +7,180 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Box
+  Box,
+  IconButton,
+  Typography
 } from '@mui/material'
-import { Pagination } from './Pagination'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface Column<T> {
   id: string
   label: string
-  render: (row: T) => React.ReactNode
+  minWidth?: number
+  align?: 'right' | 'left' | 'center'
+  format?: (value: any) => React.ReactNode
+  getValue?: (row: T) => any
+  render?: (row: T) => React.ReactNode
   onClick?: (row: T) => void
 }
 
 interface DataTableProps<T> {
   columns: Column<T>[]
-  data: T[]
-  onRowClick?: (row: T) => void
+  data?: T[]
+  rows?: T[]
   page: number
-  rowsPerPage: number
-  totalCount: number
+  rowsPerPage?: number
+  totalCount?: number
   onPageChange: (newPage: number) => void
-  onRowsPerPageChange: (newRowsPerPage: number) => void
+  onRowsPerPageChange?: (newRowsPerPage: number) => void
+  getRowId?: (row: T) => string | number
 }
 
-const DataTable = <T extends { id: number | string }>({
+export default function DataTable<T>({
   columns,
   data,
-  onRowClick,
+  rows,
   page,
+  rowsPerPage = 8,
   totalCount,
-  onPageChange
-}: DataTableProps<T>) => {
+  onPageChange,
+  onRowsPerPageChange,
+  getRowId
+}: DataTableProps<T>) {
+  // data 또는 rows 중 하나를 사용
+  const tableData = data || rows || []
+  const count = totalCount || tableData.length
+  const totalPages = Math.ceil(count / rowsPerPage)
+
+  // 페이지 번호 배열 생성
+  const getPageNumbers = () => {
+    const pageNumbers = []
+    for (let i = 0; i < totalPages; i++) {
+      pageNumbers.push(i)
+    }
+    return pageNumbers
+  }
+
+  // 페이지 변경 핸들러
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 0 && newPage < totalPages) {
+      onPageChange(newPage)
+    }
+  }
+
+  // 페이지당 행 수 변경 핸들러
+  const handleRowsPerPageChange = (
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    onRowsPerPageChange?.(parseInt(event.target.value, 10))
+  }
+
   return (
-    <Box sx={{ width: '100%', overflow: 'hidden' }}>
-      <TableContainer
-        component={Paper}
-        elevation={0}
-        sx={{
-          border: '1px solid',
-          borderColor: 'divider'
-        }}>
-        <Table stickyHeader>
+    <Box>
+      <TableContainer component={Paper}>
+        <Table sx={{ minWidth: 650 }}>
           <TableHead>
             <TableRow>
               {columns.map(column => (
                 <TableCell
                   key={column.id}
-                  sx={{ fontWeight: 600, backgroundColor: 'white' }}>
+                  align={column.align}
+                  style={{ minWidth: column.minWidth }}>
                   {column.label}
                 </TableCell>
               ))}
             </TableRow>
           </TableHead>
           <TableBody>
-            {data.map(row => (
+            {tableData.map((row, index) => (
               <TableRow
-                key={row.id}
                 hover
-                onClick={() => onRowClick?.(row)}
-                sx={{ cursor: onRowClick ? 'pointer' : 'default' }}>
-                {columns.map(column => (
-                  <TableCell
-                    key={`${row.id}-${column.id}`}
-                    onClick={e => {
-                      if (column.onClick) {
-                        e.stopPropagation()
-                        column.onClick(row)
-                      }
-                    }}
-                    sx={
-                      column.onClick
-                        ? {
-                            color: '#374151',
-                            textDecoration: 'none',
-                            '&:hover': {
-                              color: '#111827',
-                              textDecoration: 'underline'
-                            },
-                            cursor: 'pointer'
-                          }
-                        : undefined
-                    }>
-                    {column.render(row)}
-                  </TableCell>
-                ))}
+                key={getRowId ? getRowId(row) : index}
+                onClick={
+                  columns.find(col => col.onClick)?.onClick
+                    ? () => columns.find(col => col.onClick)?.onClick?.(row)
+                    : undefined
+                }
+                sx={{
+                  '&:last-child td, &:last-child th': { border: 0 },
+                  cursor: columns.find(col => col.onClick)
+                    ? 'pointer'
+                    : 'default'
+                }}>
+                {columns.map(column => {
+                  let content: React.ReactNode
+
+                  if (column.render) {
+                    content = column.render(row)
+                  } else if (column.getValue) {
+                    const value = column.getValue(row)
+                    content = column.format ? column.format(value) : value
+                  } else {
+                    content = null
+                  }
+
+                  return (
+                    <TableCell
+                      key={column.id}
+                      align={column.align}>
+                      {content}
+                    </TableCell>
+                  )
+                })}
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* 커스텀 페이지네이션 */}
       <Box
         sx={{
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          p: 2
+          mt: 2
         }}>
-        <Pagination
-          count={totalCount}
-          page={page}
-          onChange={onPageChange}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <IconButton
+            onClick={() => handlePageChange(page - 1)}
+            disabled={page === 0}
+            size="small"
+            sx={{ p: 0.5 }}>
+            <ChevronLeft size={16} />
+          </IconButton>
+
+          {getPageNumbers().map(pageNumber => (
+            <IconButton
+              key={pageNumber}
+              onClick={() => handlePageChange(pageNumber)}
+              sx={{
+                mx: 0.5,
+                minWidth: 24,
+                height: 24,
+                borderRadius: '4px',
+                backgroundColor:
+                  page === pageNumber ? 'primary.main' : 'transparent',
+                color: page === pageNumber ? 'white' : 'text.primary',
+                fontSize: '0.75rem',
+                '&:hover': {
+                  backgroundColor:
+                    page === pageNumber ? 'primary.dark' : 'action.hover'
+                }
+              }}>
+              {pageNumber + 1}
+            </IconButton>
+          ))}
+
+          <IconButton
+            onClick={() => handlePageChange(page + 1)}
+            disabled={page >= totalPages - 1}
+            size="small"
+            sx={{ p: 0.5 }}>
+            <ChevronRight size={16} />
+          </IconButton>
+        </Box>
       </Box>
     </Box>
   )
 }
-
-export default DataTable
