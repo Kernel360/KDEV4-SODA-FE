@@ -18,7 +18,8 @@ import {
   EditCompany,
   UserMain,
   UserProject,
-  UserAccountDetail
+  UserAccountDetail,
+  CreateCompany
 } from './pages'
 import { ThemeProvider } from '@mui/material/styles'
 import { LocalizationProvider } from '@mui/x-date-pickers'
@@ -91,6 +92,10 @@ const App: React.FC = () => {
             <Route
               path="companies/:id"
               element={<Company />}
+            />
+            <Route
+              path="companies/create"
+              element={<CreateCompany />}
             />
             <Route
               path="companies/:id/edit"

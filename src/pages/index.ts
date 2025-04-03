@@ -13,6 +13,7 @@ export { default as AccountList } from './admin/accounts/AccountList'
 export { default as AdminAccountDetail } from './admin/accounts/AccountDetail'
 export { default as CreateAccount } from './admin/accounts/CreateAccount'
 export { default as CompanyList } from './admin/companies/CompanyList'
+export { default as CreateCompany } from './admin/companies/CreateCompany'
 export { default as Company } from './admin/companies/Company'
 export { default as EditCompany } from './admin/companies/EditCompany'
 
