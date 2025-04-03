@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Box, Typography, Switch } from '@mui/material'
+import { Box, Typography, Switch, Button } from '@mui/material'
 import DataTable from '@/components/common/DataTable'
 import { useNavigate } from 'react-router-dom'
+import { PlusCircle } from 'lucide-react'
 
 interface Account {
   id: string
@@ -121,17 +122,27 @@ export default function AccountList() {
       id: 'name',
       label: '이름',
       getValue: (row: Account) => row.name,
-      onClick: (row: Account) => navigate(`/admin/accounts/${row.id}`)
+      onClick: (row: Account) => navigate(`/admin/accounts/${row.id}`),
+      style: {
+        cursor: 'pointer',
+        color: 'text.primary',
+        '&:hover': {
+          color: 'primary.main',
+          textDecoration: 'underline'
+        }
+      }
     },
     {
       id: 'username',
       label: '아이디',
-      getValue: (row: Account) => row.username
+      getValue: (row: Account) => row.username,
+      style: { cursor: 'default' }
     },
     {
       id: 'companyName',
       label: '회사',
-      getValue: (row: Account) => row.companyName
+      getValue: (row: Account) => row.companyName,
+      style: { cursor: 'default' }
     },
     {
       id: 'isActive',
@@ -144,19 +155,38 @@ export default function AccountList() {
           onChange={() => handleToggleActive(data.id)}
           color="primary"
         />
-      )
+      ),
+      style: { cursor: 'default' }
     }
   ]
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography
-        variant="h5"
-        component="h1"
-        gutterBottom
-        sx={{ mb: 3 }}>
-        계정 관리
-      </Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 3
+        }}>
+        <Typography
+          variant="h5"
+          component="h1">
+          계정 관리
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<PlusCircle />}
+          onClick={() => navigate('/admin/accounts/create')}
+          sx={{
+            bgcolor: 'black',
+            '&:hover': {
+              bgcolor: 'rgba(0, 0, 0, 0.8)'
+            }
+          }}>
+          새 계정 생성
+        </Button>
+      </Box>
 
       <DataTable<Account>
         columns={columns}

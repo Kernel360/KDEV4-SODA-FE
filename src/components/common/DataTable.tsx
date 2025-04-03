@@ -22,6 +22,7 @@ interface Column<T> {
   getValue?: (row: T) => any
   render?: (row: T) => React.ReactNode
   onClick?: (row: T) => void
+  style?: React.CSSProperties
 }
 
 interface DataTableProps<T> {
@@ -75,6 +76,18 @@ export default function DataTable<T>({
     onRowsPerPageChange?.(parseInt(event.target.value, 10))
   }
 
+  // 셀 클릭 핸들러
+  const handleCellClick = (
+    column: Column<T>,
+    row: T,
+    event: React.MouseEvent
+  ) => {
+    if (column.onClick) {
+      event.stopPropagation() // 이벤트 버블링 방지
+      column.onClick(row)
+    }
+  }
+
   return (
     <Box>
       <TableContainer component={Paper}>
@@ -96,16 +109,8 @@ export default function DataTable<T>({
               <TableRow
                 hover
                 key={getRowId ? getRowId(row) : index}
-                onClick={
-                  columns.find(col => col.onClick)?.onClick
-                    ? () => columns.find(col => col.onClick)?.onClick?.(row)
-                    : undefined
-                }
                 sx={{
-                  '&:last-child td, &:last-child th': { border: 0 },
-                  cursor: columns.find(col => col.onClick)
-                    ? 'pointer'
-                    : 'default'
+                  '&:last-child td, &:last-child th': { border: 0 }
                 }}>
                 {columns.map(column => {
                   let content: React.ReactNode
@@ -122,7 +127,9 @@ export default function DataTable<T>({
                   return (
                     <TableCell
                       key={column.id}
-                      align={column.align}>
+                      align={column.align}
+                      onClick={e => handleCellClick(column, row, e)}
+                      style={column.style}>
                       {content}
                     </TableCell>
                   )
