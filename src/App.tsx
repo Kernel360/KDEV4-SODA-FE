@@ -1,26 +1,30 @@
 import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/layout/Layout'
-import Dashboard from './pages/dashboard/Dashboard'
-import MyPage from './pages/profile/MyPage'
-import { AdminMain } from './pages/admin'
 import {
+  Dashboard,
+  MyPage,
+  AdminMain,
   ProjectList,
   Project,
   EditProject,
-  CreateProject
-} from './pages/admin/projects'
-import { AccountList, CreateAccount } from './pages/admin/accounts'
-import {
+  CreateProject,
+  AccountList,
+  CreateAccount,
   CompanyList,
   Company,
   CreateCompany,
-  EditCompany
-} from './pages/admin/companies'
-import { UserMain } from './pages/user'
-import { UserProjectList, UserProject } from './pages/user/projects'
-import { Article, CreateArticle, EditArticle } from './pages/article'
-import { Login, ResetPassword, UserInfo } from './pages/auth'
+  EditCompany,
+  UserMain,
+  UserProjectList,
+  UserProject,
+  Article,
+  CreateArticle,
+  EditArticle,
+  Login,
+  ResetPassword,
+  UserInfo
+} from './pages'
 
 const App: React.FC = () => {
   return (
