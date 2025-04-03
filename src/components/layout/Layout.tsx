@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box } from '@mui/material'
+import { Box, Theme } from '@mui/material'
 import { useLocation } from 'react-router-dom'
 import Header from './Header'
 import Sidebar from './Sidebar'
@@ -14,22 +14,37 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const isAdminRoute = location.pathname.startsWith('/admin')
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Header />
-      <Box sx={{ display: 'flex', flex: 1 }}>
+    <Box sx={{ display: 'flex' }}>
+      <Header
+        sx={{
+          position: 'fixed',
+          width: '100%',
+          zIndex: (theme: Theme) => theme.zIndex.drawer + 1
+        }}
+      />
+      <Box
+        component="nav"
+        sx={{
+          width: 280,
+          flexShrink: 0,
+          position: 'fixed',
+          height: '100vh',
+          borderRight: '1px solid',
+          borderColor: 'divider',
+          mt: '64px',
+          backgroundColor: 'background.paper'
+        }}>
         {isAdminRoute ? <Sidebar /> : <UserSidebar />}
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            p: 3,
-            backgroundColor: '#F9FAFB',
-            minHeight: 'calc(100vh - 64px)',
-            ml: '280px',
-            mt: '64px'
-          }}>
-          {children}
-        </Box>
+      </Box>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          mt: '64px',
+          ml: '280px'
+        }}>
+        {children}
       </Box>
     </Box>
   )

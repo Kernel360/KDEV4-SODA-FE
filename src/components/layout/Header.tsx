@@ -27,7 +27,11 @@ interface UserProfile {
   role: 'client' | 'developer'
 }
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  sx?: React.CSSProperties | any
+}
+
+const Header: React.FC<HeaderProps> = ({ sx }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const [notificationAnchor, setNotificationAnchor] =
@@ -99,7 +103,8 @@ const Header: React.FC = () => {
         backgroundColor: 'white',
         borderBottom: '1px solid',
         borderColor: 'divider',
-        width: '100%'
+        width: '100%',
+        ...sx
       }}>
       <Toolbar
         sx={{
@@ -107,18 +112,24 @@ const Header: React.FC = () => {
           minHeight: '64px !important',
           px: { xs: 2, sm: 4, md: 6 }
         }}>
-        <Typography
-          variant="h6"
-          component="div"
-          onClick={handleLogoClick}
+        <Box
           sx={{
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            color: 'primary.main',
-            letterSpacing: 'tight'
-          }}>
-          SODA
-        </Typography>
+            display: 'flex',
+            alignItems: 'center',
+            cursor: 'pointer'
+          }}
+          onClick={handleLogoClick}>
+          <Typography
+            variant="h5"
+            component="div"
+            sx={{
+              fontWeight: 700,
+              color: '#F59E0B',
+              letterSpacing: 'tight'
+            }}>
+            SODA
+          </Typography>
+        </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
           <IconButton
@@ -142,11 +153,28 @@ const Header: React.FC = () => {
               alignItems: 'center',
               gap: 1,
               cursor: 'pointer',
-              color: 'text.secondary',
-              '&:hover': { color: 'primary.main' }
+              '&:hover': {
+                '& .username': { color: 'primary.main' },
+                '& .chevron': { color: 'primary.main' }
+              }
             }}>
-            <Typography variant="body1">{user.name}</Typography>
-            <ChevronDown size={20} />
+            <Typography
+              variant="body1"
+              className="username"
+              sx={{
+                color: 'text.primary',
+                transition: 'color 0.2s'
+              }}>
+              {user.name}
+            </Typography>
+            <ChevronDown
+              size={20}
+              className="chevron"
+              style={{
+                color: '#374151',
+                transition: 'color 0.2s'
+              }}
+            />
           </Box>
 
           <Menu
