@@ -340,7 +340,9 @@ const ProjectBoard: React.FC<ProjectBoardProps> = ({ projectId }) => {
           <Button
             variant="contained"
             startIcon={<Plus size={20} />}
-            onClick={() => navigate('/user/projects/articles/create')}>
+            onClick={() =>
+              navigate(`/user/projects/${projectId}/articles/create`)
+            }>
             글쓰기
           </Button>
         </Box>

@@ -8,7 +8,8 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Button,
-  Stack
+  Stack,
+  Typography
 } from '@mui/material'
 import { Link2, X, Plus } from 'lucide-react'
 
@@ -19,113 +20,81 @@ interface Link {
 
 interface LinkInputProps {
   links: Link[]
-  onLinkAdd: (link: Link) => void
-  onLinkRemove: (index: number) => void
+  onChange: (links: Link[]) => void
   maxLinks?: number
 }
 
 const LinkInput: React.FC<LinkInputProps> = ({
   links,
-  onLinkAdd,
-  onLinkRemove,
-  maxLinks = 10
+  onChange,
+  maxLinks = 5
 }) => {
-  const [newLink, setNewLink] = useState<Link>({
-    title: '',
-    url: ''
-  })
+  const [title, setTitle] = useState('')
+  const [url, setUrl] = useState('')
 
-  const handleAddLink = () => {
-    if (newLink.title && newLink.url && links.length < maxLinks) {
-      onLinkAdd(newLink)
-      setNewLink({ title: '', url: '' })
+  const handleAdd = () => {
+    if (title.trim() && url.trim()) {
+      if (links.length >= maxLinks) {
+        alert(`최대 ${maxLinks}개의 링크만 추가할 수 있습니다.`)
+        return
+      }
+      onChange([...links, { title, url }])
+      setTitle('')
+      setUrl('')
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleAddLink()
-    }
+  const handleRemove = (index: number) => {
+    const newLinks = links.filter((_, i) => i !== index)
+    onChange(newLinks)
   }
 
   return (
     <Box>
-      <Stack
-        direction="row"
-        spacing={2}
-        alignItems="center"
-        sx={{ mb: 2 }}>
-        <TextField
-          size="small"
-          value={newLink.title}
-          onChange={e =>
-            setNewLink(prev => ({ ...prev, title: e.target.value }))
-          }
-          onKeyPress={handleKeyPress}
-          placeholder="링크 제목"
-          sx={{ width: '30%' }}
-        />
-        <TextField
-          size="small"
-          value={newLink.url}
-          onChange={e => setNewLink(prev => ({ ...prev, url: e.target.value }))}
-          onKeyPress={handleKeyPress}
-          placeholder="URL"
-          sx={{ flex: 1 }}
-          InputProps={{
-            startAdornment: (
-              <Link2
-                size={20}
-                style={{ marginRight: 8 }}
-              />
-            )
-          }}
-        />
-        <Button
-          variant="contained"
-          onClick={handleAddLink}
-          disabled={links.length >= maxLinks || !newLink.title || !newLink.url}
-          startIcon={<Plus size={20} />}
-          sx={{ minWidth: '80px' }}>
-          추가
-        </Button>
-      </Stack>
-
-      <List>
+      <Typography
+        variant="subtitle2"
+        sx={{ mb: 1 }}>
+        관련 링크
+      </Typography>
+      <Stack spacing={1}>
         {links.map((link, index) => (
-          <ListItem key={index}>
-            <Link2
-              size={20}
-              style={{ marginRight: 8 }}
-            />
-            <ListItemText
-              primary={link.title}
-              secondary={link.url}
-              primaryTypographyProps={{
-                style: {
-                  fontWeight: 500
-                }
-              }}
-              secondaryTypographyProps={{
-                style: {
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }
-              }}
-            />
-            <ListItemSecondaryAction>
-              <IconButton
-                edge="end"
-                onClick={() => onLinkRemove(index)}
-                size="small">
-                <X size={20} />
-              </IconButton>
-            </ListItemSecondaryAction>
-          </ListItem>
+          <Stack
+            key={index}
+            direction="row"
+            alignItems="center"
+            spacing={1}>
+            <Typography variant="body2">{link.title}</Typography>
+            <Button
+              size="small"
+              onClick={() => handleRemove(index)}>
+              삭제
+            </Button>
+          </Stack>
         ))}
-      </List>
+        {links.length < maxLinks && (
+          <Stack
+            direction="row"
+            spacing={1}>
+            <TextField
+              size="small"
+              placeholder="링크 제목"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+            />
+            <TextField
+              size="small"
+              placeholder="URL"
+              value={url}
+              onChange={e => setUrl(e.target.value)}
+            />
+            <Button
+              startIcon={<Link2 size={16} />}
+              onClick={handleAdd}>
+              추가
+            </Button>
+          </Stack>
+        )}
+      </Stack>
     </Box>
   )
 }

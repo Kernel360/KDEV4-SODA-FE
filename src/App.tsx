@@ -21,7 +21,8 @@ import {
   UserAccountDetail,
   CreateCompany,
   Article,
-  CreateArticle
+  CreateArticle,
+  EditArticle
 } from './pages'
 import { ThemeProvider } from '@mui/material/styles'
 import { LocalizationProvider } from '@mui/x-date-pickers'
@@ -124,12 +125,16 @@ const App: React.FC = () => {
                 element={<UserProject />}
               />
               <Route
-                path="projects/articles/create"
+                path="projects/:projectId/articles/:articleId"
+                element={<Article />}
+              />
+              <Route
+                path="projects/:projectId/articles/create"
                 element={<CreateArticle />}
               />
               <Route
-                path="projects/:id/articles/:articleId"
-                element={<Article />}
+                path="projects/:projectId/articles/:articleId/edit"
+                element={<EditArticle />}
               />
               <Route
                 path="accounts/:id"

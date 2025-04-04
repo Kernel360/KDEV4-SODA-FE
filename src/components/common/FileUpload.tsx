@@ -6,101 +6,73 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction
+  ListItemSecondaryAction,
+  Button,
+  Stack
 } from '@mui/material'
 import { Upload, X, File } from 'lucide-react'
 
 interface FileUploadProps {
   files: File[]
-  onFileAdd: (files: File[]) => void
-  onFileRemove: (index: number) => void
+  onChange: (files: File[]) => void
   maxFiles?: number
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
   files,
-  onFileAdd,
-  onFileRemove,
-  maxFiles = 10
+  onChange,
+  maxFiles = 5
 }) => {
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    const droppedFiles = Array.from(e.dataTransfer.files)
-    if (files.length + droppedFiles.length <= maxFiles) {
-      onFileAdd(droppedFiles)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newFiles = Array.from(e.target.files || [])
+    if (files.length + newFiles.length > maxFiles) {
+      alert(`최대 ${maxFiles}개의 파일만 업로드할 수 있습니다.`)
+      return
     }
+    onChange([...files, ...newFiles])
   }
 
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const selectedFiles = Array.from(e.target.files)
-      if (files.length + selectedFiles.length <= maxFiles) {
-        onFileAdd(selectedFiles)
-      }
-    }
+  const handleRemove = (index: number) => {
+    const newFiles = files.filter((_, i) => i !== index)
+    onChange(newFiles)
   }
 
   return (
     <Box>
-      <Box
-        sx={{
-          border: '2px dashed',
-          borderColor: 'divider',
-          borderRadius: 1,
-          p: 2,
-          textAlign: 'center',
-          bgcolor: 'background.default',
-          cursor: 'pointer',
-          '&:hover': {
-            borderColor: 'primary.main'
-          }
-        }}
-        onDrop={handleDrop}
-        onDragOver={e => e.preventDefault()}>
-        <input
-          type="file"
-          multiple
-          onChange={handleFileInput}
-          style={{ display: 'none' }}
-          id="file-input"
-        />
-        <label
-          htmlFor="file-input"
-          style={{ cursor: 'pointer' }}>
-          <Upload />
-          <Typography sx={{ mt: 1 }}>
-            파일을 드래그하거나 클릭하여 업로드
-          </Typography>
-          <Typography
-            variant="caption"
-            color="text.secondary">
-            최대 {maxFiles}개 파일
-          </Typography>
-        </label>
-      </Box>
-
-      <List>
+      <Typography
+        variant="subtitle2"
+        sx={{ mb: 1 }}>
+        첨부파일
+      </Typography>
+      <Stack spacing={1}>
         {files.map((file, index) => (
-          <ListItem key={index}>
-            <File
-              size={20}
-              style={{ marginRight: 8 }}
-            />
-            <ListItemText
-              primary={file.name}
-              secondary={`${(file.size / 1024 / 1024).toFixed(2)} MB`}
-            />
-            <ListItemSecondaryAction>
-              <IconButton
-                edge="end"
-                onClick={() => onFileRemove(index)}
-                size="small">
-                <X size={20} />
-              </IconButton>
-            </ListItemSecondaryAction>
-          </ListItem>
+          <Stack
+            key={index}
+            direction="row"
+            alignItems="center"
+            spacing={1}>
+            <Typography variant="body2">{file.name}</Typography>
+            <Button
+              size="small"
+              onClick={() => handleRemove(index)}>
+              삭제
+            </Button>
+          </Stack>
         ))}
-      </List>
+        {files.length < maxFiles && (
+          <Button
+            component="label"
+            startIcon={<Upload size={16} />}>
+            파일 선택
+            <input
+              type="file"
+              hidden
+              multiple
+              onChange={handleFileChange}
+            />
+          </Button>
+        )}
+      </Stack>
     </Box>
   )
 }

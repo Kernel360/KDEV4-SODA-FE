@@ -20,23 +20,25 @@ const UserProject: React.FC = () => {
       try {
         // TODO: API 호출로 대체
         const dummyProject: ProjectWithProgress = {
-          id: 1,
-          projectNumber: 'P001',
-          name: '소다 프로젝트',
-          description: '소다 프로젝트 설명입니다.',
+          id: Number(id),
+          projectNumber: 'P2024001',
+          name: '프로젝트 이름',
+          description: '프로젝트 설명',
           status: '진행중',
           startDate: '2024-01-01',
           endDate: '2024-12-31',
           clientCompany: '클라이언트 회사',
           devCompany: '개발 회사',
-          systemManager: '홍길동',
-          progress: 65,
+          systemManager: '시스템 관리자',
+          progress: 75,
           clientManagers: [],
           clientParticipants: [],
           developmentManagers: [],
           developmentParticipants: [],
           managers: [],
-          participants: []
+          participants: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         }
         setProject(dummyProject)
       } catch (error) {

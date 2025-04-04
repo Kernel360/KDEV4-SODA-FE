@@ -21,4 +21,6 @@ export interface Project {
   developmentParticipants: ProjectParticipant[]
   managers: ProjectParticipant[]
   participants: ProjectParticipant[]
+  createdAt: string
+  updatedAt: string
 }
