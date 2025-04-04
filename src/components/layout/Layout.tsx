@@ -14,37 +14,50 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const isAdminRoute = location.pathname.startsWith('/admin')
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <Header
-        sx={{
-          position: 'fixed',
-          width: '100%',
-          zIndex: (theme: Theme) => theme.zIndex.drawer + 1
-        }}
-      />
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        position: 'relative'
+      }}>
       <Box
-        component="nav"
         sx={{
-          width: 280,
-          flexShrink: 0,
           position: 'fixed',
-          height: '100vh',
-          borderRight: '1px solid',
-          borderColor: 'divider',
-          mt: '64px',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: (theme: Theme) => theme.zIndex.drawer + 1,
           backgroundColor: 'background.paper'
         }}>
-        {isAdminRoute ? <Sidebar /> : <UserSidebar />}
+        <Header />
       </Box>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          mt: '64px',
-          ml: '280px'
-        }}>
-        {children}
+      <Box sx={{ display: 'flex', flex: 1, mt: '64px' }}>
+        <Box
+          component="nav"
+          sx={{
+            width: 280,
+            flexShrink: 0,
+            position: 'fixed',
+            height: 'calc(100vh - 64px)',
+            borderRight: '1px solid',
+            borderColor: 'divider',
+            backgroundColor: 'background.paper',
+            overflowY: 'auto'
+          }}>
+          {isAdminRoute ? <Sidebar /> : <UserSidebar />}
+        </Box>
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            p: 3,
+            ml: '280px',
+            minHeight: 'calc(100vh - 64px)',
+            overflowY: 'auto'
+          }}>
+          {children}
+        </Box>
       </Box>
     </Box>
   )

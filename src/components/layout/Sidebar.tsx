@@ -10,24 +10,12 @@ import {
   Box,
   Typography
 } from '@mui/material'
-import {
-  LayoutDashboard,
-  Users,
-  Building2,
-  ClipboardList,
-  PlusCircle
-} from 'lucide-react'
+import { Users, Building2, ClipboardList, PlusCircle } from 'lucide-react'
 
 const menuGroups = [
   {
     title: '프로젝트',
     items: [
-      {
-        id: 'dashboard',
-        label: '대시보드',
-        icon: LayoutDashboard,
-        path: '/admin'
-      },
       {
         id: 'projects',
         label: '프로젝트 관리',
@@ -121,16 +109,22 @@ const Sidebar = () => {
   return (
     <Box
       sx={{
-        width: 280,
-        flexShrink: 0,
-        borderRight: '1px solid',
-        borderColor: 'divider',
-        height: '100vh',
-        backgroundColor: 'background.paper',
-        position: 'fixed',
-        left: 0,
-        top: 64, // Header height
-        pt: 2
+        width: '100%',
+        height: '100%',
+        overflowY: 'auto',
+        '&::-webkit-scrollbar': {
+          width: '4px'
+        },
+        '&::-webkit-scrollbar-track': {
+          background: 'transparent'
+        },
+        '&::-webkit-scrollbar-thumb': {
+          background: 'rgba(0, 0, 0, 0.1)',
+          borderRadius: '4px'
+        },
+        '&::-webkit-scrollbar-thumb:hover': {
+          background: 'rgba(0, 0, 0, 0.2)'
+        }
       }}>
       {menuGroups.map((group, index) => (
         <React.Fragment key={group.title}>
