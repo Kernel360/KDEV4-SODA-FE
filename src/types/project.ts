@@ -1,22 +1,24 @@
 export interface ProjectParticipant {
+  id: number
   name: string
-  position: string
-  email: string
+  role?: string
 }
 
 export interface Project {
   id: number
+  projectNumber: string
   name: string
   description: string
-  projectNumber: string
-  status: string
   startDate: string
   endDate: string
+  status: string
   clientCompany: string
+  developmentCompany: string
   clientManagers: ProjectParticipant[]
   clientParticipants: ProjectParticipant[]
-  developmentCompany: string
   developmentManagers: ProjectParticipant[]
   developmentParticipants: ProjectParticipant[]
   systemManager: string
+  managers: ProjectParticipant[]
+  participants: ProjectParticipant[]
 }
