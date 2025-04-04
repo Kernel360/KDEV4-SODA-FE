@@ -44,7 +44,11 @@ const dummyAccounts: Account[] = [
   }
 ]
 
-export default function AdminAccountDetail() {
+interface AccountDetailProps {
+  isAdmin?: boolean
+}
+
+export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [account, setAccount] = useState<Account | null>(null)
@@ -132,14 +136,14 @@ export default function AdminAccountDetail() {
     if (hasChanges) {
       setShowConfirmDialog(true)
     } else {
-      navigate('/admin/accounts')
+      navigate(isAdmin ? '/admin/accounts' : '/user/accounts')
     }
   }
 
   // 확인 모달에서 돌아가기 확인
   const handleConfirmBack = () => {
     setShowConfirmDialog(false)
-    navigate('/admin/accounts')
+    navigate(isAdmin ? '/admin/accounts' : '/user/accounts')
   }
 
   if (loading && !account) {
@@ -162,7 +166,9 @@ export default function AdminAccountDetail() {
         <Alert severity="error">{error}</Alert>
         <Button
           startIcon={<ArrowLeft />}
-          onClick={() => navigate('/admin/accounts')}
+          onClick={() =>
+            navigate(isAdmin ? '/admin/accounts' : '/user/accounts')
+          }
           sx={{ mt: 2 }}>
           계정 목록으로 돌아가기
         </Button>
@@ -191,7 +197,7 @@ export default function AdminAccountDetail() {
         loading={loading}
         error={error}
         success={success}
-        isAdmin={true}
+        isAdmin={isAdmin}
         onSave={handleSave}
         onPasswordChange={handlePasswordChange}
       />
@@ -200,11 +206,9 @@ export default function AdminAccountDetail() {
       <Dialog
         open={showConfirmDialog}
         onClose={() => setShowConfirmDialog(false)}>
-        <DialogTitle>수정사항 저장</DialogTitle>
+        <DialogTitle>수정사항이 있습니다</DialogTitle>
         <DialogContent>
-          <Typography>
-            수정사항이 있습니다. 저장하지 않고 나가시겠습니까?
-          </Typography>
+          저장하지 않은 수정사항이 있습니다. 정말로 나가시겠습니까?
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowConfirmDialog(false)}>취소</Button>
