@@ -10,9 +10,26 @@ import {
   Box,
   Typography
 } from '@mui/material'
-import { Users, Building2, ClipboardList, PlusCircle } from 'lucide-react'
+import {
+  Users,
+  Building2,
+  ClipboardList,
+  PlusCircle,
+  LayoutDashboard
+} from 'lucide-react'
 
 const menuGroups = [
+  {
+    title: '대시보드',
+    items: [
+      {
+        id: 'dashboard',
+        label: '대시보드',
+        icon: LayoutDashboard,
+        path: '/admin'
+      }
+    ]
+  },
   {
     title: '프로젝트',
     items: [
