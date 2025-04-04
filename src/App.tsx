@@ -1,105 +1,156 @@
-import { Route, Routes } from 'react-router-dom'
+import React from 'react'
+import { Routes, Route, Outlet } from 'react-router-dom'
+import Layout from './components/layout/Layout'
 import {
-  AccountListPage,
-  AdminMainPage,
-  ArticlePage,
-  CompanyListPage,
-  CompanyPage,
-  CreateAccountPage,
-  CreateArticlePage,
-  CreateCompanyPage,
-  CreateProjectPage,
-  EditArticlePage,
-  EditCompanyPage,
-  EditProjectPage,
-  LoginPage,
-  ProjectListPage,
-  ProjectPage,
-  UserMainPage,
-  UserProjectListPage,
-  UserProjectPage
+  Login,
+  ResetPassword,
+  UserInfo,
+  AdminMain,
+  ProjectList,
+  CreateProject,
+  Project,
+  EditProject,
+  AccountList,
+  AccountDetail,
+  CreateAccount,
+  CompanyList,
+  Company,
+  EditCompany,
+  UserMain,
+  UserProject,
+  UserAccountDetail,
+  CreateCompany,
+  Article,
+  CreateArticle,
+  EditArticle,
+  ReplyArticle
 } from './pages'
+import { ThemeProvider } from '@mui/material/styles'
+import { LocalizationProvider } from '@mui/x-date-pickers'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import theme from './theme'
+import { ToastProvider } from './contexts/ToastContext'
 
-export default function App() {
+const App: React.FC = () => {
   return (
-    <Routes>
-      {/* 메인 페이지(로그인 페이지) */}
-      <Route
-        path=""
-        element={<LoginPage />}
-      />
+    <ThemeProvider theme={theme}>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <ToastProvider>
+          <Routes>
+            {/* Auth routes without layout */}
+            <Route
+              path="/"
+              element={<Login />}
+            />
+            <Route
+              path="/reset-password"
+              element={<ResetPassword />}
+            />
+            <Route
+              path="/user-info"
+              element={<UserInfo />}
+            />
 
-      {/* 관리자 페이지 */}
-      <Route
-        path="/admin"
-        element={<AdminMainPage />}
-      />
-      <Route
-        path="/admin/projects"
-        element={<ProjectListPage />}
-      />
-      <Route
-        path="/admin/projects/create"
-        element={<CreateProjectPage />}
-      />
-      <Route
-        path="/admin/projects/:id"
-        element={<ProjectPage />}
-      />
-      <Route
-        path="/admin/projects/:id/edit"
-        element={<EditProjectPage />}
-      />
-      <Route
-        path="/admin/accounts"
-        element={<AccountListPage />}
-      />
-      <Route
-        path="/admin/accounts/create"
-        element={<CreateAccountPage />}
-      />
-      <Route
-        path="/admin/companies"
-        element={<CompanyListPage />}
-      />
-      <Route
-        path="/admin/companies/:id"
-        element={<CompanyPage />}
-      />
-      <Route
-        path="/admin/companies/create"
-        element={<CreateCompanyPage />}
-      />
-      <Route
-        path="/admin/companies/:id/edit"
-        element={<EditCompanyPage />}
-      />
+            {/* Admin routes with layout */}
+            <Route
+              path="/admin"
+              element={
+                <Layout>
+                  <Outlet />
+                </Layout>
+              }>
+              <Route
+                index
+                element={<AdminMain />}
+              />
+              <Route
+                path="projects"
+                element={<ProjectList />}
+              />
+              <Route
+                path="projects/create"
+                element={<CreateProject />}
+              />
+              <Route
+                path="projects/:id"
+                element={<Project />}
+              />
+              <Route
+                path="projects/:id/edit"
+                element={<EditProject />}
+              />
+              <Route
+                path="accounts"
+                element={<AccountList />}
+              />
+              <Route
+                path="accounts/:id"
+                element={<AccountDetail isAdmin={true} />}
+              />
+              <Route
+                path="accounts/create"
+                element={<CreateAccount />}
+              />
+              <Route
+                path="companies"
+                element={<CompanyList />}
+              />
+              <Route
+                path="companies/:id"
+                element={<Company />}
+              />
+              <Route
+                path="companies/create"
+                element={<CreateCompany />}
+              />
+              <Route
+                path="companies/:id/edit"
+                element={<EditCompany />}
+              />
+            </Route>
 
-      {/* 고객사/개발사 */}
-      <Route
-        path="/user"
-        element={<UserMainPage />}
-      />
-      <Route
-        path="/user/projects"
-        element={<UserProjectListPage />}
-      />
-      <Route
-        path="/user/projects/:id"
-        element={<UserProjectPage />}
-      />
-      <Route
-        path="/article/create"
-        element={<CreateArticlePage />}
-      />
-      <Route
-        path="/article/:id"
-        element={<ArticlePage />}
-      />
-      <Route
-        path="/article/:id/edit"
-        element={<EditArticlePage />}
-      />
-    </Routes>
+            {/* User routes with layout */}
+            <Route
+              path="/user"
+              element={
+                <Layout>
+                  <Outlet />
+                </Layout>
+              }>
+              <Route
+                index
+                element={<UserMain />}
+              />
+              <Route
+                path="projects/:id"
+                element={<UserProject />}
+              />
+              <Route
+                path="projects/:projectId/articles/:articleId"
+                element={<Article />}
+              />
+              <Route
+                path="projects/:projectId/articles/create"
+                element={<CreateArticle />}
+              />
+              <Route
+                path="projects/:projectId/articles/:articleId/edit"
+                element={<EditArticle />}
+              />
+              <Route
+                path="projects/:projectId/articles/:articleId/reply"
+                element={<ReplyArticle />}
+              />
+              <Route
+                path="accounts/:id"
+                element={<UserAccountDetail isAdmin={false} />}
+              />
+            </Route>
+          </Routes>
+        </ToastProvider>
+      </LocalizationProvider>
+    </ThemeProvider>
   )
 }
+
+export default App
