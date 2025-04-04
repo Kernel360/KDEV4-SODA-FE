@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   Box,
   Stack,
@@ -11,7 +11,8 @@ import {
   Typography,
   IconButton,
   InputAdornment,
-  Container
+  Container,
+  Paper
 } from '@mui/material'
 import { ArrowLeft, Link2 } from 'lucide-react'
 
@@ -30,19 +31,36 @@ export interface ArticleFormData {
   dueDate?: string
 }
 
+export interface ParentArticle {
+  id: number
+  title: string
+  content: string
+  author: {
+    name: string
+  }
+  createdAt: string
+}
+
 interface ArticleFormProps {
+  mode: 'create' | 'edit' | 'reply'
   formData: ArticleFormData
+  parentArticle?: ParentArticle
   onSubmit: (e: React.FormEvent) => void
   onChange: (data: ArticleFormData) => void
   onCancel: () => void
 }
 
 const ArticleForm: React.FC<ArticleFormProps> = ({
+  mode,
   formData,
+  parentArticle,
   onSubmit,
   onChange,
   onCancel
 }) => {
+  const [linkTitle, setLinkTitle] = useState('')
+  const [linkUrl, setLinkUrl] = useState('')
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files && files.length > 0) {
@@ -53,26 +71,28 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     }
   }
 
-  const handleAddLink = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddLink = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
-    const formElement = e.currentTarget
-    const titleInput = formElement.querySelector(
-      'input[name="linkTitle"]'
-    ) as HTMLInputElement
-    const urlInput = formElement.querySelector(
-      'input[name="linkUrl"]'
-    ) as HTMLInputElement
-
-    if (titleInput.value && urlInput.value) {
+    if (linkTitle && linkUrl) {
       onChange({
         ...formData,
-        links: [
-          ...formData.links,
-          { title: titleInput.value, url: urlInput.value }
-        ]
+        links: [...formData.links, { title: linkTitle, url: linkUrl }]
       })
-      titleInput.value = ''
-      urlInput.value = ''
+      setLinkTitle('')
+      setLinkUrl('')
+    }
+  }
+
+  const getFormTitle = () => {
+    switch (mode) {
+      case 'create':
+        return '새 게시글 작성'
+      case 'edit':
+        return '게시글 수정'
+      case 'reply':
+        return '답글 작성'
+      default:
+        return ''
     }
   }
 
@@ -91,8 +111,42 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
             direction="row"
             alignItems="center"
             spacing={1}>
-            <Typography variant="h6">새 게시글 작성</Typography>
+            <IconButton onClick={onCancel}>
+              <ArrowLeft />
+            </IconButton>
+            <Typography variant="h6">{getFormTitle()}</Typography>
           </Stack>
+
+          {mode === 'reply' && parentArticle && (
+            <Paper
+              variant="outlined"
+              sx={{ p: 2 }}>
+              <Stack spacing={1}>
+                <Typography
+                  variant="subtitle2"
+                  color="text.secondary">
+                  원본 글
+                </Typography>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight="bold">
+                  {parentArticle.title}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  noWrap>
+                  {parentArticle.content}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary">
+                  작성자: {parentArticle.author.name} · 작성일:{' '}
+                  {new Date(parentArticle.createdAt).toLocaleDateString()}
+                </Typography>
+              </Stack>
+            </Paper>
+          )}
 
           <Stack
             direction="row"
@@ -180,9 +234,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 </Box>
               </Box>
 
-              <Box
-                component="form"
-                onSubmit={handleAddLink}>
+              <Box>
                 <Typography
                   variant="caption"
                   color="text.secondary"
@@ -193,13 +245,15 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   direction="row"
                   spacing={1}>
                   <TextField
-                    name="linkTitle"
+                    value={linkTitle}
+                    onChange={e => setLinkTitle(e.target.value)}
                     placeholder="링크 제목"
                     size="small"
                     fullWidth
                   />
                   <TextField
-                    name="linkUrl"
+                    value={linkUrl}
+                    onChange={e => setLinkUrl(e.target.value)}
                     placeholder="URL"
                     size="small"
                     fullWidth
@@ -212,7 +266,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                     }}
                   />
                   <Button
-                    type="submit"
+                    onClick={handleAddLink}
                     variant="outlined"
                     size="small"
                     sx={{ minWidth: 64 }}>
@@ -275,7 +329,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
               type="submit"
               variant="contained"
               sx={{ minWidth: 120 }}>
-              등록
+              {mode === 'edit' ? '수정' : '등록'}
             </Button>
           </Stack>
         </Stack>

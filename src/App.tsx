@@ -22,7 +22,8 @@ import {
   CreateCompany,
   Article,
   CreateArticle,
-  EditArticle
+  EditArticle,
+  ReplyArticle
 } from './pages'
 import { ThemeProvider } from '@mui/material/styles'
 import { LocalizationProvider } from '@mui/x-date-pickers'
@@ -135,6 +136,10 @@ const App: React.FC = () => {
               <Route
                 path="projects/:projectId/articles/:articleId/edit"
                 element={<EditArticle />}
+              />
+              <Route
+                path="projects/:projectId/articles/:articleId/reply"
+                element={<ReplyArticle />}
               />
               <Route
                 path="accounts/:id"

@@ -31,6 +31,7 @@ const CreateArticle: React.FC = () => {
   return (
     <Box sx={{ p: 3 }}>
       <ArticleForm
+        mode="create"
         formData={formData}
         onSubmit={handleSubmit}
         onChange={setFormData}

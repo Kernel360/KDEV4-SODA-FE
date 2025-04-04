@@ -13,10 +13,10 @@ import type { Comment } from '../../types/comment'
 
 interface CommentItemProps {
   comment: Comment
-  onEdit: (id: number, content: string) => void
-  onDelete: (id: number) => void
-  onAddReply: (content: string, parentId: number) => void
-  currentUserId: number
+  onEdit?: (id: number, content: string) => void
+  onDelete?: (id: number) => void
+  onAddReply?: (content: string, parentId: number) => void
+  currentUserId?: number
 }
 
 const CommentItem: React.FC<CommentItemProps> = ({
@@ -32,8 +32,10 @@ const CommentItem: React.FC<CommentItemProps> = ({
   const [replyContent, setReplyContent] = useState('')
 
   const handleEdit = () => {
-    onEdit(comment.id, editContent)
-    setIsEditing(false)
+    if (onEdit) {
+      onEdit(comment.id, editContent)
+      setIsEditing(false)
+    }
   }
 
   const handleCancelEdit = () => {
@@ -42,7 +44,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
   }
 
   const handleAddReply = () => {
-    if (replyContent.trim()) {
+    if (replyContent.trim() && onAddReply) {
       onAddReply(replyContent, comment.id)
       setReplyContent('')
       setIsReplying(false)
@@ -69,7 +71,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
               {dayjs(comment.createdAt).format('YYYY.MM.DD HH:mm')}
             </Typography>
           </Stack>
-          {comment.author.id === currentUserId && (
+          {comment.author.id === currentUserId && onEdit && onDelete && (
             <Stack
               direction="row"
               spacing={1}>
@@ -121,7 +123,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
           </Typography>
         )}
 
-        {!comment.parentId && (
+        {!comment.parentId && onAddReply && (
           <Button
             startIcon={<MessageSquarePlus size={16} />}
             onClick={() => setIsReplying(!isReplying)}

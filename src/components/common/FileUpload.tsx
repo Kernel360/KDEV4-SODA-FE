@@ -1,16 +1,6 @@
 import React from 'react'
-import {
-  Box,
-  Typography,
-  IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Button,
-  Stack
-} from '@mui/material'
-import { Upload, X, File } from 'lucide-react'
+import { Box, Typography, Button, Stack } from '@mui/material'
+import { Upload } from 'lucide-react'
 
 interface FileUploadProps {
   files: File[]

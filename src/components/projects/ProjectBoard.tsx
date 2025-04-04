@@ -20,9 +20,7 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Paperclip,
-  Link2,
-  MessageSquare
+  Paperclip
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 

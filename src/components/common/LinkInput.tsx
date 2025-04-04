@@ -1,17 +1,6 @@
 import React, { useState } from 'react'
-import {
-  Box,
-  TextField,
-  IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Button,
-  Stack,
-  Typography
-} from '@mui/material'
-import { Link2, X, Plus } from 'lucide-react'
+import { Box, TextField, Button, Stack, Typography } from '@mui/material'
+import { Link2 } from 'lucide-react'
 
 interface Link {
   title: string

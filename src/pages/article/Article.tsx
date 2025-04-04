@@ -25,7 +25,7 @@ import dayjs from 'dayjs'
 import ProjectHeader from '../../components/projects/ProjectHeader'
 import CommentList from '../../components/comment/CommentList'
 import type { Project } from '../../types/project'
-import type { Article } from '../../types/article'
+import type { Article as ArticleType } from '../../types/article'
 import type { Comment } from '../../types/comment'
 
 const Article: React.FC = () => {
@@ -34,7 +34,7 @@ const Article: React.FC = () => {
   const projectId = params.projectId
   const articleId = params.articleId
   const [project, setProject] = useState<Project | null>(null)
-  const [article, setArticle] = useState<Article | null>(null)
+  const [article, setArticle] = useState<ArticleType | null>(null)
   const [comments, setComments] = useState<Comment[]>([
     {
       id: 1,
@@ -89,7 +89,7 @@ const Article: React.FC = () => {
     }
     setProject(dummyProject)
 
-    const dummyArticle: Article = {
+    const dummyArticle: ArticleType = {
       id: Number(articleId),
       title: '로그인 기능 구현 관련 논의',
       content:
@@ -231,9 +231,9 @@ const Article: React.FC = () => {
     console.log('Delete article:', articleId)
   }
 
-  const handleList = () => {
-    navigate(`/user/projects/${projectId}`)
-  }
+  // const handleList = () => {
+  //   navigate(`/user/projects/${projectId}`)
+  // }
 
   const handlePrevious = () => {
     if (!projectId || !articleId) return
@@ -250,9 +250,7 @@ const Article: React.FC = () => {
       console.error('Project ID or Article ID is missing')
       return
     }
-    navigate(
-      `/user/projects/${projectId}/articles/create?parentId=${articleId}`
-    )
+    navigate(`/user/projects/${projectId}/articles/${articleId}/reply`)
   }
 
   if (!project || !article) {
@@ -445,4 +443,4 @@ const Article: React.FC = () => {
   )
 }
 
-export default Article
+export default Article as React.FC
