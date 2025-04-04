@@ -9,16 +9,16 @@ export interface Project {
   projectNumber: string
   name: string
   description: string
+  status: '대기중' | '진행중' | '완료' | '중단'
   startDate: string
   endDate: string
-  status: string
   clientCompany: string
-  developmentCompany: string
+  devCompany: string
+  systemManager: string
   clientManagers: ProjectParticipant[]
   clientParticipants: ProjectParticipant[]
   developmentManagers: ProjectParticipant[]
   developmentParticipants: ProjectParticipant[]
-  systemManager: string
   managers: ProjectParticipant[]
   participants: ProjectParticipant[]
 }
