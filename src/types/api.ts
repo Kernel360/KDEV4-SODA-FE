@@ -1,0 +1,40 @@
+export interface Company {
+  id: number
+  name: string
+  phoneNumber: string
+  companyNumber: string
+  address: string
+  detailAddress: string
+}
+
+export interface User {
+  name: string
+  authId: string
+  position: string
+  phoneNumber: string
+  role: 'USER' | 'ADMIN'
+  firstLogin: boolean
+  company: Company
+}
+
+export interface ApiResponse<T = any> {
+  status: 'success' | 'error'
+  code: string
+  message: string
+  data?: T
+}
+
+export interface LoginResponse {
+  name: string
+  authId: string
+  position: string
+  phoneNumber: string
+  role: 'USER' | 'ADMIN'
+  firstLogin: boolean
+  company: Company
+}
+
+export interface LoginRequest {
+  authId: string
+  password: string
+} 

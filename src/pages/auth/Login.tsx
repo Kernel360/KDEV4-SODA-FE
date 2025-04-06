@@ -1,69 +1,197 @@
-import React from 'react'
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { login } from '../../api/auth';
+import type { LoginRequest } from '../../types/api';
 
 const Login: React.FC = () => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState<LoginRequest>({
+    authId: '',
+    password: '',
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await login(formData);
+      if (response.status === 'success' && response.data) {
+        localStorage.setItem('user', JSON.stringify(response.data));
+        if (response.data.role === 'ADMIN') {
+          navigate(response.data.firstLogin ? '/admin/additional-info' : '/admin');
+        } else {
+          navigate(response.data.firstLogin ? '/user/additional-info' : '/user');
+        }
+      } else {
+        setError(response.message || '로그인에 실패했습니다.');
+      }
+    } catch (error) {
+      setError('로그인 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            로그인
-          </h2>
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-white">
+      <header className="fixed top-0 left-0 right-0 z-10 bg-white shadow-sm">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
+          <div className="text-2xl font-bold tracking-tight">SODA</div>
         </div>
-        <form className="mt-8 space-y-6">
-          <div className="-space-y-px rounded-md shadow-sm">
-            <div>
-              <label
-                htmlFor="email"
-                className="sr-only">
-                이메일
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="relative block w-full appearance-none rounded-none rounded-t-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
-                placeholder="이메일"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="password"
-                className="sr-only">
-                비밀번호
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="relative block w-full appearance-none rounded-none rounded-b-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
-                placeholder="비밀번호"
-              />
-            </div>
-          </div>
+      </header>
 
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <a
-                href="/reset-password"
-                className="font-medium text-blue-600 hover:text-blue-500">
-                비밀번호를 잊으셨나요?
-              </a>
+      <main className="flex-1 pt-16">
+        <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-6 lg:grid lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-16">
+          <section className="hidden lg:block lg:order-1">
+            <div>
+              <h1 className="mb-4 text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl lg:mb-6 lg:text-6xl bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                프로젝트 관리의<br className="hidden sm:block"/>새로운 기준
+              </h1>
+              <p className="mb-8 text-base text-muted-foreground sm:text-lg lg:mb-16 leading-relaxed">
+                소다는 웹 에이전시와 고객사 간의 원활한 협업을 위한 올인원 프로젝트 관리 플랫폼입니다. 실시간 소통과 체계적인 프로세스 관리로 프로젝트 성공을 지원합니다.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
+                <div className="group rounded-xl border border-gray-100 text-card-foreground bg-white p-4 transition-all duration-300 hover:border-gray-200 hover:shadow-lg hover:-translate-y-0.5 sm:p-5">
+                  <h3 className="mb-2 text-sm font-semibold text-gray-900 sm:mb-3 sm:text-base">회원 관리</h3>
+                  <p className="text-xs text-muted-foreground sm:text-sm leading-relaxed">체계적인 사용자 권한 관리와 팀 협업 기능을 제공합니다</p>
+                </div>
+                <div className="group rounded-xl border border-gray-100 text-card-foreground bg-white p-4 transition-all duration-300 hover:border-gray-200 hover:shadow-lg hover:-translate-y-0.5 sm:p-5">
+                  <h3 className="mb-2 text-sm font-semibold text-gray-900 sm:mb-3 sm:text-base">프로젝트 관리</h3>
+                  <p className="text-xs text-muted-foreground sm:text-sm leading-relaxed">직관적인 대시보드로 프로젝트 진행 상황을 한눈에 파악할 수 있습니다</p>
+                </div>
+                <div className="group rounded-xl border border-gray-100 text-card-foreground bg-white p-4 transition-all duration-300 hover:border-gray-200 hover:shadow-lg hover:-translate-y-0.5 sm:p-5">
+                  <h3 className="mb-2 text-sm font-semibold text-gray-900 sm:mb-3 sm:text-base">커뮤니케이션</h3>
+                  <p className="text-xs text-muted-foreground sm:text-sm leading-relaxed">실시간 알림과 댓글로 원활한 소통이 가능합니다</p>
+                </div>
+                <div className="group rounded-xl border border-gray-100 text-card-foreground bg-white p-4 transition-all duration-300 hover:border-gray-200 hover:shadow-lg hover:-translate-y-0.5 sm:p-5">
+                  <h3 className="mb-2 text-sm font-semibold text-gray-900 sm:mb-3 sm:text-base">승인 프로세스</h3>
+                  <p className="text-xs text-muted-foreground sm:text-sm leading-relaxed">단계별 승인 절차로 업무 진행을 체계적으로 관리합니다</p>
+                </div>
+                <div className="group rounded-xl border border-gray-100 text-card-foreground bg-white p-4 transition-all duration-300 hover:border-gray-200 hover:shadow-lg hover:-translate-y-0.5 sm:p-5">
+                  <h3 className="mb-2 text-sm font-semibold text-gray-900 sm:mb-3 sm:text-base">자료 관리</h3>
+                  <p className="text-xs text-muted-foreground sm:text-sm leading-relaxed">프로젝트 산출물과 문서를 체계적으로 관리할 수 있습니다</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="flex items-center justify-center lg:order-2 lg:justify-end">
+            <div className="w-full rounded-2xl border border-gray-100 bg-white p-6 shadow-md transition-shadow duration-300 hover:shadow-lg sm:p-8 lg:max-w-md">
+              <form className="space-y-6" onSubmit={handleSubmit}>
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">로그인</h2>
+                  <p className="text-sm text-muted-foreground sm:text-base">소다 서비스를 이용하시려면 로그인해 주세요.</p>
+                </div>
+                {error && (
+                  <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
+                    {error}
+                  </div>
+                )}
+                <div className="space-y-6">
+                  <div className="space-y-2.5">
+                    <label className="text-sm font-medium text-gray-900 sm:text-base" htmlFor="authId">
+                      아이디
+                    </label>
+                    <input
+                      type="text"
+                      className="flex h-11 w-full rounded-lg border border-gray-100 bg-white px-4 py-2 text-sm transition-colors placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 sm:h-12 sm:text-base"
+                      id="authId"
+                      name="authId"
+                      placeholder="아이디를 입력하세요"
+                      required
+                      value={formData.authId}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div className="space-y-2.5">
+                    <label className="text-sm font-medium text-gray-900 sm:text-base" htmlFor="password">
+                      비밀번호
+                    </label>
+                    <input
+                      type="password"
+                      className="flex h-11 w-full rounded-lg border border-gray-100 bg-white px-4 py-2 text-sm transition-colors placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 sm:h-12 sm:text-base"
+                      id="password"
+                      name="password"
+                      placeholder="••••••••"
+                      required
+                      value={formData.password}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-6">
+                  <button
+                    type="submit"
+                    className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-gray-900 px-6 font-medium text-white transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 sm:h-12 sm:text-base disabled:opacity-50"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <svg
+                          className="mr-2 h-4 w-4 animate-spin"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        처리중...
+                      </>
+                    ) : (
+                      "로그인"
+                    )}
+                  </button>
+                  <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
+                    <Link to="/find-id" className="hover:text-gray-900 transition-colors">
+                      아이디 찾기
+                    </Link>
+                    <div className="w-px h-4 bg-gray-200" />
+                    <Link to="/find-password" className="hover:text-gray-900 transition-colors">
+                      비밀번호 찾기
+                    </Link>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <footer className="mt-auto bg-white shadow-[0_-1px_2px_rgba(0,0,0,0.03)]">
+        <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
+          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+            <p className="text-sm text-gray-600">© 2024 소다. 모든 권리 보유.</p>
+            <div className="flex items-center">
+              <span className="text-sm text-gray-600">고객센터: 02-123-4567</span>
             </div>
           </div>
-
-          <div>
-            <button
-              type="submit"
-              className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none">
-              로그인
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
+      </footer>
     </div>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;
