@@ -1,13 +1,13 @@
 import { API_ENDPOINTS } from './config'
 import { apiRequest } from './client'
-import type { LoginRequest, LoginResponse } from '../types/api'
+import type { LoginRequest, LoginResponse, FindIdRequest, FindIdResponse } from '../types/api'
 
 export async function login(data: LoginRequest) {
   return apiRequest<LoginResponse>('POST', API_ENDPOINTS.LOGIN, data)
 }
 
-export async function findId(data: { name: string; phoneNumber: string }) {
-  return apiRequest('POST', API_ENDPOINTS.FIND_ID, data)
+export async function findId(data: FindIdRequest) {
+  return apiRequest<FindIdResponse>('POST', API_ENDPOINTS.FIND_ID, data)
 }
 
 export async function requestPasswordReset(data: { email: string }) {

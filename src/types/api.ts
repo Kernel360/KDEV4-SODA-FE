@@ -37,4 +37,13 @@ export interface LoginResponse {
 export interface LoginRequest {
   authId: string
   password: string
+}
+
+export interface FindIdRequest {
+  name: string;
+  email: string;
+}
+
+export interface FindIdResponse {
+  maskedAuthId: string;
 } 

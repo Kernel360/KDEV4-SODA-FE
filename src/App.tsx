@@ -3,6 +3,7 @@ import { Routes, Route, Outlet } from 'react-router-dom'
 import Layout from './components/layout/Layout'
 import {
   Login,
+  FindId,
   ResetPassword,
   UserInfo,
   AdminMain,
@@ -41,6 +42,10 @@ const App: React.FC = () => {
             <Route
               path="/"
               element={<Login />}
+            />
+            <Route
+              path="/find-id"
+              element={<FindId />}
             />
             <Route
               path="/reset-password"
