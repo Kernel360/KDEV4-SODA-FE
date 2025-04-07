@@ -21,6 +21,7 @@ client.interceptors.response.use(
     return response
   },
   (error) => {
+    console.error('API Response Error:', error.response?.data || error.message)
     return Promise.reject(error)
   }
 )
@@ -32,26 +33,43 @@ client.interceptors.request.use(
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
     }
+    console.log('API Request:', {
+      method: config.method,
+      url: config.url,
+      headers: config.headers,
+      data: config.data
+    })
     return config
   },
   (error) => {
+    console.error('API Request Error:', error)
     return Promise.reject(error)
   }
 )
 
-export async function apiRequest<T>(
+interface ApiRequestOptions {
+  headers?: Record<string, string>;
+}
+
+export const apiRequest = async <T>(
   method: 'GET' | 'POST' | 'PUT' | 'DELETE',
   url: string,
-  data?: any
-): Promise<ApiResponse<T>> {
+  data?: any,
+  options?: ApiRequestOptions
+): Promise<ApiResponse<T>> => {
   try {
     const response = await client.request<ApiResponse<T>>({
       method,
       url,
       data,
+      headers: {
+        ...options?.headers
+      }
     })
+    console.log('API Response:', response.data)
     return response.data
   } catch (error) {
+    console.error('API Request Error:', error)
     if (axios.isAxiosError(error) && error.response) {
       return error.response.data as ApiResponse<T>
     }

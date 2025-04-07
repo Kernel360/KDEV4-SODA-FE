@@ -1,8 +1,8 @@
 import { API_ENDPOINTS } from './config'
 import { apiRequest } from './client'
-import type { LoginRequest, LoginResponse, FindIdRequest, FindIdResponse, RequestPasswordResetRequest, VerifyCodeRequest, ResetPasswordRequest } from '../types/api'
+import type { LoginRequest, LoginResponse, FindIdRequest, FindIdResponse, RequestPasswordResetRequest, VerifyCodeRequest, ResetPasswordRequest, SignupRequest, SignupResponse } from '../types/api'
 
-export async function login(data: LoginRequest) {
+export const login = async (data: LoginRequest) => {
   return apiRequest<LoginResponse>('POST', API_ENDPOINTS.LOGIN, data)
 }
 
@@ -35,4 +35,8 @@ export const resetPassword = async (data: ResetPasswordRequest) => {
   } catch (error) {
     throw error
   }
+}
+
+export const signup = async (data: SignupRequest) => {
+  return apiRequest<SignupResponse>('POST', API_ENDPOINTS.SIGNUP, data)
 } 
