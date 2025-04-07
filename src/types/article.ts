@@ -2,7 +2,8 @@ export enum ArticleStatus {
   PENDING = 'PENDING',
   IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
-  REJECTED = 'REJECTED'
+  REJECTED = 'REJECTED',
+  COMMENTED = 'COMMENTED'
 }
 
 export enum PriorityType {
@@ -11,16 +12,25 @@ export enum PriorityType {
   LOW = 'LOW'
 }
 
+export interface Author {
+  id: number
+  name: string
+  email: string
+}
+
 export interface Article {
   id: number
   title: string
-  userName: string
+  content: string
   status: ArticleStatus
   priority: PriorityType
-  deadLine: string
+  deadLine: string | null
   createdAt: string
+  updatedAt: string
+  userName: string
   parentArticleId: number | null
   children: Article[]
+  links?: ArticleLinkDTO[]
 }
 
 export interface LinkUploadDTO {

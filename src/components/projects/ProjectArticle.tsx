@@ -2,21 +2,25 @@ import React, { useState, useEffect } from 'react'
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
-  Chip,
-  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
   Button,
-  IconButton,
   TextField,
-  InputAdornment
+  InputAdornment,
+  IconButton,
+  Chip
 } from '@mui/material'
 import { Article, ArticleStatus, PriorityType } from '@/types/article'
 import { Stage } from '@/types/stage'
 import { projectService } from '@/services/projectService'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import ErrorMessage from '@/components/common/ErrorMessage'
-import { ChevronLeft, ChevronRight, Search, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search, Plus, Link2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 interface ProjectArticleProps {
@@ -67,31 +71,61 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
     fetchArticles()
   }, [projectId, selectedStage])
 
-  const getStatusColor = (status: ArticleStatus) => {
-    switch (status) {
-      case ArticleStatus.PENDING:
-        return 'default'
-      case ArticleStatus.IN_PROGRESS:
-        return 'primary'
-      case ArticleStatus.COMPLETED:
-        return 'success'
-      case ArticleStatus.REJECTED:
-        return 'error'
-      default:
-        return 'default'
-    }
-  }
-
   const getPriorityColor = (priority: PriorityType) => {
     switch (priority) {
       case PriorityType.HIGH:
-        return 'error'
+        return { color: '#ef4444', backgroundColor: '#fef2f2' }
       case PriorityType.MEDIUM:
-        return 'warning'
+        return { color: '#f59e0b', backgroundColor: '#fffbeb' }
       case PriorityType.LOW:
-        return 'success'
+        return { color: '#3b82f6', backgroundColor: '#eff6ff' }
       default:
-        return 'default'
+        return { color: 'text.secondary', backgroundColor: 'grey.100' }
+    }
+  }
+
+  const getPriorityText = (priority: PriorityType) => {
+    switch (priority) {
+      case PriorityType.HIGH:
+        return '높음'
+      case PriorityType.MEDIUM:
+        return '보통'
+      case PriorityType.LOW:
+        return '낮음'
+      default:
+        return priority
+    }
+  }
+
+  const getStatusColor = (status: ArticleStatus) => {
+    switch (status) {
+      case ArticleStatus.COMPLETED:
+        return { color: '#22c55e', backgroundColor: '#f0fdf4' }
+      case ArticleStatus.IN_PROGRESS:
+        return { color: '#f59e0b', backgroundColor: '#fffbeb' }
+      case ArticleStatus.PENDING:
+        return { color: '#6b7280', backgroundColor: '#f3f4f6' }
+      case ArticleStatus.REJECTED:
+        return { color: '#ef4444', backgroundColor: '#fef2f2' }
+      default:
+        return { color: 'text.secondary', backgroundColor: 'grey.100' }
+    }
+  }
+
+  const getStatusText = (status: ArticleStatus) => {
+    switch (status) {
+      case ArticleStatus.PENDING:
+        return '답변대기'
+      case ArticleStatus.COMMENTED:
+        return '답변완료'
+      case ArticleStatus.IN_PROGRESS:
+        return '진행중'
+      case ArticleStatus.COMPLETED:
+        return '완료'
+      case ArticleStatus.REJECTED:
+        return '거절'
+      default:
+        return status
     }
   }
 
@@ -104,81 +138,6 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
-  }
-
-  const renderPagination = () => {
-    if (totalPages <= 1) return null
-
-    const pages = []
-    const maxVisiblePages = 5
-
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2))
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
-
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1)
-    }
-
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, gap: 1 }}>
-        <IconButton
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          size="small">
-          <ChevronLeft size={20} />
-        </IconButton>
-
-        {startPage > 1 && (
-          <>
-            <Button
-              variant="text"
-              onClick={() => handlePageChange(1)}>
-              1
-            </Button>
-            {startPage > 2 && (
-              <Typography sx={{ lineHeight: '40px' }}>...</Typography>
-            )}
-          </>
-        )}
-
-        {Array.from(
-          { length: endPage - startPage + 1 },
-          (_, i) => startPage + i
-        ).map(page => (
-          <Button
-            key={page}
-            variant={currentPage === page ? 'contained' : 'text'}
-            onClick={() => handlePageChange(page)}
-            sx={{
-              minWidth: '40px',
-              height: '40px',
-              p: 0
-            }}>
-            {page}
-          </Button>
-        ))}
-
-        {endPage < totalPages && (
-          <>
-            {endPage < totalPages - 1 && (
-              <Typography sx={{ lineHeight: '40px' }}>...</Typography>
-            )}
-            <Button
-              variant="text"
-              onClick={() => handlePageChange(totalPages)}>
-              {totalPages}
-            </Button>
-          </>
-        )}
-
-        <IconButton
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          size="small">
-          <ChevronRight size={20} />
-        </IconButton>
-      </Box>
-    )
   }
 
   if (loading) {
@@ -257,67 +216,154 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
         ))}
       </Box>
 
-      {paginatedArticles.length > 0 ? (
-        <>
-          {paginatedArticles.map(article => (
-            <Card
-              key={article.id}
-              sx={{ mb: 2 }}>
-              <CardContent>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    mb: 1
-                  }}>
-                  <Typography variant="h6">{article.title}</Typography>
-                  <Stack
-                    direction="row"
-                    spacing={1}>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell
+                align="center"
+                width={80}>
+                번호
+              </TableCell>
+              <TableCell
+                align="center"
+                width={100}>
+                우선순위
+              </TableCell>
+              <TableCell
+                align="center"
+                width={100}>
+                상태
+              </TableCell>
+              <TableCell>제목</TableCell>
+              <TableCell
+                align="center"
+                width={120}>
+                작성자
+              </TableCell>
+              <TableCell
+                align="center"
+                width={120}>
+                작성일
+              </TableCell>
+              <TableCell
+                align="center"
+                width={120}>
+                마감일
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {paginatedArticles.length > 0 ? (
+              paginatedArticles.map(article => (
+                <TableRow
+                  key={article.id}
+                  hover
+                  onClick={() =>
+                    navigate(
+                      `/user/projects/${projectId}/articles/${article.id}`
+                    )
+                  }
+                  sx={{ cursor: 'pointer' }}>
+                  <TableCell align="center">{article.id}</TableCell>
+                  <TableCell align="center">
                     <Chip
-                      label={article.status}
-                      color={getStatusColor(article.status)}
+                      label={getPriorityText(article.priority)}
                       size="small"
+                      sx={{
+                        ...getPriorityColor(article.priority),
+                        fontWeight: 500
+                      }}
                     />
+                  </TableCell>
+                  <TableCell align="center">
                     <Chip
-                      label={article.priority}
-                      color={getPriorityColor(article.priority)}
+                      label={getStatusText(article.status)}
                       size="small"
+                      sx={{
+                        ...getStatusColor(article.status),
+                        fontWeight: 500
+                      }}
                     />
-                  </Stack>
-                </Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  gutterBottom>
-                  작성자: {article.userName} | 마감일:{' '}
-                  {new Date(article.deadLine).toLocaleDateString()}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary">
-                  작성일: {new Date(article.createdAt).toLocaleDateString()}
-                </Typography>
-              </CardContent>
-            </Card>
-          ))}
-          {renderPagination()}
-        </>
-      ) : (
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {article.title}
+                      {article.links && article.links.length > 0 && (
+                        <Link2
+                          size={16}
+                          color="#6B7280"
+                        />
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell align="center">{article.userName}</TableCell>
+                  <TableCell align="center">
+                    {new Date(article.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell align="center">
+                    {article.deadLine
+                      ? new Date(article.deadLine).toLocaleDateString()
+                      : '-'}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={7}
+                  align="center"
+                  sx={{ py: 3 }}>
+                  게시글이 존재하지 않습니다.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {totalPages > 1 && (
         <Box
           sx={{
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            height: '200px',
-            bgcolor: 'grey.50',
-            borderRadius: 1
+            gap: 1,
+            mt: 2
           }}>
-          <Typography
-            variant="body1"
-            color="text.secondary">
-            게시글이 존재하지 않습니다.
-          </Typography>
+          <IconButton
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            size="small">
+            <ChevronLeft size={20} />
+          </IconButton>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+            <Button
+              key={page}
+              variant={currentPage === page ? 'contained' : 'text'}
+              onClick={() => handlePageChange(page)}
+              size="small"
+              sx={{
+                minWidth: 32,
+                height: 32,
+                p: 0,
+                backgroundColor:
+                  currentPage === page ? 'primary.main' : 'transparent',
+                color: currentPage === page ? 'white' : 'text.primary',
+                '&:hover': {
+                  backgroundColor:
+                    currentPage === page ? 'primary.dark' : 'action.hover'
+                }
+              }}>
+              {page}
+            </Button>
+          ))}
+          <IconButton
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            size="small">
+            <ChevronRight size={20} />
+          </IconButton>
         </Box>
       )}
     </Box>
