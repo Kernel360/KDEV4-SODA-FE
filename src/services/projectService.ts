@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type { Project } from '../types/project'
+import type { Stage } from '../types/stage'
 import { client } from '../api/client'
 
 const API_BASE_URL = 'http://localhost:8080'
@@ -64,5 +65,28 @@ export const projectService = {
   async getProjectById(id: number): Promise<Project> {
     const response = await client.get(`/projects/${id}`)
     return response.data.data
+  },
+
+  // 프로젝트 단계 조회
+  async getProjectStages(projectId: number): Promise<Stage[]> {
+    const response = await client.get(`/projects/${projectId}/stages`)
+    return response.data.data
+  },
+
+  // 프로젝트 생성
+  async createProject(project: Omit<Project, 'id'>): Promise<Project> {
+    const response = await client.post('/projects', project)
+    return response.data.data
+  },
+
+  // 프로젝트 수정
+  async updateProject(id: number, project: Partial<Project>): Promise<Project> {
+    const response = await client.put(`/projects/${id}`, project)
+    return response.data.data
+  },
+
+  // 프로젝트 삭제
+  async deleteProject(id: number): Promise<void> {
+    await client.delete(`/projects/${id}`)
   }
 }

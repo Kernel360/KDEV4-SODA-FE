@@ -9,6 +9,9 @@ import {
 } from '@hello-pangea/dnd'
 import { Plus } from 'lucide-react'
 import type { Stage } from '../../types/stage'
+import { projectService } from '../../services/projectService'
+import LoadingSpinner from '../common/LoadingSpinner'
+import ErrorMessage from '../common/ErrorMessage'
 import AddStageModal from './AddStageModal'
 import StageCard from './StageCard'
 
@@ -16,26 +19,29 @@ interface ProjectStagesProps {
   projectId: number
 }
 
-const defaultStages: Stage[] = [
-  { id: 1, title: '요구사항 정의', order: 1, tasks: [] },
-  { id: 2, title: '화면 설계', order: 2, tasks: [] },
-  { id: 3, title: '디자인', order: 3, tasks: [] },
-  { id: 4, title: '퍼블리싱', order: 4, tasks: [] },
-  { id: 5, title: '개발', order: 5, tasks: [] },
-  { id: 6, title: '검수', order: 6, tasks: [] }
-]
-
 const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
   const [stages, setStages] = useState<Stage[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [isAddStageModalOpen, setIsAddStageModalOpen] = useState(false)
   const [selectedStageIndex, setSelectedStageIndex] = useState<number | null>(
     null
   )
 
   useEffect(() => {
-    // TODO: API 호출로 대체
-    setStages(defaultStages)
-  }, [])
+    const fetchStages = async () => {
+      try {
+        const data = await projectService.getProjectStages(projectId)
+        setStages(data)
+      } catch (err) {
+        setError('단계 정보를 불러오는데 실패했습니다.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStages()
+  }, [projectId])
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return
@@ -44,13 +50,7 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
     const [reorderedItem] = items.splice(result.source.index, 1)
     items.splice(result.destination.index, 0, reorderedItem)
 
-    // Update order property for each stage
-    const updatedItems = items.map((item, index) => ({
-      ...item,
-      order: index + 1
-    }))
-
-    setStages(updatedItems)
+    setStages(items)
   }
 
   const handleAddStage = (index: number) => {
@@ -58,14 +58,13 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
     setIsAddStageModalOpen(true)
   }
 
-  const handleAddStageSubmit = (title: string) => {
+  const handleAddStageSubmit = (name: string) => {
     if (selectedStageIndex === null) return
 
     const newStage: Stage = {
       id: Math.max(...stages.map(s => s.id)) + 1,
-      title,
-      order: selectedStageIndex + 1,
-      tasks: []
+      name,
+      stageOrder: selectedStageIndex + 1
     }
 
     const updatedStages = [
@@ -97,6 +96,19 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
         order: index + 1
       }))
     setStages(updatedStages)
+  }
+
+  if (loading) {
+    return <LoadingSpinner />
+  }
+
+  if (error) {
+    return (
+      <ErrorMessage
+        message={error}
+        onRetry={() => window.location.reload()}
+      />
+    )
   }
 
   return (

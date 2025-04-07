@@ -114,7 +114,7 @@ const StageCard: React.FC<StageCardProps> = ({
   const [isEditTitleModalOpen, setIsEditTitleModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [newTitle, setNewTitle] = useState(stage.title)
+  const [newTitle, setNewTitle] = useState(stage.name)
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -182,7 +182,7 @@ const StageCard: React.FC<StageCardProps> = ({
         <Typography
           variant="subtitle2"
           sx={{ fontWeight: 500 }}>
-          {stage.title}
+          {stage.name}
         </Typography>
         <IconButton
           size="small"
@@ -381,7 +381,7 @@ const StageCard: React.FC<StageCardProps> = ({
           <Button
             onClick={handleEditTitle}
             variant="contained"
-            disabled={!newTitle || newTitle === stage.title}>
+            disabled={!newTitle || newTitle === stage.name}>
             수정
           </Button>
         </DialogActions>
