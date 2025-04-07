@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { Box, Typography, Button } from '@mui/material'
+import {
+  Box,
+  Typography,
+  Button,
+  CircularProgress,
+  Alert
+} from '@mui/material'
 import {
   DragDropContext,
   Droppable,
@@ -11,6 +17,8 @@ import { Plus } from 'lucide-react'
 import type { Stage } from '../../types/stage'
 import AddStageModal from './AddStageModal'
 import StageCard from './StageCard'
+import { getProjectStages } from '../../api/project'
+import type { ProjectStage as ApiStage } from '../../types/api'
 
 interface ProjectStagesProps {
   projectId: number
@@ -29,11 +37,49 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
   const [stages, setStages] = useState<Stage[]>([])
   const [isAddStageModalOpen, setIsAddStageModalOpen] = useState(false)
   const [selectedStageIndex, setSelectedStageIndex] = useState<number | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchStages = async () => {
+    try {
+      const response = await getProjectStages(projectId)
+      if (response.status === 'success' && response.data) {
+        // API 응답을 Stage 타입으로 변환
+        const convertedStages: Stage[] = response.data.map(apiStage => ({
+          id: apiStage.id,
+          title: apiStage.name,
+          order: apiStage.stageOrder,
+          tasks: apiStage.tasks.map(task => ({
+            id: task.taskId,
+            title: task.title,
+            description: task.content,
+            status: task.status || '신청 대기 중',
+            taskOrder: task.taskOrder,
+            requests: [], // 초기에는 빈 배열로 설정, 필요한 경우 별도 API 호출로 채워넣을 수 있음
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }))
+        }))
+        
+        // taskOrder 기준으로 정렬
+        const sortedStages = convertedStages.map(stage => ({
+          ...stage,
+          tasks: [...stage.tasks].sort((a, b) => (a as any).taskOrder - (b as any).taskOrder)
+        }))
+        
+        setStages(sortedStages)
+      }
+    } catch (err) {
+      setError('단계 목록을 불러오는데 실패했습니다.')
+      console.error('Error fetching stages:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    // TODO: API 호출로 대체
-    setStages(defaultStages)
-  }, [])
+    fetchStages()
+  }, [projectId])
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return
@@ -95,6 +141,38 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
         order: index + 1
       }))
     setStages(updatedStages)
+  }
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert
+          severity="error"
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => {
+                setError(null)
+                setIsLoading(true)
+                // 데이터 다시 불러오기
+                fetchStages()
+              }}>
+              다시 시도
+            </Button>
+          }>
+          {error}
+        </Alert>
+      </Box>
+    )
   }
 
   return (
