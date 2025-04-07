@@ -1,19 +1,13 @@
 import axios from 'axios'
 import type { Project } from '../types/project'
 import type { Stage } from '../types/stage'
+import type { Task } from '../types/task'
 import { client } from '../api/client'
 
 const API_BASE_URL = 'http://localhost:8080'
 
-const projectApi = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
-
 // Request interceptor to add auth token
-projectApi.interceptors.request.use(
+client.interceptors.request.use(
   config => {
     const token = localStorage.getItem('accessToken')
     if (token) {
@@ -27,7 +21,7 @@ projectApi.interceptors.request.use(
 )
 
 // Response interceptor to handle token errors
-projectApi.interceptors.response.use(
+client.interceptors.response.use(
   response => response,
   async error => {
     if (error.response?.status === 401) {
@@ -88,5 +82,15 @@ export const projectService = {
   // 프로젝트 삭제
   async deleteProject(id: number): Promise<void> {
     await client.delete(`/projects/${id}`)
+  },
+
+  async getStageTasks(stageId: number): Promise<Task[]> {
+    try {
+      const response = await client.get(`/stages/${stageId}/tasks`)
+      return response.data.data
+    } catch (error) {
+      console.error('Error fetching stage tasks:', error)
+      throw error
+    }
   }
 }

@@ -79,15 +79,29 @@ const Project: React.FC = () => {
             {project.title}
           </Typography>
         </Box>
+
         <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="contained"
+            startIcon={<LayoutDashboard size={20} />}
+            onClick={() => navigate(`/user/projects/${id}`)}
+            sx={{
+              backgroundColor: '#FBBF24',
+              '&:hover': {
+                backgroundColor: '#FCD34D'
+              },
+              color: '#ffffff'
+            }}>
+            대시보드 바로가기
+          </Button>
           <Button
             variant="contained"
             startIcon={<Edit size={20} />}
             onClick={() => navigate(`/admin/projects/${id}/edit`)}
             sx={{
-              backgroundColor: 'black',
+              borderColor: '#F59E0B',
               '&:hover': {
-                backgroundColor: 'black'
+                backgroundColor: '#FCD34D'
               }
             }}>
             수정
@@ -104,18 +118,6 @@ const Project: React.FC = () => {
               }
             }}>
             삭제
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<LayoutDashboard size={20} />}
-            onClick={() => navigate(`/user/projects/${id}`)}
-            sx={{
-              backgroundColor: '#1976d2',
-              '&:hover': {
-                backgroundColor: '#1565c0'
-              }
-            }}>
-            대시보드
           </Button>
         </Box>
       </Box>
