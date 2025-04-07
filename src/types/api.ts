@@ -131,4 +131,26 @@ export interface CompanyMemberListResponse {
   code: string
   message: string
   data: CompanyMember[]
+}
+
+export interface TaskRequest {
+  requestId: number;
+  taskId: number;
+  memberId: number;
+  memberName: string;
+  title: string;
+  content: string;
+  links: {
+    id: number;
+    urlAddress: string;
+    urlDescription: string;
+  }[];
+  files: any[]; // 파일 타입은 추후 정의
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaskRequestsResponse extends ApiResponse<TaskRequest[]> {
+  data: TaskRequest[];
 } 
