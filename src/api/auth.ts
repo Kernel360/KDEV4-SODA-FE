@@ -1,6 +1,6 @@
 import { API_ENDPOINTS } from './config'
 import { apiRequest } from './client'
-import type { LoginRequest, LoginResponse, FindIdRequest, FindIdResponse } from '../types/api'
+import type { LoginRequest, LoginResponse, FindIdRequest, FindIdResponse, RequestPasswordResetRequest, VerifyCodeRequest, ResetPasswordRequest } from '../types/api'
 
 export async function login(data: LoginRequest) {
   return apiRequest<LoginResponse>('POST', API_ENDPOINTS.LOGIN, data)
@@ -10,14 +10,29 @@ export async function findId(data: FindIdRequest) {
   return apiRequest<FindIdResponse>('POST', API_ENDPOINTS.FIND_ID, data)
 }
 
-export async function requestPasswordReset(data: { email: string }) {
-  return apiRequest('POST', API_ENDPOINTS.FIND_PASSWORD, data)
+export const requestPasswordReset = async (data: RequestPasswordResetRequest) => {
+  try {
+    const response = await apiRequest('POST', API_ENDPOINTS.FIND_PASSWORD, data);
+    return response;
+  } catch (error) {
+    throw error;
+  }
 }
 
-export async function verifyCode(data: { email: string; code: string }) {
-  return apiRequest('POST', API_ENDPOINTS.VERIFY_CODE, data)
+export const verifyCode = async (data: VerifyCodeRequest) => {
+  try {
+    const response = await apiRequest('POST', API_ENDPOINTS.VERIFY_CODE, data)
+    return response.data
+  } catch (error) {
+    throw error
+  }
 }
 
-export async function resetPassword(data: { email: string; password: string; code: string }) {
-  return apiRequest('POST', API_ENDPOINTS.RESET_PASSWORD, data)
+export const resetPassword = async (data: ResetPasswordRequest) => {
+  try {
+    const response = await apiRequest('POST', API_ENDPOINTS.RESET_PASSWORD, data)
+    return response.data
+  } catch (error) {
+    throw error
+  }
 } 

@@ -18,10 +18,10 @@ export interface User {
 }
 
 export interface ApiResponse<T = any> {
-  status: 'success' | 'error'
-  code: string
-  message: string
-  data?: T
+  status: 'success' | 'error';
+  code: string;
+  message: string;
+  data?: T;
 }
 
 export interface LoginResponse {
@@ -46,4 +46,18 @@ export interface FindIdRequest {
 
 export interface FindIdResponse {
   maskedAuthId: string;
+}
+
+export interface RequestPasswordResetRequest {
+  email: string;
+}
+
+export interface VerifyCodeRequest {
+  email: string;
+  code: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  newPassword: string;
 } 
