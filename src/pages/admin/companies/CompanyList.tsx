@@ -1,31 +1,26 @@
-import React, { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
+import { Box, Typography, Button } from '@mui/material'
+import DataTable from '@/components/common/DataTable'
 import { useNavigate } from 'react-router-dom'
-import {
-  Box,
-  Paper,
-  Typography,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  TablePagination
-} from '@mui/material'
-import { Pencil, Trash2 } from 'lucide-react'
+import { PlusCircle } from 'lucide-react'
+import { getCompanyList } from '../../../api/company'
 import { useToast } from '../../../contexts/ToastContext'
-import { Company } from '../../../types/api'
-import { getCompanies } from '../../../api/company'
+import type { CompanyListItem } from '../../../types/api'
+
+interface Column<T> {
+  id: string;
+  label: string;
+  getValue: (row: T) => any;
+  style?: React.CSSProperties;
+}
 
 const CompanyList: React.FC = () => {
   const navigate = useNavigate()
   const { showToast } = useToast()
-  const [companies, setCompanies] = useState<Company[]>([])
+  const [loading, setLoading] = useState(true)
+  const [companies, setCompanies] = useState<CompanyListItem[]>([])
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchCompanies()
@@ -33,116 +28,104 @@ const CompanyList: React.FC = () => {
 
   const fetchCompanies = async () => {
     try {
-      setLoading(true)
-      const data = await getCompanies()
-      setCompanies(data)
-    } catch (error) {
-      console.error('Error fetching companies:', error)
-      showToast('회사 목록을 불러오는 중 오류가 발생했습니다.', 'error')
+      const response = await getCompanyList()
+      if (response.status === 'success') {
+        setCompanies(response.data)
+      } else {
+        showToast(response.message || '회사 목록을 불러오는데 실패했습니다.', 'error')
+      }
+    } catch (err) {
+      console.error('회사 목록 조회 중 오류:', err)
+      showToast('회사 목록을 불러오는데 실패했습니다.', 'error')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handlePageChange = (newPage: number) => {
     setPage(newPage)
   }
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10))
+  const handleRowsPerPageChange = (newRowsPerPage: number) => {
+    setRowsPerPage(newRowsPerPage)
     setPage(0)
   }
 
-  const handleEdit = (companyId: number) => {
-    navigate(`/admin/companies/${companyId}`)
-  }
+  const columns: Column<CompanyListItem>[] = [
+    {
+      id: 'name',
+      label: '회사명',
+      getValue: (row) => row.name,
+      style: {
+        cursor: 'pointer',
+        '&:hover': {
+          textDecoration: 'underline'
+        }
+      }
+    },
+    {
+      id: 'phoneNumber',
+      label: '전화번호',
+      getValue: (row) => row.phoneNumber
+    },
+    {
+      id: 'companyNumber',
+      label: '사업자번호',
+      getValue: (row) => row.companyNumber
+    },
+    {
+      id: 'address',
+      label: '주소',
+      getValue: (row) => row.address
+    }
+  ]
 
-  const handleDelete = async (companyId: number) => {
-    // TODO: Implement delete functionality
-    console.log('Delete company:', companyId)
+  const currentPageData = companies.slice(
+    page * rowsPerPage,
+    (page + 1) * rowsPerPage
+  )
+
+  if (loading) {
+    return <Box sx={{ p: 3 }}>Loading...</Box>
   }
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h5">회사 목록</Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 3
+        }}>
+        <Typography
+          variant="h5"
+          component="h1">
+          회사 관리
+        </Typography>
         <Button
           variant="contained"
-          color="primary"
+          startIcon={<PlusCircle />}
           onClick={() => navigate('/admin/companies/create')}
-        >
-          회사 생성
+          sx={{
+            bgcolor: 'black',
+            '&:hover': {
+              bgcolor: 'rgba(0, 0, 0, 0.8)'
+            }
+          }}>
+          새 회사 등록
         </Button>
       </Box>
 
-      <Paper>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>회사명</TableCell>
-                <TableCell>대표자명</TableCell>
-                <TableCell>전화번호</TableCell>
-                <TableCell>사업자등록번호</TableCell>
-                <TableCell>주소</TableCell>
-                <TableCell>상세주소</TableCell>
-                <TableCell align="right">작업</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    로딩 중...
-                  </TableCell>
-                </TableRow>
-              ) : companies.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    회사가 없습니다.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                companies
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((company) => (
-                    <TableRow key={company.id}>
-                      <TableCell>{company.name}</TableCell>
-                      <TableCell>{company.ownerName}</TableCell>
-                      <TableCell>{company.phoneNumber}</TableCell>
-                      <TableCell>{company.companyNumber}</TableCell>
-                      <TableCell>{company.address}</TableCell>
-                      <TableCell>{company.detailAddress}</TableCell>
-                      <TableCell align="right">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEdit(company.id)}
-                        >
-                          <Pencil size={20} />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDelete(company.id)}
-                        >
-                          <Trash2 size={20} />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={companies.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
-      </Paper>
+      <DataTable<CompanyListItem>
+        columns={columns}
+        data={currentPageData}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        totalCount={companies.length}
+        onPageChange={handlePageChange}
+        onRowsPerPageChange={handleRowsPerPageChange}
+      />
     </Box>
   )
 }

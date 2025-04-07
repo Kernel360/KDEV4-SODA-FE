@@ -1,13 +1,37 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Typography } from '@mui/material'
 import CreateAccountForm from '@/components/accounts/CreateAccountForm'
+import { getCompanyList } from '../../../api/company'
+import { signup } from '../../../api/auth'
+import { useToast } from '../../../contexts/ToastContext'
+import type { CompanyListItem } from '../../../types/api'
 
 export default function CreateAccount() {
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [companies, setCompanies] = useState<CompanyListItem[]>([])
+
+  useEffect(() => {
+    fetchCompanies()
+  }, [])
+
+  const fetchCompanies = async () => {
+    try {
+      const response = await getCompanyList()
+      if (response.status === 'success') {
+        setCompanies(response.data)
+      } else {
+        showToast(response.message || '회사 목록을 불러오는데 실패했습니다.', 'error')
+      }
+    } catch (err) {
+      console.error('회사 목록 조회 중 오류:', err)
+      showToast('회사 목록을 불러오는데 실패했습니다.', 'error')
+    }
+  }
 
   // 계정 생성 핸들러
   const handleSave = async (formData: {
@@ -34,19 +58,26 @@ export default function CreateAccount() {
         return
       }
 
-      // 실제로는 API 호출을 통해 계정을 생성해야 함
-      console.log('생성할 계정 데이터:', formData)
+      // API 호출
+      const response = await signup({
+        name: formData.name,
+        authId: formData.username,
+        password: formData.password,
+        role: formData.isAdmin ? 'ADMIN' : 'USER',
+        companyId: parseInt(formData.companyId)
+      })
 
-      // 성공 메시지 표시
-      setSuccess('계정이 성공적으로 생성되었습니다.')
-
-      // 1초 후 계정 목록 페이지로 이동
-      setTimeout(() => {
-        navigate('/admin/accounts')
-      }, 1000)
+      if (response.status === 'success') {
+        setSuccess('계정이 성공적으로 생성되었습니다.')
+        setTimeout(() => {
+          navigate('/admin/accounts')
+        }, 1000)
+      } else {
+        setError(response.message || '계정 생성에 실패했습니다.')
+      }
     } catch (err) {
+      console.error('계정 생성 중 오류:', err)
       setError('계정 생성 중 오류가 발생했습니다.')
-      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -61,15 +92,14 @@ export default function CreateAccount() {
     <Box sx={{ p: 3 }}>
       <Typography
         variant="h5"
-        component="h1"
-        sx={{ mb: 3 }}>
+        gutterBottom>
         계정 생성
       </Typography>
-
       <CreateAccountForm
         loading={loading}
         error={error}
         success={success}
+        companies={companies}
         onSave={handleSave}
         onCancel={handleCancel}
       />
