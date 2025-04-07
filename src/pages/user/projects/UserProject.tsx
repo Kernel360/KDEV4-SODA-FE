@@ -4,7 +4,7 @@ import { Box } from '@mui/material'
 import { Project } from '@/types/project'
 import ProjectHeader from '@/components/projects/ProjectHeader'
 import ProjectStages from '@/components/projects/ProjectStages'
-import ProjectBoard from '@/components/projects/ProjectBoard'
+import ProjectArticle from '@/components/projects/ProjectArticle'
 import { projectService } from '@/services/projectService'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import ErrorMessage from '@/components/common/ErrorMessage'
@@ -59,7 +59,7 @@ const UserProject: React.FC = () => {
     <Box sx={{ p: 3 }}>
       <ProjectHeader project={project} />
       <ProjectStages projectId={project.id} />
-      <ProjectBoard projectId={project.id} />
+      <ProjectArticle projectId={project.id} />
     </Box>
   )
 }

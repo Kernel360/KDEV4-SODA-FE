@@ -1,24 +1,24 @@
+export enum ArticleStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  REJECTED = 'REJECTED'
+}
+
+export enum PriorityType {
+  HIGH = 'HIGH',
+  MEDIUM = 'MEDIUM',
+  LOW = 'LOW'
+}
+
 export interface Article {
   id: number
   title: string
-  content: string
-  stage: '요구사항' | '설계' | '개발' | '테스트' | '배포'
-  priority: '낮음' | '보통' | '높음'
-  files: {
-    id: number
-    name: string
-    url: string
-  }[]
-  links: {
-    id: number
-    title: string
-    url: string
-  }[]
+  userName: string
+  status: ArticleStatus
+  priority: PriorityType
+  deadLine: string
   createdAt: string
-  updatedAt: string
-  author: {
-    id: number
-    name: string
-    email: string
-  }
+  parentArticleId: number | null
+  children: Article[]
 }
