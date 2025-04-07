@@ -1,55 +1,68 @@
 import React from 'react'
-import { Box, Paper, Typography, LinearProgress } from '@mui/material'
-import dayjs from 'dayjs'
+import { Card, CardContent, Typography, Stack, Chip } from '@mui/material'
 import type { Project } from '../../types/project'
-
-interface ProjectWithProgress extends Project {
-  progress: number
-}
+import dayjs from 'dayjs'
 
 interface ProjectCardProps {
-  project: ProjectWithProgress
-  onClick?: (projectId: number) => void
+  project: Project
+  onClick?: () => void
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
   return (
-    <Paper
+    <Card
       sx={{
-        p: 2,
         cursor: onClick ? 'pointer' : 'default',
-        '&:hover': onClick ? { bgcolor: 'action.hover' } : undefined
+        '&:hover': onClick
+          ? {
+              backgroundColor: 'action.hover'
+            }
+          : {}
       }}
-      onClick={() => onClick?.(project.id)}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-        <Typography
-          variant="subtitle1"
-          sx={{ fontWeight: 'bold' }}>
-          {project.name}
-        </Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary">
-          {project.progress}%
-        </Typography>
-      </Box>
-      <Box sx={{ mb: 2 }}>
-        <LinearProgress
-          variant="determinate"
-          value={project.progress}
-          sx={{
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: 'grey.100'
-          }}
-        />
-      </Box>
-      <Typography
-        variant="body2"
-        color="text.secondary">
-        {dayjs(project.endDate).format('YYYY.MM.DD')}
-      </Typography>
-    </Paper>
+      onClick={onClick}>
+      <CardContent>
+        <Stack spacing={1}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center">
+            <Typography variant="h6">{project.title}</Typography>
+            <Chip
+              label={project.status}
+              color={project.status === '진행중' ? 'primary' : 'default'}
+              size="small"
+            />
+          </Stack>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden'
+            }}>
+            {project.description}
+          </Typography>
+          <Stack
+            direction="row"
+            spacing={2}
+            alignItems="center">
+            <Typography
+              variant="caption"
+              color="text.secondary">
+              {project.clientCompanyName}
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary">
+              {dayjs(project.startDate).format('YYYY.MM.DD')} ~{' '}
+              {dayjs(project.endDate).format('YYYY.MM.DD')}
+            </Typography>
+          </Stack>
+        </Stack>
+      </CardContent>
+    </Card>
   )
 }
 

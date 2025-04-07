@@ -6,21 +6,14 @@ export interface ProjectParticipant {
 
 export interface Project {
   id: number
-  projectNumber: string
-  name: string
+  title: string
   description: string
-  status: '대기중' | '진행중' | '완료' | '중단'
   startDate: string
   endDate: string
-  clientCompany: string
-  devCompany: string
-  systemManager: string
-  clientManagers: ProjectParticipant[]
-  clientParticipants: ProjectParticipant[]
-  developmentManagers: ProjectParticipant[]
-  developmentParticipants: ProjectParticipant[]
-  managers: ProjectParticipant[]
-  participants: ProjectParticipant[]
-  createdAt: string
-  updatedAt: string
+  clientCompanyName: string
+  clientCompanyManagers: string[]
+  clientCompanyMembers: string[]
+  devCompanyName: string
+  devCompanyManagers: string[]
+  devCompanyMembers: string[]
 }

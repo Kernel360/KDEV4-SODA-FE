@@ -1,73 +1,23 @@
-import { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Typography, Button } from '@mui/material'
 import { Plus } from 'lucide-react'
+import useProjectStore from '../../../stores/projectStore'
 import DataTable from '../../../components/common/DataTable'
+import LoadingSpinner from '../../../components/common/LoadingSpinner'
+import ErrorMessage from '../../../components/common/ErrorMessage'
+import { formatDate } from '../../../utils/dateUtils'
+import type { Project } from '../../../types/project'
 
-interface Project {
-  id: number
-  name: string
-  client: string
-  developer: string
-  startDate: string
-  endDate: string
-}
-
-// Mock data generator
-const generateMockProjects = (count: number): Project[] => {
-  const companies = [
-    '삼성전자',
-    'LG전자',
-    'SK하이닉스',
-    '현대자동차',
-    '네이버',
-    '카카오',
-    'KT',
-    'LG CNS'
-  ]
-  const developers = [
-    '테크솔루션',
-    '클라우드테크',
-    '모바일솔루션',
-    '시스템인테그레이션',
-    '데이터테크'
-  ]
-  const projects = [
-    'AI 챗봇',
-    '클라우드 마이그레이션',
-    '모바일 앱',
-    'ERP 시스템',
-    '빅데이터 플랫폼',
-    'IoT 플랫폼',
-    '블록체인'
-  ]
-
-  return Array.from({ length: count }, (_, index) => {
-    const startDate = new Date(
-      2024,
-      Math.floor(Math.random() * 12),
-      Math.floor(Math.random() * 28) + 1
-    )
-    const endDate = new Date(startDate)
-    endDate.setMonth(endDate.getMonth() + Math.floor(Math.random() * 6) + 3)
-
-    return {
-      id: index + 1,
-      name: `${projects[Math.floor(Math.random() * projects.length)]} ${index + 1}차`,
-      client: companies[Math.floor(Math.random() * companies.length)],
-      developer: developers[Math.floor(Math.random() * developers.length)],
-      startDate: startDate.toISOString().split('T')[0],
-      endDate: endDate.toISOString().split('T')[0]
-    }
-  })
-}
-
-const mockProjects = generateMockProjects(50)
-
-const ProjectList = () => {
+const ProjectList: React.FC = () => {
   const navigate = useNavigate()
+  const { projects, isLoading, error, fetchAllProjects } = useProjectStore()
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(5)
+
+  useEffect(() => {
+    fetchAllProjects()
+  }, [fetchAllProjects])
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
@@ -78,40 +28,53 @@ const ProjectList = () => {
     setPage(0)
   }
 
-  // 현재 페이지에 해당하는 데이터만 추출
-  const currentPageData = mockProjects.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  )
-
   const columns = [
     {
-      id: 'name',
+      id: 'title',
       label: '프로젝트명',
-      render: (row: Project) => row.name,
+      render: (row: Project) => row.title,
       onClick: (row: Project) => navigate(`/admin/projects/${row.id}`)
     },
     {
-      id: 'client',
+      id: 'clientCompany',
       label: '고객사',
-      render: (row: Project) => row.client
+      render: (row: Project) => row.clientCompanyName
     },
     {
-      id: 'developer',
+      id: 'devCompany',
       label: '개발사',
-      render: (row: Project) => row.developer
+      render: (row: Project) => row.devCompanyName
     },
     {
       id: 'startDate',
       label: '시작 날짜',
-      render: (row: Project) => row.startDate
+      render: (row: Project) => formatDate(row.startDate)
     },
     {
       id: 'endDate',
       label: '마감 날짜',
-      render: (row: Project) => row.endDate
+      render: (row: Project) => formatDate(row.endDate)
     }
   ]
+
+  if (isLoading) {
+    return <LoadingSpinner />
+  }
+
+  if (error) {
+    return (
+      <ErrorMessage
+        message={error}
+        onRetry={fetchAllProjects}
+      />
+    )
+  }
+
+  // 현재 페이지에 해당하는 데이터만 추출
+  const currentPageData = projects.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  )
 
   return (
     <Box>
@@ -146,7 +109,7 @@ const ProjectList = () => {
         data={currentPageData}
         page={page}
         rowsPerPage={rowsPerPage}
-        totalCount={mockProjects.length}
+        totalCount={projects.length}
         onPageChange={handlePageChange}
         onRowsPerPageChange={handleRowsPerPageChange}
       />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Box, Typography, Button } from '@mui/material'
+import { Box, Typography, Button, Card, CardContent } from '@mui/material'
 import {
   DragDropContext,
   Droppable,
@@ -9,6 +9,10 @@ import {
 } from '@hello-pangea/dnd'
 import { Plus } from 'lucide-react'
 import type { Stage } from '../../types/stage'
+import type { Task } from '../../types/task'
+import { projectService } from '../../services/projectService'
+import LoadingSpinner from '../common/LoadingSpinner'
+import ErrorMessage from '../common/ErrorMessage'
 import AddStageModal from './AddStageModal'
 import StageCard from './StageCard'
 
@@ -16,26 +20,43 @@ interface ProjectStagesProps {
   projectId: number
 }
 
-const defaultStages: Stage[] = [
-  { id: 1, title: '요구사항 정의', order: 1, tasks: [] },
-  { id: 2, title: '화면 설계', order: 2, tasks: [] },
-  { id: 3, title: '디자인', order: 3, tasks: [] },
-  { id: 4, title: '퍼블리싱', order: 4, tasks: [] },
-  { id: 5, title: '개발', order: 5, tasks: [] },
-  { id: 6, title: '검수', order: 6, tasks: [] }
-]
+interface StageWithTasks extends Stage {
+  tasks: Task[]
+}
 
 const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
-  const [stages, setStages] = useState<Stage[]>([])
+  const [stages, setStages] = useState<StageWithTasks[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [isAddStageModalOpen, setIsAddStageModalOpen] = useState(false)
   const [selectedStageIndex, setSelectedStageIndex] = useState<number | null>(
     null
   )
 
   useEffect(() => {
-    // TODO: API 호출로 대체
-    setStages(defaultStages)
-  }, [])
+    const fetchStagesAndTasks = async () => {
+      try {
+        // Fetch stages
+        const stagesData = await projectService.getProjectStages(projectId)
+
+        // Fetch tasks for each stage
+        const stagesWithTasks = await Promise.all(
+          stagesData.map(async stage => {
+            const tasks = await projectService.getStageTasks(stage.id)
+            return { ...stage, tasks: tasks || [] } // tasks가 undefined일 경우 빈 배열로 초기화
+          })
+        )
+
+        setStages(stagesWithTasks)
+      } catch (err) {
+        setError('단계 및 작업 정보를 불러오는데 실패했습니다.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStagesAndTasks()
+  }, [projectId])
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return
@@ -44,13 +65,7 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
     const [reorderedItem] = items.splice(result.source.index, 1)
     items.splice(result.destination.index, 0, reorderedItem)
 
-    // Update order property for each stage
-    const updatedItems = items.map((item, index) => ({
-      ...item,
-      order: index + 1
-    }))
-
-    setStages(updatedItems)
+    setStages(items)
   }
 
   const handleAddStage = (index: number) => {
@@ -58,14 +73,14 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
     setIsAddStageModalOpen(true)
   }
 
-  const handleAddStageSubmit = (title: string) => {
+  const handleAddStageSubmit = (name: string) => {
     if (selectedStageIndex === null) return
 
-    const newStage: Stage = {
+    const newStage: StageWithTasks = {
       id: Math.max(...stages.map(s => s.id)) + 1,
-      title,
-      order: selectedStageIndex + 1,
-      tasks: []
+      name,
+      stageOrder: selectedStageIndex + 1,
+      tasks: [] // 새로 추가된 스테이지는 빈 tasks 배열로 초기화
     }
 
     const updatedStages = [
@@ -74,7 +89,7 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
       ...stages.slice(selectedStageIndex)
     ].map((stage, index) => ({
       ...stage,
-      order: index + 1
+      stageOrder: index + 1
     }))
 
     setStages(updatedStages)
@@ -99,136 +114,92 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
     setStages(updatedStages)
   }
 
+  if (loading) {
+    return <LoadingSpinner />
+  }
+
+  if (error) {
+    return (
+      <ErrorMessage
+        message={error}
+        onRetry={() => window.location.reload()}
+      />
+    )
+  }
+
   return (
     <Box sx={{ mb: 4 }}>
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h5"
-          sx={{ mb: 1 }}>
-          프로젝트 단계
-        </Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary">
-          각 단계를 드래그하여 순서를 변경할 수 있습니다
-        </Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 2
+        }}>
+        <Typography variant="h6">단계</Typography>
+        <Button
+          variant="contained"
+          startIcon={<Plus size={20} />}>
+          단계 추가
+        </Button>
       </Box>
+
       <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable
-          droppableId="stages"
-          direction="horizontal">
+        <Droppable droppableId="stages">
           {(provided: DroppableProvided) => (
             <Box
-              ref={provided.innerRef}
               {...provided.droppableProps}
+              ref={provided.innerRef}
               sx={{
                 display: 'flex',
-                gap: 0,
+                gap: 2,
                 overflowX: 'auto',
-                pb: 2,
-                '& > .stage-container': {
-                  minWidth: '200px',
-                  maxWidth: '200px'
-                },
-                '& > .add-stage-container': {
-                  minWidth: '20px',
-                  maxWidth: '20px'
-                }
+                pb: 2
               }}>
               {stages.map((stage, index) => (
-                <React.Fragment key={stage.id}>
-                  {index > 0 && (
+                <Draggable
+                  key={stage.id}
+                  draggableId={stage.id.toString()}
+                  index={index}>
+                  {(provided: DraggableProvided) => (
                     <Box
-                      className="add-stage-container"
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
                       sx={{
-                        position: 'relative',
-                        alignSelf: 'stretch',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
+                        minWidth: 300,
+                        bgcolor: 'background.paper',
+                        borderRadius: 1,
+                        p: 2,
+                        boxShadow: 1
                       }}>
-                      <Button
-                        className="add-stage-button"
-                        onClick={() => handleAddStage(index)}
-                        sx={{
-                          position: 'relative',
-                          minWidth: 'auto',
-                          width: '16px',
-                          height: '16px',
-                          p: 0,
-                          bgcolor: 'background.paper',
-                          boxShadow: 1,
-                          borderRadius: '50%',
-                          zIndex: 1,
-                          opacity: 0,
-                          transition:
-                            'opacity 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-                          '&:hover': {
-                            bgcolor: 'background.paper',
-                            boxShadow: 2,
-                            opacity: 1
-                          }
-                        }}>
-                        <Plus size={12} />
-                      </Button>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{ mb: 2 }}>
+                        {stage.name}
+                      </Typography>
+                      {stage.tasks &&
+                        stage.tasks.map(task => (
+                          <Card
+                            key={task.taskId}
+                            sx={{ mb: 1 }}>
+                            <CardContent>
+                              <Typography variant="subtitle2">
+                                {task.title}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary">
+                                {task.content}
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        ))}
                     </Box>
                   )}
-                  <Box className="stage-container">
-                    <Draggable
-                      draggableId={String(stage.id)}
-                      index={index}>
-                      {(provided: DraggableProvided) => (
-                        <Box
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          sx={{ px: 0.5 }}>
-                          <StageCard
-                            stage={stage}
-                            onUpdateStage={handleUpdateStage}
-                            onDeleteStage={handleDeleteStage}
-                          />
-                        </Box>
-                      )}
-                    </Draggable>
-                  </Box>
-                </React.Fragment>
+                </Draggable>
               ))}
               {provided.placeholder}
-              <Box
-                className="add-stage-container"
-                sx={{
-                  position: 'relative',
-                  alignSelf: 'stretch',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                <Button
-                  className="add-stage-button"
-                  onClick={() => handleAddStage(stages.length)}
-                  sx={{
-                    position: 'relative',
-                    minWidth: 'auto',
-                    width: '16px',
-                    height: '16px',
-                    p: 0,
-                    bgcolor: 'background.paper',
-                    boxShadow: 1,
-                    borderRadius: '50%',
-                    zIndex: 1,
-                    opacity: 0,
-                    transition:
-                      'opacity 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-                    '&:hover': {
-                      bgcolor: 'background.paper',
-                      boxShadow: 2,
-                      opacity: 1
-                    }
-                  }}>
-                  <Plus size={12} />
-                </Button>
-              </Box>
             </Box>
           )}
         </Droppable>
