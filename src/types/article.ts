@@ -22,3 +22,44 @@ export interface Article {
   parentArticleId: number | null
   children: Article[]
 }
+
+export interface LinkUploadDTO {
+  title: string
+  url: string
+}
+
+export interface ArticleCreateRequest {
+  projectId: number
+  title: string
+  content: string
+  priority: PriorityType
+  deadLine?: string
+  memberId?: number
+  stageId: number
+  parentArticleId?: number
+  linkList?: LinkUploadDTO[]
+}
+
+export interface ArticleFileDTO {
+  id: number
+  name: string
+  url: string
+}
+
+export interface ArticleLinkDTO {
+  id: number
+  title: string
+  url: string
+}
+
+export interface ArticleCreateResponse {
+  title: string
+  content: string
+  priority: PriorityType
+  deadLine?: string
+  memberName: string
+  stageName: string
+  parentArticleId?: number
+  fileList: ArticleFileDTO[]
+  linkList: ArticleLinkDTO[]
+}

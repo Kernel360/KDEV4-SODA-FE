@@ -3,7 +3,11 @@ import type { Project } from '../types/project'
 import type { Stage } from '../types/stage'
 import type { Task } from '../types/task'
 import { client } from '../api/client'
-import { Article } from '../types/article'
+import {
+  Article,
+  ArticleCreateRequest,
+  ArticleCreateResponse
+} from '../types/article'
 
 const API_BASE_URL = 'http://localhost:8080'
 
@@ -106,6 +110,18 @@ export const projectService = {
       return response.data.data
     } catch (error) {
       console.error('Error fetching project articles:', error)
+      throw error
+    }
+  },
+
+  async createArticle(
+    request: ArticleCreateRequest
+  ): Promise<ArticleCreateResponse> {
+    try {
+      const response = await client.post('/articles', request)
+      return response.data.data
+    } catch (error) {
+      console.error('Error creating article:', error)
       throw error
     }
   }
