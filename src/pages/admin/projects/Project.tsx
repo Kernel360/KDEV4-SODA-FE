@@ -8,10 +8,9 @@ import {
   List,
   ListItem,
   ListItemText,
-  Divider,
   Grid
 } from '@mui/material'
-import { ArrowLeft, Edit } from 'lucide-react'
+import { ArrowLeft, Edit, LayoutDashboard } from 'lucide-react'
 import { projectService } from '../../../services/projectService'
 import { formatDate } from '../../../utils/dateUtils'
 import type { Project } from '../../../types/project'
@@ -105,6 +104,18 @@ const Project: React.FC = () => {
               }
             }}>
             삭제
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<LayoutDashboard size={20} />}
+            onClick={() => navigate(`/user/projects/${id}`)}
+            sx={{
+              backgroundColor: '#1976d2',
+              '&:hover': {
+                backgroundColor: '#1565c0'
+              }
+            }}>
+            대시보드
           </Button>
         </Box>
       </Box>
