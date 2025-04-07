@@ -7,13 +7,13 @@ export interface ProjectParticipant {
 export interface Project {
   id: number
   projectNumber: string
-  name: string
+  title: string
   description: string
   status: '대기중' | '진행중' | '완료' | '중단'
   startDate: string
   endDate: string
-  clientCompany: string
-  devCompany: string
+  clientCompanyName: string
+  devCompanyName: string
   systemManager: string
   clientManagers: ProjectParticipant[]
   clientParticipants: ProjectParticipant[]

@@ -8,52 +8,43 @@ import {
   TableRow,
   Paper,
   Box,
-  IconButton,
-  Typography
+  IconButton
 } from '@mui/material'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface Column<T> {
   id: string
   label: string
-  minWidth?: number
-  align?: 'right' | 'left' | 'center'
-  format?: (value: any) => React.ReactNode
-  getValue?: (row: T) => any
-  render?: (row: T) => React.ReactNode
+  render: (row: T) => React.ReactNode
   onClick?: (row: T) => void
-  style?: React.CSSProperties
 }
 
 interface DataTableProps<T> {
   columns: Column<T>[]
-  data?: T[]
-  rows?: T[]
+  data: T[]
   page: number
-  rowsPerPage?: number
-  totalCount?: number
+  rowsPerPage: number
+  totalCount: number
   onPageChange: (newPage: number) => void
-  onRowsPerPageChange?: (newRowsPerPage: number) => void
-  getRowId?: (row: T) => string | number
+  onRowsPerPageChange: (newRowsPerPage: number) => void
 }
 
-export default function DataTable<T>({
+const DataTable = <T extends Record<string, any>>({
   columns,
   data,
-  rows,
   page,
-  rowsPerPage = 8,
+  rowsPerPage,
   totalCount,
-  onPageChange,
-  onRowsPerPageChange,
-  getRowId
-}: DataTableProps<T>) {
-  // data 또는 rows 중 하나를 사용
-  const tableData = data || rows || []
-  const count = totalCount || tableData.length
-  const totalPages = Math.ceil(count / rowsPerPage)
+  onPageChange
+}: DataTableProps<T>) => {
+  const totalPages = Math.ceil(totalCount / rowsPerPage)
 
-  // 페이지 번호 배열 생성
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 0 && newPage < totalPages) {
+      onPageChange(newPage)
+    }
+  }
+
   const getPageNumbers = () => {
     const pageNumbers = []
     for (let i = 0; i < totalPages; i++) {
@@ -62,78 +53,48 @@ export default function DataTable<T>({
     return pageNumbers
   }
 
-  // 페이지 변경 핸들러
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 0 && newPage < totalPages) {
-      onPageChange(newPage)
-    }
-  }
-
-  // 페이지당 행 수 변경 핸들러
-  const handleRowsPerPageChange = (
-    event: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    onRowsPerPageChange?.(parseInt(event.target.value, 10))
-  }
-
-  // 셀 클릭 핸들러
-  const handleCellClick = (
-    column: Column<T>,
-    row: T,
-    event: React.MouseEvent
-  ) => {
-    if (column.onClick) {
-      event.stopPropagation() // 이벤트 버블링 방지
-      column.onClick(row)
-    }
-  }
-
   return (
-    <Box>
-      <TableContainer component={Paper}>
+    <Paper
+      sx={{
+        width: '100%',
+        overflow: 'hidden',
+        boxShadow: 'none',
+        border: '1px solid',
+        borderColor: 'divider'
+      }}>
+      <TableContainer>
         <Table sx={{ minWidth: 650 }}>
           <TableHead>
             <TableRow>
               {columns.map(column => (
                 <TableCell
                   key={column.id}
-                  align={column.align}
-                  style={{ minWidth: column.minWidth }}>
+                  sx={{
+                    fontWeight: 600,
+                    backgroundColor: 'grey.50'
+                  }}>
                   {column.label}
                 </TableCell>
               ))}
             </TableRow>
           </TableHead>
           <TableBody>
-            {tableData.map((row, index) => (
+            {data.map((row, index) => (
               <TableRow
+                key={index}
                 hover
-                key={getRowId ? getRowId(row) : index}
+                onClick={
+                  columns[0].onClick
+                    ? () => columns[0].onClick?.(row)
+                    : undefined
+                }
                 sx={{
+                  cursor: columns[0].onClick ? 'pointer' : 'default',
                   '&:last-child td, &:last-child th': { border: 0 }
                 }}>
-                {columns.map(column => {
-                  let content: React.ReactNode
-
-                  if (column.render) {
-                    content = column.render(row)
-                  } else if (column.getValue) {
-                    const value = column.getValue(row)
-                    content = column.format ? column.format(value) : value
-                  } else {
-                    content = null
-                  }
-
-                  return (
-                    <TableCell
-                      key={column.id}
-                      align={column.align}
-                      onClick={e => handleCellClick(column, row, e)}
-                      style={column.style}>
-                      {content}
-                    </TableCell>
-                  )
-                })}
+                {columns.map(column => (
+                  <TableCell key={column.id}>{column.render(row)}</TableCell>
+                ))}
               </TableRow>
             ))}
           </TableBody>
@@ -146,7 +107,8 @@ export default function DataTable<T>({
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          mt: 2
+          mt: 2,
+          pb: 2
         }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <IconButton
@@ -188,6 +150,8 @@ export default function DataTable<T>({
           </IconButton>
         </Box>
       </Box>
-    </Box>
+    </Paper>
   )
 }
+
+export default DataTable
