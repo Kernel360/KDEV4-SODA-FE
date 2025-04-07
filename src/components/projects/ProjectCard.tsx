@@ -26,7 +26,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
             direction="row"
             justifyContent="space-between"
             alignItems="center">
-            <Typography variant="h6">{project.name}</Typography>
+            <Typography variant="h6">{project.title}</Typography>
             <Chip
               label={project.status}
               color={project.status === '진행중' ? 'primary' : 'default'}
@@ -51,7 +51,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
             <Typography
               variant="caption"
               color="text.secondary">
-              {project.clientCompany}
+              {project.clientCompanyName}
             </Typography>
             <Typography
               variant="caption"

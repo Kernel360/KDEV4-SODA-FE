@@ -52,3 +52,17 @@ export const fetchProjects = async (): Promise<Project[]> => {
     throw error
   }
 }
+
+export const projectService = {
+  // 프로젝트 목록 조회
+  async getAllProjects(): Promise<Project[]> {
+    const response = await client.get('/projects')
+    return response.data.data
+  },
+
+  // 프로젝트 상세 조회
+  async getProjectById(id: number): Promise<Project> {
+    const response = await client.get(`/projects/${id}`)
+    return response.data.data
+  }
+}

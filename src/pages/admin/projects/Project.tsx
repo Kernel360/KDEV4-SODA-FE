@@ -1,89 +1,275 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import ProjectDetail from '../../../components/projects/ProjectDetail'
+import {
+  Box,
+  Typography,
+  Paper,
+  Button,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
+  Grid
+} from '@mui/material'
+import { ArrowLeft, Edit } from 'lucide-react'
+import { projectService } from '../../../services/projectService'
+import { formatDate } from '../../../utils/dateUtils'
 import type { Project } from '../../../types/project'
-import { useToast } from '../../../contexts/ToastContext'
+import LoadingSpinner from '../../../components/common/LoadingSpinner'
+import ErrorMessage from '../../../components/common/ErrorMessage'
 
-const ProjectPage: React.FC = () => {
+const Project: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { showToast } = useToast()
   const [project, setProject] = useState<Project | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        // TODO: API 호출로 대체
-        const dummyProject: Project = {
-          id: 1,
-          name: '프로젝트 A',
-          description: '프로젝트 A에 대한 설명입니다.',
-          projectNumber: 'PRJ-2024-001',
-          status: '진행중',
-          startDate: '2024-03-01',
-          endDate: '2024-12-31',
-          clientCompany: '고객사 A',
-          clientManagers: [
-            { name: '김담당', position: '과장', email: 'manager@client.com' }
-          ],
-          clientParticipants: [
-            {
-              name: '이참여',
-              position: '대리',
-              email: 'participant@client.com'
-            }
-          ],
-          developmentCompany: '개발사 A',
-          developmentManagers: [
-            { name: '박담당', position: '과장', email: 'manager@dev.com' }
-          ],
-          developmentParticipants: [
-            { name: '최참여', position: '대리', email: 'participant@dev.com' }
-          ],
-          systemManager: '김태형'
-        }
-        setProject(dummyProject)
+        if (!id) return
+        const data = await projectService.getProjectById(parseInt(id))
+        setProject(data)
       } catch (err) {
         setError('프로젝트 정보를 불러오는데 실패했습니다.')
-        showToast('프로젝트 정보를 불러오는데 실패했습니다.', 'error')
       } finally {
-        setLoading(false)
+        setIsLoading(false)
       }
     }
 
     fetchProject()
-  }, [id, showToast])
+  }, [id])
 
-  const handleEdit = () => {
-    navigate(`/admin/projects/${id}/edit`)
+  if (isLoading) {
+    return <LoadingSpinner />
   }
 
-  const handleDelete = async () => {
-    if (window.confirm('정말로 이 프로젝트를 삭제하시겠습니까?')) {
-      try {
-        // TODO: API 호출로 대체
-        showToast('프로젝트가 삭제되었습니다.', 'success')
-        navigate('/admin/projects')
-      } catch (err) {
-        showToast('프로젝트 삭제에 실패했습니다.', 'error')
-      }
-    }
+  if (error) {
+    return (
+      <ErrorMessage
+        message={error}
+        onRetry={() => window.location.reload()}
+      />
+    )
   }
 
-  if (loading) return <div>Loading...</div>
-  if (error) return <div>{error}</div>
-  if (!project) return <div>프로젝트를 찾을 수 없습니다.</div>
+  if (!project) {
+    return <ErrorMessage message="프로젝트가 존재하지 않습니다." />
+  }
 
   return (
-    <ProjectDetail
-      project={project}
-      isEditable={true}
-      onEdit={handleEdit}
-      onDelete={handleDelete}
-    />
+    <Box>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 4
+        }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Button
+            startIcon={<ArrowLeft size={20} />}
+            onClick={() => navigate('/admin/projects')}
+            sx={{ color: 'text.primary' }}>
+            목록으로
+          </Button>
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: 600 }}>
+            {project.title}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="contained"
+            startIcon={<Edit size={20} />}
+            onClick={() => navigate(`/admin/projects/${id}/edit`)}
+            sx={{
+              backgroundColor: 'black',
+              '&:hover': {
+                backgroundColor: 'black'
+              }
+            }}>
+            수정
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            sx={{
+              borderColor: '#ef5350',
+              color: '#ef5350',
+              '&:hover': {
+                borderColor: '#d32f2f',
+                backgroundColor: 'transparent'
+              }
+            }}>
+            삭제
+          </Button>
+        </Box>
+      </Box>
+
+      <Paper sx={{ p: 4, mb: 4 }}>
+        <Typography
+          variant="body1"
+          sx={{ mb: 4 }}>
+          {project.description}
+        </Typography>
+
+        <Grid
+          container
+          spacing={3}>
+          <Grid
+            item
+            xs={12}
+            md={6}>
+            <Box>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom>
+                고객사
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{ mb: 3 }}>
+                {project.clientCompanyName}
+              </Typography>
+
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom>
+                계획 시작일
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{ mb: 3 }}>
+                {formatDate(project.startDate)}
+              </Typography>
+
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom>
+                고객사 담당자
+              </Typography>
+              <List
+                dense
+                disablePadding>
+                {project.clientCompanyManagers.map((manager, index) => (
+                  <ListItem
+                    key={index}
+                    sx={{ px: 0 }}>
+                    <ListItemText primary={manager} />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          </Grid>
+
+          <Grid
+            item
+            xs={12}
+            md={6}>
+            <Box>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom>
+                개발사
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{ mb: 3 }}>
+                {project.devCompanyName}
+              </Typography>
+
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom>
+                계획 종료일
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{ mb: 3 }}>
+                {formatDate(project.endDate)}
+              </Typography>
+
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom>
+                개발사 담당자
+              </Typography>
+              <List
+                dense
+                disablePadding>
+                {project.devCompanyManagers.map((manager, index) => (
+                  <ListItem
+                    key={index}
+                    sx={{ px: 0 }}>
+                    <ListItemText primary={manager} />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          </Grid>
+
+          <Grid
+            item
+            xs={12}
+            md={6}>
+            <Box>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom>
+                고객사 일반 참여자
+              </Typography>
+              <List
+                dense
+                disablePadding>
+                {project.clientCompanyMembers.map((member, index) => (
+                  <ListItem
+                    key={index}
+                    sx={{ px: 0 }}>
+                    <ListItemText primary={member} />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          </Grid>
+
+          <Grid
+            item
+            xs={12}
+            md={6}>
+            <Box>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom>
+                개발사 일반 참여자
+              </Typography>
+              <List
+                dense
+                disablePadding>
+                {project.devCompanyMembers.map((member, index) => (
+                  <ListItem
+                    key={index}
+                    sx={{ px: 0 }}>
+                    <ListItemText primary={member} />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          </Grid>
+        </Grid>
+      </Paper>
+    </Box>
   )
 }
 
-export default ProjectPage
+export default Project
