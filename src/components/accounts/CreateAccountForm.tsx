@@ -14,29 +14,17 @@ import {
   Stack,
   Select,
   MenuItem,
-  InputLabel
+  InputLabel,
+  SelectChangeEvent
 } from '@mui/material'
 import { Save, X } from 'lucide-react'
-
-// 회사 인터페이스 정의
-interface Company {
-  id: string
-  name: string
-}
-
-// 더미 회사 데이터
-const dummyCompanies: Company[] = [
-  { id: '1', name: '테크솔루션' },
-  { id: '2', name: '클라우드시스템' },
-  { id: '3', name: '디자인스튜디오' },
-  { id: '4', name: '데이터인사이트' },
-  { id: '5', name: '소프트웨어엔지니어링' }
-]
+import type { CompanyListItem } from '../../types/api'
 
 interface CreateAccountFormProps {
   loading: boolean
   error: string | null
   success: string | null
+  companies: CompanyListItem[]
   onSave: (formData: {
     name: string
     username: string
@@ -48,13 +36,14 @@ interface CreateAccountFormProps {
   onCancel: () => void
 }
 
-export default function CreateAccountForm({
+const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
   loading,
   error,
   success,
+  companies,
   onSave,
   onCancel
-}: CreateAccountFormProps) {
+}) => {
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -64,7 +53,6 @@ export default function CreateAccountForm({
     companyId: ''
   })
 
-  // 폼 데이터 변경 핸들러
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, checked } = e.target
     setFormData(prev => ({
@@ -73,16 +61,14 @@ export default function CreateAccountForm({
     }))
   }
 
-  // Select 컴포넌트 변경 핸들러
-  const handleSelectChange = (e: any) => {
+  const handleSelectChange = (e: SelectChangeEvent) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name as string]: value
     }))
   }
 
-  // 폼 제출 핸들러
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     await onSave(formData)
@@ -90,24 +76,11 @@ export default function CreateAccountForm({
 
   return (
     <Paper sx={{ p: 3 }}>
-      {error && (
-        <Alert
-          severity="error"
-          sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      {success && (
-        <Alert
-          severity="success"
-          sx={{ mb: 2 }}>
-          {success}
-        </Alert>
-      )}
-
       <form onSubmit={handleSubmit}>
         <Stack spacing={3}>
+          {error && <Alert severity="error">{error}</Alert>}
+          {success && <Alert severity="success">{success}</Alert>}
+
           <TextField
             fullWidth
             label="이름"
@@ -146,17 +119,14 @@ export default function CreateAccountForm({
             required
           />
 
-          <FormControl
-            fullWidth
-            required>
-            <InputLabel id="company-select-label">회사</InputLabel>
+          <FormControl fullWidth>
+            <InputLabel>회사</InputLabel>
             <Select
-              labelId="company-select-label"
               name="companyId"
               value={formData.companyId}
-              label="회사"
-              onChange={handleSelectChange}>
-              {dummyCompanies.map(company => (
+              onChange={handleSelectChange}
+              required>
+              {companies.map(company => (
                 <MenuItem
                   key={company.id}
                   value={company.id}>
@@ -167,42 +137,36 @@ export default function CreateAccountForm({
           </FormControl>
 
           <FormControl component="fieldset">
-            <Typography
-              variant="subtitle1"
-              sx={{ mb: 1 }}>
-              계정 유형
-            </Typography>
             <RadioGroup
               name="isAdmin"
               value={formData.isAdmin}
               onChange={handleChange}>
               <FormControlLabel
+                value={false}
+                control={<Radio />}
+                label="일반 사용자"
+              />
+              <FormControlLabel
                 value={true}
                 control={<Radio />}
                 label="관리자"
               />
-              <FormControlLabel
-                value={false}
-                control={<Radio />}
-                label="사용자"
-              />
             </RadioGroup>
           </FormControl>
 
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
             <Button
               variant="outlined"
               startIcon={<X />}
-              onClick={onCancel}
-              disabled={loading}>
+              onClick={onCancel}>
               취소
             </Button>
             <Button
               type="submit"
               variant="contained"
-              startIcon={<Save />}
+              startIcon={loading ? <CircularProgress size={20} /> : <Save />}
               disabled={loading}>
-              {loading ? <CircularProgress size={24} /> : '저장'}
+              저장
             </Button>
           </Box>
         </Stack>
@@ -210,3 +174,5 @@ export default function CreateAccountForm({
     </Paper>
   )
 }
+
+export default CreateAccountForm
