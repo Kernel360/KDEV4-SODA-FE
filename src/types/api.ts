@@ -151,6 +151,21 @@ export interface TaskRequest {
   updatedAt: string;
 }
 
-export interface TaskRequestsResponse extends ApiResponse<TaskRequest[]> {
-  data: TaskRequest[];
-} 
+export interface TaskRequestsResponse extends ApiResponse<TaskRequest[]> {}
+
+export interface ProjectStageTask {
+  taskId: number;
+  title: string;
+  content: string;
+  taskOrder: number;
+  status: '신청 대기 중' | '승인 대기 중' | '승인' | '반려';
+}
+
+export interface ProjectStage {
+  id: number;
+  name: string;
+  stageOrder: number;
+  tasks: ProjectStageTask[];
+}
+
+export interface ProjectStagesResponse extends ApiResponse<ProjectStage[]> {} 
