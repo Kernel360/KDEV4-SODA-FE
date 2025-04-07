@@ -124,5 +124,28 @@ export const projectService = {
       console.error('Error creating article:', error)
       throw error
     }
+  },
+
+  async getArticleDetail(
+    projectId: number,
+    articleId: number
+  ): Promise<Article> {
+    try {
+      console.log('Fetching article detail for:', { projectId, articleId })
+      const response = await client.get(
+        `/projects/${projectId}/articles/${articleId}`
+      )
+      console.log('API Response:', response)
+      if (!response.data) {
+        throw new Error('No data received from API')
+      }
+      if (!response.data.data) {
+        throw new Error('Article data is missing in response')
+      }
+      return response.data.data
+    } catch (error) {
+      console.error('Error fetching article detail:', error)
+      throw error
+    }
   }
 }
