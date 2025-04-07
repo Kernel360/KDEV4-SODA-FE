@@ -15,9 +15,21 @@ import {
   TextField,
   Button,
   ListItemIcon,
-  Chip
+  Chip,
+  Stack,
+  Tooltip,
+  Badge
 } from '@mui/material'
-import { MoreVertical, Edit, Plus, Trash2 } from 'lucide-react'
+import {
+  MoreVertical,
+  Edit,
+  Plus,
+  Trash2,
+  GripVertical,
+  Clock,
+  CheckCircle,
+  XCircle
+} from 'lucide-react'
 import type { Stage, Task, TaskStatus } from '../../types/stage'
 import TaskRequestsModal from './TaskRequestsModal'
 import AddTaskModal from './AddTaskModal'
@@ -28,6 +40,8 @@ import {
   DroppableProvided,
   DraggableProvided
 } from '@hello-pangea/dnd'
+import { getTaskRequests } from '../../api/task'
+import type { TaskRequest, TaskRequestsResponse } from '../../types/api'
 
 interface StageCardProps {
   stage: Stage
@@ -112,7 +126,7 @@ const StageCard: React.FC<StageCardProps> = ({
 }) => {
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false)
   const [isEditTitleModalOpen, setIsEditTitleModalOpen] = useState(false)
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [selectedTask, setSelectedTask] = useState<TaskRequest | null>(null)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [newTitle, setNewTitle] = useState(stage.name)
 
@@ -124,8 +138,15 @@ const StageCard: React.FC<StageCardProps> = ({
     setAnchorEl(null)
   }
 
-  const handleTaskClick = (task: Task) => {
-    setSelectedTask(task)
+  const handleTaskClick = async (task: Task) => {
+    try {
+      const response = await getTaskRequests(task.id)
+      if (response.status === 'success' && response.data && response.data.length > 0) {
+        setSelectedTask(response.data[0])
+      }
+    } catch (error) {
+      console.error('요청 목록을 불러오는 중 오류가 발생했습니다:', error)
+    }
   }
 
   const handleAddTask = (
