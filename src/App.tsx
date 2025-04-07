@@ -3,6 +3,7 @@ import { Routes, Route, Outlet } from 'react-router-dom'
 import Layout from './components/layout/Layout'
 import {
   Login,
+  FindId,
   ResetPassword,
   UserInfo,
   AdminMain,
@@ -23,17 +24,20 @@ import {
   Article,
   CreateArticle,
   EditArticle,
-  ReplyArticle
+  ReplyArticle,
+  FindPassword
 } from './pages'
 import { ThemeProvider } from '@mui/material/styles'
 import { LocalizationProvider } from '@mui/x-date-pickers'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import theme from './theme'
 import { ToastProvider } from './contexts/ToastContext'
+import CssBaseline from '@mui/material/CssBaseline'
 
 const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
+      <CssBaseline />
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <ToastProvider>
           <Routes>
@@ -41,6 +45,18 @@ const App: React.FC = () => {
             <Route
               path="/"
               element={<Login />}
+            />
+            <Route
+              path="/login"
+              element={<Login />}
+            />
+            <Route
+              path="/find-id"
+              element={<FindId />}
+            />
+            <Route
+              path="/find-password"
+              element={<FindPassword />}
             />
             <Route
               path="/reset-password"
