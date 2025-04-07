@@ -25,18 +25,7 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({ project }) => {
           },
           p: 1
         }}>
-        <Typography variant="h3">{project.name}</Typography>
-        <Chip
-          label={project.status}
-          color={
-            project.status === '진행중'
-              ? 'primary'
-              : project.status === '완료'
-                ? 'success'
-                : 'default'
-          }
-          size="small"
-        />
+        <Typography variant="h3">{project.title}</Typography>
         <IconButton
           size="small"
           onClick={e => {
@@ -64,7 +53,7 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({ project }) => {
               color="text.secondary">
               고객사
             </Typography>
-            <Typography>{project.clientCompany}</Typography>
+            <Typography>{project.clientCompanyName}</Typography>
           </Box>
           <Box>
             <Typography
@@ -72,7 +61,7 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({ project }) => {
               color="text.secondary">
               개발사
             </Typography>
-            <Typography>{project.devCompany}</Typography>
+            <Typography>{project.devCompanyName}</Typography>
           </Box>
           <Box>
             <Typography
