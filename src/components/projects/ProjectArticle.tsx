@@ -7,14 +7,17 @@ import {
   Chip,
   Stack,
   Button,
-  IconButton
+  IconButton,
+  TextField,
+  InputAdornment
 } from '@mui/material'
 import { Article, ArticleStatus, PriorityType } from '@/types/article'
 import { Stage } from '@/types/stage'
 import { projectService } from '@/services/projectService'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import ErrorMessage from '@/components/common/ErrorMessage'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search, Plus } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 interface ProjectArticleProps {
   projectId: number
@@ -23,12 +26,14 @@ interface ProjectArticleProps {
 const ITEMS_PER_PAGE = 10
 
 const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
+  const navigate = useNavigate()
   const [articles, setArticles] = useState<Article[]>([])
   const [stages, setStages] = useState<Stage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedStage, setSelectedStage] = useState<number | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     const fetchStages = async () => {
@@ -186,6 +191,40 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
 
   return (
     <Box sx={{ mt: 3 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 3
+        }}>
+        <Typography variant="h6">게시판</Typography>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <TextField
+            size="small"
+            placeholder="검색어를 입력하세요"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search size={20} />
+                </InputAdornment>
+              )
+            }}
+            sx={{ width: '300px' }}
+          />
+          <Button
+            variant="contained"
+            startIcon={<Plus size={20} />}
+            onClick={() =>
+              navigate(`/user/projects/${projectId}/articles/create`)
+            }>
+            글쓰기
+          </Button>
+        </Box>
+      </Box>
+
       <Box sx={{ mb: 3, display: 'flex', gap: 1 }}>
         <Button
           variant={selectedStage === null ? 'contained' : 'outlined'}
