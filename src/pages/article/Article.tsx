@@ -9,7 +9,11 @@ import {
   Divider,
   IconButton,
   Link as MuiLink,
-  Stack
+  Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material'
 import type { Article as ArticleType } from '@/types/article'
 import { projectService } from '@/services/projectService'
@@ -24,7 +28,8 @@ import {
   ChevronRight,
   Pencil,
   Trash2,
-  MessageSquarePlus
+  MessageSquarePlus,
+  AlertTriangle
 } from 'lucide-react'
 import dayjs from 'dayjs'
 
@@ -37,6 +42,8 @@ const Article: React.FC = () => {
   const [article, setArticle] = useState<ArticleType | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleted, setIsDeleted] = useState(false)
 
   // TODO: 실제 로그인한 사용자 정보로 대체
   const currentUserId = 'Admin User'
@@ -72,10 +79,20 @@ const Article: React.FC = () => {
     fetchArticle()
   }, [projectId, articleId])
 
-  const handleDelete = () => {
-    // TODO: 삭제 API 연동
-    if (window.confirm('게시글을 삭제하시겠습니까?')) {
-      console.log('Delete article:', articleId)
+  const handleDelete = async () => {
+    if (!projectId || !articleId) return
+
+    try {
+      setLoading(true)
+      await projectService.deleteArticle(Number(projectId), Number(articleId))
+      setDeleteDialogOpen(false)
+      setIsDeleted(true)
+      navigate(`/user/projects/${projectId}`)
+    } catch (error) {
+      console.error('Error deleting article:', error)
+      setError('게시글 삭제에 실패했습니다.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -145,7 +162,7 @@ const Article: React.FC = () => {
                   </IconButton>
                   <IconButton
                     size="small"
-                    onClick={handleDelete}>
+                    onClick={() => setDeleteDialogOpen(true)}>
                     <Trash2 size={16} />
                   </IconButton>
                 </Stack>
@@ -295,12 +312,44 @@ const Article: React.FC = () => {
         </Box>
       </Box>
 
-      <Box sx={{ mt: 3 }}>
-        <CommentSection
-          projectId={Number(projectId)}
-          articleId={Number(articleId)}
-        />
-      </Box>
+      {!isDeleted && (
+        <Box sx={{ mt: 3 }}>
+          <CommentSection
+            projectId={Number(projectId)}
+            articleId={Number(articleId)}
+          />
+        </Box>
+      )}
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}>
+            <AlertTriangle
+              size={20}
+              color="#f44336"
+            />
+            <Typography>게시글 삭제</Typography>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Typography>게시글을 삭제하시겠습니까?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>취소</Button>
+          <Button
+            onClick={handleDelete}
+            color="error"
+            variant="contained"
+            disabled={loading}>
+            삭제
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

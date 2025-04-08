@@ -188,5 +188,10 @@ export const projectService = {
       console.error('Error fetching article detail:', error)
       throw error
     }
+  },
+
+  // 게시글 삭제
+  async deleteArticle(projectId: number, articleId: number): Promise<void> {
+    await client.delete(`/projects/${projectId}/articles/${articleId}`)
   }
 }
