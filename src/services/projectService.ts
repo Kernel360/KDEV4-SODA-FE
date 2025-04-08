@@ -120,8 +120,14 @@ export const projectService = {
   ): Promise<ArticleCreateResponse> {
     try {
       const response = await client.post('/articles', {
-        ...request,
-        projectId
+        projectId,
+        title: request.title,
+        content: request.content,
+        priority: request.priority,
+        deadLine: request.deadLine,
+        stageId: request.stageId,
+        parentArticleId: request.parentArticleId,
+        linkList: request.linkList || []
       })
       return response.data.data
     } catch (error) {

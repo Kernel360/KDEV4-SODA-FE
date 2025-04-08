@@ -74,11 +74,21 @@ const CreateArticle: React.FC = () => {
 
     try {
       setLoading(true)
-      await projectService.createArticle({
-        ...formData,
-        projectId: parseInt(projectId),
-        deadLine: formData.deadLine?.toISOString()
-      })
+      const parsedProjectId = parseInt(projectId)
+      const request = {
+        projectId: parsedProjectId,
+        title: formData.title,
+        content: formData.content,
+        priority: formData.priority,
+        stageId: formData.stageId,
+        deadLine: formData.deadLine?.toISOString(),
+        linkList:
+          formData.links?.map(link => ({
+            urlAddress: link.url,
+            urlDescription: link.title
+          })) || []
+      }
+      await projectService.createArticle(parsedProjectId, request)
       showToast('게시글이 성공적으로 작성되었습니다.', 'success')
       navigate(`/user/projects/${projectId}`)
     } catch (err) {

@@ -27,7 +27,111 @@ interface ProjectArticleProps {
   projectId: number
 }
 
-const ITEMS_PER_PAGE = 10
+const ITEMS_PER_PAGE = 5
+
+const ArticleRow: React.FC<{
+  article: Article
+  projectId: number
+  level?: number
+  index?: number
+  totalCount?: number
+  getPriorityColor: (priority: PriorityType) => {
+    color: string
+    backgroundColor: string
+  }
+  getPriorityText: (priority: PriorityType) => string
+  getStatusColor: (status: ArticleStatus) => {
+    color: string
+    backgroundColor: string
+  }
+  getStatusText: (status: ArticleStatus) => string
+}> = ({
+  article,
+  projectId,
+  level = 0,
+  index,
+  totalCount,
+  getPriorityColor,
+  getPriorityText,
+  getStatusColor,
+  getStatusText
+}) => {
+  const navigate = useNavigate()
+  const createdAt = new Date(article.createdAt)
+
+  return (
+    <>
+      <TableRow
+        hover
+        onClick={() =>
+          navigate(`/user/projects/${projectId}/articles/${article.id}`)
+        }
+        sx={{
+          cursor: 'pointer',
+          backgroundColor: level > 0 ? '#f8f9fa' : 'inherit',
+          '& > td:first-of-type': {
+            paddingLeft: level * 3 + 2 + 'rem'
+          }
+        }}>
+        <TableCell align="center">
+          {level === 0 ? totalCount! - index! : ''}
+        </TableCell>
+        <TableCell align="center">
+          <Chip
+            label={getPriorityText(article.priority)}
+            size="small"
+            sx={getPriorityColor(article.priority)}
+          />
+        </TableCell>
+        <TableCell align="center">
+          <Chip
+            label={getStatusText(article.status)}
+            size="small"
+            sx={getStatusColor(article.status)}
+          />
+        </TableCell>
+        <TableCell>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {level > 0 && (
+              <Box
+                component="span"
+                sx={{ color: 'text.secondary' }}>
+                └
+              </Box>
+            )}
+            {article.title}
+            {article.linkList && article.linkList.length > 0 && (
+              <Link2
+                size={16}
+                style={{ color: '#6b7280' }}
+              />
+            )}
+          </Box>
+        </TableCell>
+        <TableCell align="center">{article.userName}</TableCell>
+        <TableCell align="center">
+          {createdAt.toLocaleDateString('ko-KR')}
+        </TableCell>
+      </TableRow>
+      {article.children &&
+        article.children.length > 0 &&
+        article.children.map(child => (
+          <ArticleRow
+            key={child.id}
+            article={child}
+            projectId={projectId}
+            level={level + 1}
+            index={index}
+            totalCount={totalCount}
+            getPriorityColor={getPriorityColor}
+            getPriorityText={getPriorityText}
+            getStatusColor={getStatusColor}
+            getStatusText={getStatusText}
+          />
+        ))}
+    </>
+  )
+}
 
 const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
   const navigate = useNavigate()
@@ -60,6 +164,7 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
           projectId,
           selectedStage
         )
+        console.log('Fetched articles:', data)
         setArticles(data)
       } catch (err) {
         setError('게시글을 불러오는데 실패했습니다.')
@@ -129,12 +234,75 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
     }
   }
 
-  const totalPages = Math.ceil(articles.length / ITEMS_PER_PAGE)
+  const getAllArticles = (articles: Article[]): Article[] => {
+    return articles.reduce((acc: Article[], article) => {
+      acc.push(article)
+      if (article.children && article.children.length > 0) {
+        acc.push(...getAllArticles(article.children))
+      }
+      return acc
+    }, [])
+  }
+
+  const filteredArticles = articles
+    .filter(article => !article.parentArticleId) // Only show top-level articles
+    .filter(article =>
+      searchQuery
+        ? article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          article.userName.toLowerCase().includes(searchQuery.toLowerCase())
+        : true
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+
+  // Get total count of parent articles (excluding replies) for numbering
+  const totalParentArticlesCount = filteredArticles.length
+
+  // Get all articles including replies for pagination
+  const allArticles = getAllArticles(articles)
+  const totalArticlesCount = allArticles.length
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
-  const paginatedArticles = articles.slice(
+  const endIndex = startIndex + ITEMS_PER_PAGE
+
+  const getVisibleArticles = (
+    articles: Article[],
+    start: number,
+    end: number
+  ): Article[] => {
+    let count = 0
+    return articles.filter(article => {
+      const shouldInclude = count >= start && count < end
+      if (shouldInclude || (article.children && article.children.length > 0)) {
+        const visibleChildren = article.children
+          ? getVisibleArticles(
+              article.children,
+              Math.max(0, start - count),
+              end - count
+            )
+          : []
+
+        if (shouldInclude || visibleChildren.length > 0) {
+          if (visibleChildren.length > 0) {
+            article.children = visibleChildren
+          }
+          count++
+          return true
+        }
+      }
+      count++
+      return false
+    })
+  }
+
+  const paginatedArticles = getVisibleArticles(
+    filteredArticles,
     startIndex,
-    startIndex + ITEMS_PER_PAGE
+    endIndex
   )
+
+  const totalPages = Math.ceil(totalArticlesCount / ITEMS_PER_PAGE)
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -246,78 +414,22 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
                 width={120}>
                 작성일
               </TableCell>
-              <TableCell
-                align="center"
-                width={120}>
-                마감일
-              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {paginatedArticles.length > 0 ? (
-              paginatedArticles.map(article => (
-                <TableRow
-                  key={article.id}
-                  hover
-                  onClick={() =>
-                    navigate(
-                      `/user/projects/${projectId}/articles/${article.id}`
-                    )
-                  }
-                  sx={{ cursor: 'pointer' }}>
-                  <TableCell align="center">{article.id}</TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={getPriorityText(article.priority)}
-                      size="small"
-                      sx={{
-                        ...getPriorityColor(article.priority),
-                        fontWeight: 500
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={getStatusText(article.status)}
-                      size="small"
-                      sx={{
-                        ...getStatusColor(article.status),
-                        fontWeight: 500
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {article.title}
-                      {article.links && article.links.length > 0 && (
-                        <Link2
-                          size={16}
-                          color="#6B7280"
-                        />
-                      )}
-                    </Box>
-                  </TableCell>
-                  <TableCell align="center">{article.userName}</TableCell>
-                  <TableCell align="center">
-                    {new Date(article.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell align="center">
-                    {article.deadLine
-                      ? new Date(article.deadLine).toLocaleDateString()
-                      : '-'}
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={7}
-                  align="center"
-                  sx={{ py: 3 }}>
-                  게시글이 존재하지 않습니다.
-                </TableCell>
-              </TableRow>
-            )}
+            {paginatedArticles.map((article, index) => (
+              <ArticleRow
+                key={article.id}
+                article={article}
+                projectId={projectId}
+                index={index}
+                totalCount={totalParentArticlesCount}
+                getPriorityColor={getPriorityColor}
+                getPriorityText={getPriorityText}
+                getStatusColor={getStatusColor}
+                getStatusText={getStatusText}
+              />
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
@@ -331,39 +443,36 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
             gap: 1,
             mt: 2
           }}>
-          <IconButton
+          <Button
+            variant="outlined"
+            size="small"
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            size="small">
-            <ChevronLeft size={20} />
-          </IconButton>
+            sx={{ minWidth: 'auto', px: 1 }}>
+            &lt;
+          </Button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
             <Button
               key={page}
-              variant={currentPage === page ? 'contained' : 'text'}
+              variant={currentPage === page ? 'contained' : 'outlined'}
               onClick={() => handlePageChange(page)}
               size="small"
               sx={{
                 minWidth: 32,
                 height: 32,
-                p: 0,
-                backgroundColor:
-                  currentPage === page ? 'primary.main' : 'transparent',
-                color: currentPage === page ? 'white' : 'text.primary',
-                '&:hover': {
-                  backgroundColor:
-                    currentPage === page ? 'primary.dark' : 'action.hover'
-                }
+                p: 0
               }}>
               {page}
             </Button>
           ))}
-          <IconButton
+          <Button
+            variant="outlined"
+            size="small"
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            size="small">
-            <ChevronRight size={20} />
-          </IconButton>
+            sx={{ minWidth: 'auto', px: 1 }}>
+            &gt;
+          </Button>
         </Box>
       )}
     </Box>

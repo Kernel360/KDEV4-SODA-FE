@@ -24,6 +24,7 @@ export interface Article {
   content: string
   priority: PriorityType
   deadLine: string | null
+  userName: string
   memberName: string
   stageName: string
   fileList: ArticleFile[]
@@ -31,6 +32,8 @@ export interface Article {
   createdAt: string
   updatedAt: string
   status: ArticleStatus
+  children: Article[]
+  parentArticleId?: number
 }
 
 export interface ArticleFile {
@@ -41,13 +44,13 @@ export interface ArticleFile {
 
 export interface ArticleLink {
   id: number
-  title: string
-  url: string
+  urlAddress: string
+  urlDescription: string
 }
 
 export interface LinkUploadDTO {
-  title: string
-  url: string
+  urlAddress: string
+  urlDescription: string
 }
 
 export interface ArticleCreateRequest {
@@ -56,7 +59,6 @@ export interface ArticleCreateRequest {
   content: string
   priority: PriorityType
   deadLine?: string
-  memberId?: number
   stageId: number
   parentArticleId?: number
   linkList?: {

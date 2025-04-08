@@ -216,21 +216,28 @@ const Article: React.FC = () => {
               </Typography>
               {article.linkList && article.linkList.length > 0 ? (
                 <Stack spacing={1}>
-                  {article.linkList.map(link => (
-                    <Stack
-                      key={link.id}
-                      direction="row"
-                      alignItems="center"
-                      spacing={1}>
-                      <Link2 size={16} />
-                      <MuiLink
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer">
-                        {link.title || link.url}
-                      </MuiLink>
-                    </Stack>
-                  ))}
+                  {article.linkList.map(link => {
+                    const url =
+                      link.urlAddress.startsWith('http://') ||
+                      link.urlAddress.startsWith('https://')
+                        ? link.urlAddress
+                        : `https://${link.urlAddress}`
+                    return (
+                      <Stack
+                        key={link.id}
+                        direction="row"
+                        alignItems="center"
+                        spacing={1}>
+                        <Link2 size={16} />
+                        <MuiLink
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer">
+                          {link.urlDescription}
+                        </MuiLink>
+                      </Stack>
+                    )
+                  })}
                 </Stack>
               ) : (
                 <Typography
