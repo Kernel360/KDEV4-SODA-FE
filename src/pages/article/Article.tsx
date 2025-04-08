@@ -44,9 +44,15 @@ const Article: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleted, setIsDeleted] = useState(false)
+  const [currentUser, setCurrentUser] = useState<string | null>(null)
 
-  // TODO: 실제 로그인한 사용자 정보로 대체
-  const currentUserId = 'Admin User'
+  useEffect(() => {
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      const user = JSON.parse(userData)
+      setCurrentUser(user.name)
+    }
+  }, [])
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -108,7 +114,7 @@ const Article: React.FC = () => {
     return <ErrorMessage message="게시글을 찾을 수 없습니다." />
   }
 
-  const isAuthor = article.memberName === currentUserId
+  const isAuthor = currentUser === article.memberName
 
   return (
     <Box sx={{ mt: 3 }}>

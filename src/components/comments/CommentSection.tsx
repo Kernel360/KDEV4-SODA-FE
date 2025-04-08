@@ -14,7 +14,7 @@ import {
   DialogContent,
   DialogActions
 } from '@mui/material'
-import { Send, Pencil, Trash2, MessageCircle } from 'lucide-react'
+import { Send, Pencil, Trash2, MessageCircle, Edit } from 'lucide-react'
 import type { Comment } from '@/types/comment'
 import { commentService } from '@/services/commentService'
 import dayjs from 'dayjs'
@@ -154,6 +154,7 @@ interface CommentItemProps {
   replyToId: number | null
   loading: boolean
   onSubmitReply: (content: string) => Promise<void>
+  currentUser: string | null
 }
 
 // 댓글 아이템 컴포넌트
@@ -165,7 +166,8 @@ const CommentItem: React.FC<CommentItemProps> = memo(
     onUpdate,
     replyToId,
     loading,
-    onSubmitReply
+    onSubmitReply,
+    currentUser
   }) => {
     const theme = useTheme()
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
@@ -182,8 +184,13 @@ const CommentItem: React.FC<CommentItemProps> = memo(
     }
 
     const handleEditClick = () => {
-      setIsEditing(true)
-      setEditContent(comment.content)
+      if (isEditing) {
+        setIsEditing(false)
+        setEditContent(comment.content)
+      } else {
+        setIsEditing(true)
+        setEditContent(comment.content)
+      }
     }
 
     const handleEditCancel = () => {
@@ -235,6 +242,7 @@ const CommentItem: React.FC<CommentItemProps> = memo(
                     replyToId={replyToId}
                     loading={loading}
                     onSubmitReply={onSubmitReply}
+                    currentUser={currentUser}
                   />
                   {replyIndex < (comment.childComments?.length || 0) - 1 && (
                     <Divider sx={{ mt: 2 }} />
@@ -277,30 +285,38 @@ const CommentItem: React.FC<CommentItemProps> = memo(
           <Stack
             direction="row"
             spacing={0.5}>
-            <IconButton
-              size="small"
-              onClick={handleEditClick}
-              sx={{
-                padding: '4px',
-                color: theme.palette.text.secondary,
-                '&:hover': {
-                  color: theme.palette.primary.main
-                }
-              }}>
-              <Pencil size={14} />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={handleDeleteClick}
-              sx={{
-                padding: '4px',
-                color: theme.palette.text.secondary,
-                '&:hover': {
-                  color: theme.palette.error.main
-                }
-              }}>
-              <Trash2 size={14} />
-            </IconButton>
+            {currentUser === comment.member.name && (
+              <>
+                <IconButton
+                  size="small"
+                  onClick={handleEditClick}
+                  sx={{
+                    padding: '4px',
+                    color: isEditing
+                      ? theme.palette.primary.main
+                      : theme.palette.text.secondary,
+                    '&:hover': {
+                      color: theme.palette.primary.main
+                    }
+                  }}>
+                  <Edit size={14} />
+                </IconButton>
+                {!isEditing && (
+                  <IconButton
+                    size="small"
+                    onClick={handleDeleteClick}
+                    sx={{
+                      padding: '4px',
+                      color: theme.palette.text.secondary,
+                      '&:hover': {
+                        color: theme.palette.error.main
+                      }
+                    }}>
+                    <Trash2 size={14} />
+                  </IconButton>
+                )}
+              </>
+            )}
           </Stack>
         </Stack>
 
@@ -403,6 +419,7 @@ const CommentItem: React.FC<CommentItemProps> = memo(
                   replyToId={replyToId}
                   loading={loading}
                   onSubmitReply={onSubmitReply}
+                  currentUser={currentUser}
                 />
                 {replyIndex < (comment.childComments?.length || 0) - 1 && (
                   <Divider sx={{ mt: 2 }} />
@@ -438,6 +455,15 @@ const CommentSection: React.FC<CommentSectionProps> = ({
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(false)
   const [replyToId, setReplyToId] = useState<number | null>(null)
+  const [currentUser, setCurrentUser] = useState<string | null>(null)
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      const user = JSON.parse(userData)
+      setCurrentUser(user.name)
+    }
+  }, [])
 
   // 댓글 목록 조회
   const fetchComments = async () => {
@@ -514,11 +540,16 @@ const CommentSection: React.FC<CommentSectionProps> = ({
 
   // 댓글 삭제
   const handleDelete = async (commentId: number) => {
-    try {
-      await commentService.deleteComment(commentId)
-      await fetchComments()
-    } catch (error) {
-      console.error('Error deleting comment:', error)
+    if (window.confirm('댓글을 삭제하시겠습니까?')) {
+      try {
+        setLoading(true)
+        await commentService.deleteComment(commentId)
+        await fetchComments()
+      } catch (error) {
+        console.error('Error deleting comment:', error)
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -576,6 +607,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                   replyToId={replyToId}
                   loading={loading}
                   onSubmitReply={handleSubmitComment}
+                  currentUser={currentUser}
                 />
                 {index < comments.length - 1 && <Divider sx={{ mt: 2 }} />}
               </Box>
