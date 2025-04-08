@@ -73,5 +73,10 @@ export interface FileUploadDTO {
 }
 
 export interface ArticleCreateResponse {
-  id: number
+  status: string
+  code: string
+  message: string
+  data: {
+    id: number
+  }
 }

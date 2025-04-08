@@ -88,7 +88,32 @@ const CreateArticle: React.FC = () => {
             urlDescription: link.title
           })) || []
       }
-      await projectService.createArticle(parsedProjectId, request)
+
+      // 게시글 생성
+      const response = await projectService.createArticle(
+        parsedProjectId,
+        request
+      )
+      console.log('Created article response:', response)
+
+      // 파일이 있는 경우 파일 업로드
+      if (formData.files && formData.files.length > 0 && response.data?.id) {
+        try {
+          await projectService.uploadArticleFiles(
+            response.data.id,
+            formData.files
+          )
+          console.log(
+            'Files uploaded successfully for article:',
+            response.data.id
+          )
+        } catch (uploadError) {
+          console.error('Error uploading files:', uploadError)
+          showToast('파일 업로드에 실패했습니다.', 'error')
+          // 파일 업로드 실패해도 게시글은 작성 완료로 처리
+        }
+      }
+
       showToast('게시글이 성공적으로 작성되었습니다.', 'success')
       navigate(`/user/projects/${projectId}`)
     } catch (err) {

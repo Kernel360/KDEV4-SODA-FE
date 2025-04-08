@@ -129,9 +129,40 @@ export const projectService = {
         parentArticleId: request.parentArticleId,
         linkList: request.linkList || []
       })
+      console.log('Create article response:', response.data)
+      if (!response.data || !response.data.data || !response.data.data.id) {
+        throw new Error('Invalid response format from create article API')
+      }
       return response.data.data
     } catch (error) {
       console.error('Error creating article:', error)
+      throw error
+    }
+  },
+
+  async uploadArticleFiles(articleId: number, files: File[]): Promise<void> {
+    try {
+      if (!articleId) {
+        throw new Error('Article ID is required for file upload')
+      }
+
+      const formData = new FormData()
+      files.forEach(file => {
+        formData.append('file', file)
+      })
+
+      const response = await client.post(
+        `/articles/${articleId}/files`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      )
+      console.log('File upload response:', response.data)
+    } catch (error) {
+      console.error('Error uploading files:', error)
       throw error
     }
   },

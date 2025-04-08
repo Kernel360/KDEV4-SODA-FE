@@ -52,6 +52,7 @@ const Article: React.FC = () => {
           Number(articleId)
         )
         console.log('Received article data:', data)
+        console.log('Article fileList:', data.fileList)
         if (!data) {
           throw new Error('No article data received')
         }

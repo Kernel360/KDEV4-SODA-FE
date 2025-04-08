@@ -41,7 +41,7 @@ export interface RequestAction {
 
 export interface Stage {
   id: number
-  title: string
-  order: number
+  name: string
+  stageOrder: number
   tasks: Task[]
 }

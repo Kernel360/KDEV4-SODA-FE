@@ -15,7 +15,7 @@ import {
 import { DateTimePicker } from '@mui/x-date-pickers'
 import { Stage } from '@/types/stage'
 import { PriorityType } from '@/types/article'
-import { ArrowLeft, Link2, Upload } from 'lucide-react'
+import { ArrowLeft, Link2, Upload, FileText, Trash2 } from 'lucide-react'
 
 const UploadBox = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -193,32 +193,91 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   variant="caption"
                   color="text.secondary"
                   sx={{ mb: 1, display: 'block' }}>
-                  첨부파일 (선택사항, 최대 10개)
+                  관련 링크 (선택사항, 최대 10개)
                 </Typography>
-                <UploadBox>
-                  <Upload
-                    size={24}
-                    color="#6B7280"
-                  />
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 1 }}>
-                    파일을 드래그하거나 클릭하여 업로드
-                  </Typography>
-                  <input
-                    type="file"
-                    multiple
-                    onChange={handleFileChange}
-                    style={{
-                      position: 'absolute',
-                      width: '100%',
-                      height: '100%',
-                      opacity: 0,
-                      cursor: 'pointer'
-                    }}
-                  />
-                </UploadBox>
+                <Stack spacing={2}>
+                  <Stack
+                    direction="row"
+                    spacing={1}>
+                    <TextField
+                      size="small"
+                      placeholder="링크 제목"
+                      value={linkTitle}
+                      onChange={e => setLinkTitle(e.target.value)}
+                    />
+                    <TextField
+                      size="small"
+                      placeholder="URL"
+                      value={linkUrl}
+                      onChange={e => setLinkUrl(e.target.value)}
+                      InputProps={{
+                        startAdornment: (
+                          <Link2
+                            size={16}
+                            color="#6B7280"
+                          />
+                        )
+                      }}
+                      sx={{ flex: 1 }}
+                    />
+                    <Button
+                      variant="outlined"
+                      onClick={handleAddLink}
+                      disabled={
+                        !linkTitle ||
+                        !linkUrl ||
+                        (formData.links?.length ?? 0) >= 10
+                      }
+                      size="small">
+                      추가
+                    </Button>
+                  </Stack>
+                  {formData.links && formData.links.length > 0 && (
+                    <Box sx={{ mt: 1 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ mb: 1, display: 'block' }}>
+                        추가된 링크
+                      </Typography>
+                      <Stack spacing={1}>
+                        {formData.links.map((link, index) => (
+                          <Box
+                            key={index}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                              p: 1,
+                              bgcolor: 'grey.50',
+                              borderRadius: 1
+                            }}>
+                            <Link2 size={16} />
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="body2">
+                                {link.title}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary">
+                                {link.url}
+                              </Typography>
+                            </Box>
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                const newLinks = [...(formData.links || [])]
+                                newLinks.splice(index, 1)
+                                handleChange('links', newLinks)
+                              }}>
+                              <Trash2 size={16} />
+                            </IconButton>
+                          </Box>
+                        ))}
+                      </Stack>
+                    </Box>
+                  )}
+                </Stack>
               </Box>
 
               <Box>
@@ -226,39 +285,65 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   variant="caption"
                   color="text.secondary"
                   sx={{ mb: 1, display: 'block' }}>
-                  관련 링크 (선택사항, 최대 10개)
+                  첨부 파일 (선택사항)
                 </Typography>
-                <Stack
-                  direction="row"
-                  spacing={1}>
-                  <TextField
-                    size="small"
-                    placeholder="링크 제목"
-                    value={linkTitle}
-                    onChange={e => setLinkTitle(e.target.value)}
-                  />
-                  <TextField
-                    size="small"
-                    placeholder="URL"
-                    value={linkUrl}
-                    onChange={e => setLinkUrl(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <Link2
-                          size={16}
-                          color="#6B7280"
-                        />
-                      )
-                    }}
-                    sx={{ flex: 1 }}
-                  />
-                  <Button
-                    variant="outlined"
-                    onClick={handleAddLink}
-                    size="small">
-                    추가
-                  </Button>
-                </Stack>
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileChange}
+                  style={{ display: 'none' }}
+                  id="file-input"
+                />
+                <label htmlFor="file-input">
+                  <UploadBox>
+                    <Upload size={24} />
+                    <Typography
+                      variant="body2"
+                      sx={{ mt: 1 }}>
+                      클릭하여 파일 선택
+                    </Typography>
+                  </UploadBox>
+                </label>
+                {formData.files && formData.files.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mb: 1, display: 'block' }}>
+                      첨부된 파일
+                    </Typography>
+                    <Stack spacing={1}>
+                      {formData.files.map((file, index) => (
+                        <Box
+                          key={index}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            p: 1,
+                            bgcolor: 'grey.50',
+                            borderRadius: 1
+                          }}>
+                          <FileText size={16} />
+                          <Typography
+                            variant="body2"
+                            sx={{ flex: 1 }}>
+                            {file.name}
+                          </Typography>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              const newFiles = [...(formData.files || [])]
+                              newFiles.splice(index, 1)
+                              handleChange('files', newFiles)
+                            }}>
+                            <Trash2 size={16} />
+                          </IconButton>
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
               </Box>
             </Stack>
           </Box>
