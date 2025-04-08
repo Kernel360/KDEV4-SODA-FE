@@ -8,7 +8,11 @@ import {
   Stack,
   Divider,
   useTheme,
-  IconButton
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material'
 import { Send, Pencil, Trash2, MessageCircle } from 'lucide-react'
 import type { Comment } from '@/types/comment'
@@ -106,6 +110,42 @@ const CommentInput: React.FC<CommentInputProps> = memo(
 
 CommentInput.displayName = 'CommentInput'
 
+interface DeleteConfirmModalProps {
+  open: boolean
+  onClose: () => void
+  onConfirm: () => void
+}
+
+const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
+  open,
+  onClose,
+  onConfirm
+}) => {
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}>
+      <DialogTitle>댓글 삭제</DialogTitle>
+      <DialogContent>
+        <Typography>댓글을 삭제하시겠습니까?</Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button
+          onClick={onClose}
+          color="inherit">
+          취소
+        </Button>
+        <Button
+          onClick={onConfirm}
+          color="error"
+          variant="contained">
+          삭제
+        </Button>
+      </DialogActions>
+    </Dialog>
+  )
+}
+
 interface CommentItemProps {
   comment: Comment
   onReply: (commentId: number) => void
@@ -119,10 +159,61 @@ interface CommentItemProps {
 const CommentItem: React.FC<CommentItemProps> = memo(
   ({ comment, onReply, onDelete, replyToId, loading, onSubmitReply }) => {
     const theme = useTheme()
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+
+    const handleDeleteClick = () => {
+      setIsDeleteModalOpen(true)
+    }
+
+    const handleDeleteConfirm = () => {
+      setIsDeleteModalOpen(false)
+      onDelete(comment.id)
+    }
 
     const formatDate = (date: string) => {
       if (!date) return ''
       return dayjs(date).format('YYYY.MM.DD HH:mm')
+    }
+
+    // 삭제된 댓글 표시
+    if (comment.deleted) {
+      return (
+        <Stack
+          spacing={1}
+          sx={{ ml: comment.parentCommentId ? 5 : 0 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: theme.palette.text.secondary,
+              fontStyle: 'italic',
+              py: 1
+            }}>
+            삭제된 댓글입니다.
+          </Typography>
+          {/* 대댓글이 있는 경우 표시 */}
+          {comment.childComments && comment.childComments.length > 0 && (
+            <Stack
+              spacing={2}
+              sx={{ mt: 1 }}>
+              {comment.childComments.map((reply, replyIndex) => (
+                <Box key={`reply-${reply.id}-${replyIndex}`}>
+                  <CommentItem
+                    comment={reply}
+                    onReply={onReply}
+                    onDelete={onDelete}
+                    replyToId={replyToId}
+                    loading={loading}
+                    onSubmitReply={onSubmitReply}
+                  />
+                  {replyIndex < (comment.childComments?.length || 0) - 1 && (
+                    <Divider sx={{ mt: 2 }} />
+                  )}
+                </Box>
+              ))}
+            </Stack>
+          )}
+        </Stack>
+      )
     }
 
     return (
@@ -169,7 +260,7 @@ const CommentItem: React.FC<CommentItemProps> = memo(
             </IconButton>
             <IconButton
               size="small"
-              onClick={() => onDelete(comment.id)}
+              onClick={handleDeleteClick}
               sx={{
                 padding: '4px',
                 color: theme.palette.text.secondary,
@@ -242,13 +333,20 @@ const CommentItem: React.FC<CommentItemProps> = memo(
                   loading={loading}
                   onSubmitReply={onSubmitReply}
                 />
-                {replyIndex < comment.childComments.length - 1 && (
+                {replyIndex < (comment.childComments?.length || 0) - 1 && (
                   <Divider sx={{ mt: 2 }} />
                 )}
               </Box>
             ))}
           </Stack>
         )}
+
+        {/* 삭제 확인 모달 */}
+        <DeleteConfirmModal
+          open={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={handleDeleteConfirm}
+        />
       </Stack>
     )
   }
@@ -276,9 +374,34 @@ const CommentSection: React.FC<CommentSectionProps> = ({
       const data = await commentService.getComments(articleId)
       console.log('Fetched comments:', data)
 
-      // 부모 댓글만 최신순으로 정렬
+      // 부모 댓글 필터링 및 정렬
       const sortedComments = (data || [])
-        .filter(comment => !comment.parentCommentId)
+        .filter(comment => {
+          // 부모 댓글이 아닌 경우 제외
+          if (comment.parentCommentId) return false
+
+          // 삭제된 댓글이면서 대댓글이 없는 경우 제외
+          if (
+            comment.deleted &&
+            (!comment.childComments || comment.childComments.length === 0)
+          ) {
+            return false
+          }
+
+          return true
+        })
+        .map(comment => {
+          // 대댓글 중 삭제되지 않은 것만 유지
+          if (comment.childComments) {
+            return {
+              ...comment,
+              childComments: comment.childComments.filter(
+                reply => !reply.deleted
+              )
+            }
+          }
+          return comment
+        })
         .sort((a, b) => {
           return (
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -320,8 +443,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({
 
   // 댓글 삭제
   const handleDelete = async (commentId: number) => {
-    if (!window.confirm('댓글을 삭제하시겠습니까?')) return
-
     try {
       await commentService.deleteComment(commentId)
       await fetchComments()

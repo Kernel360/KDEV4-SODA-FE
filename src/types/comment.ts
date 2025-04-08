@@ -6,12 +6,15 @@ export interface Member {
 export interface Comment {
   id: number
   content: string
-  member: Member
-  articleId: number
-  parentCommentId?: number
-  childComments: Comment[]
   createdAt: string
-  updatedAt?: string
+  member: {
+    id: number
+    name: string
+  }
+  articleId: number
+  deleted: boolean
+  parentCommentId?: number
+  childComments?: Comment[]
 }
 
 export interface CreateCommentRequest {
