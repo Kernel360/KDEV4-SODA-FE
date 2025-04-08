@@ -1,12 +1,29 @@
+export interface Member {
+  id: number
+  name: string
+}
+
 export interface Comment {
   id: number
   content: string
-  author: {
-    id: number
-    name: string
-    email: string
-  }
+  member: Member
+  articleId: number
+  parentCommentId?: number
+  childComments: Comment[]
   createdAt: string
-  replies?: Comment[]
-  parentId?: number
+  updatedAt?: string
+}
+
+export interface CreateCommentRequest {
+  projectId: number
+  articleId: number
+  content: string
+  parentCommentId?: number
+}
+
+export interface CommentResponse {
+  status: string
+  code: string
+  message: string
+  data: Comment[]
 }

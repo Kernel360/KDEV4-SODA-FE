@@ -12,10 +12,10 @@ import {
   Stack
 } from '@mui/material'
 import type { Article as ArticleType } from '@/types/article'
-import { ArticleStatus, PriorityType } from '@/types/article'
 import { projectService } from '@/services/projectService'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import ErrorMessage from '@/components/common/ErrorMessage'
+import CommentSection from '@/components/comments/CommentSection'
 import {
   ArrowLeft,
   Link2,
@@ -296,19 +296,10 @@ const Article: React.FC = () => {
       </Box>
 
       <Box sx={{ mt: 3 }}>
-        <Typography
-          variant="h6"
-          sx={{ mb: 2 }}>
-          댓글
-        </Typography>
-        <Paper sx={{ p: 3 }}>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            align="center">
-            댓글이 없습니다.
-          </Typography>
-        </Paper>
+        <CommentSection
+          projectId={Number(projectId)}
+          articleId={Number(articleId)}
+        />
       </Box>
     </Box>
   )
