@@ -115,10 +115,14 @@ export const projectService = {
   },
 
   async createArticle(
+    projectId: number,
     request: ArticleCreateRequest
   ): Promise<ArticleCreateResponse> {
     try {
-      const response = await client.post('/articles', request)
+      const response = await client.post('/articles', {
+        ...request,
+        projectId
+      })
       return response.data.data
     } catch (error) {
       console.error('Error creating article:', error)

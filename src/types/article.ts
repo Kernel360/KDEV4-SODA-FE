@@ -51,13 +51,18 @@ export interface LinkUploadDTO {
 }
 
 export interface ArticleCreateRequest {
+  projectId: number
   title: string
   content: string
   priority: PriorityType
   deadLine?: string
-  stageId?: number
-  fileList?: FileUploadDTO[]
-  linkList?: ArticleLink[]
+  memberId?: number
+  stageId: number
+  parentArticleId?: number
+  linkList?: {
+    urlAddress: string
+    urlDescription: string
+  }[]
 }
 
 export interface FileUploadDTO {

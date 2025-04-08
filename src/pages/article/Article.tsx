@@ -101,21 +101,21 @@ const Article: React.FC = () => {
           gap: 2,
           mb: 3
         }}>
-        <IconButton
-          onClick={() => navigate(`/user/projects/${projectId}/articles`)}>
+        <IconButton onClick={() => navigate(`/user/projects/${projectId}`)}>
           <ArrowLeft size={24} />
         </IconButton>
-        <Typography
-          variant="h5"
-          sx={{ flex: 1 }}>
-          {article.title}
-        </Typography>
+
         <Chip
           label={article.stageName}
           color="primary"
           size="small"
           sx={{ height: 24 }}
         />
+        <Typography
+          variant="h5"
+          sx={{ flex: 1 }}>
+          {article.title}
+        </Typography>
       </Box>
 
       <Paper sx={{ p: 3 }}>
