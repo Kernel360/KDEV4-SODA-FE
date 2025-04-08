@@ -150,6 +150,7 @@ interface CommentItemProps {
   comment: Comment
   onReply: (commentId: number) => void
   onDelete: (commentId: number) => void
+  onUpdate: (commentId: number, content: string) => Promise<void>
   replyToId: number | null
   loading: boolean
   onSubmitReply: (content: string) => Promise<void>
@@ -157,9 +158,19 @@ interface CommentItemProps {
 
 // 댓글 아이템 컴포넌트
 const CommentItem: React.FC<CommentItemProps> = memo(
-  ({ comment, onReply, onDelete, replyToId, loading, onSubmitReply }) => {
+  ({
+    comment,
+    onReply,
+    onDelete,
+    onUpdate,
+    replyToId,
+    loading,
+    onSubmitReply
+  }) => {
     const theme = useTheme()
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+    const [isEditing, setIsEditing] = useState(false)
+    const [editContent, setEditContent] = useState(comment.content)
 
     const handleDeleteClick = () => {
       setIsDeleteModalOpen(true)
@@ -168,6 +179,25 @@ const CommentItem: React.FC<CommentItemProps> = memo(
     const handleDeleteConfirm = () => {
       setIsDeleteModalOpen(false)
       onDelete(comment.id)
+    }
+
+    const handleEditClick = () => {
+      setIsEditing(true)
+      setEditContent(comment.content)
+    }
+
+    const handleEditCancel = () => {
+      setIsEditing(false)
+      setEditContent(comment.content)
+    }
+
+    const handleEditSubmit = async () => {
+      if (!editContent.trim() || editContent === comment.content) {
+        setIsEditing(false)
+        return
+      }
+      await onUpdate(comment.id, editContent.trim())
+      setIsEditing(false)
     }
 
     const formatDate = (date: string) => {
@@ -201,6 +231,7 @@ const CommentItem: React.FC<CommentItemProps> = memo(
                     comment={reply}
                     onReply={onReply}
                     onDelete={onDelete}
+                    onUpdate={onUpdate}
                     replyToId={replyToId}
                     loading={loading}
                     onSubmitReply={onSubmitReply}
@@ -248,7 +279,7 @@ const CommentItem: React.FC<CommentItemProps> = memo(
             spacing={0.5}>
             <IconButton
               size="small"
-              onClick={() => console.log('Edit comment:', comment.id)}
+              onClick={handleEditClick}
               sx={{
                 padding: '4px',
                 color: theme.palette.text.secondary,
@@ -274,18 +305,57 @@ const CommentItem: React.FC<CommentItemProps> = memo(
         </Stack>
 
         {/* 댓글 내용 */}
-        <Typography
-          variant="body2"
-          sx={{
-            whiteSpace: 'pre-wrap',
-            color: theme.palette.text.primary,
-            lineHeight: 1.5
-          }}>
-          {comment.content}
-        </Typography>
+        {isEditing ? (
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="flex-start">
+            <TextField
+              multiline
+              rows={2}
+              fullWidth
+              size="small"
+              value={editContent}
+              onChange={e => setEditContent(e.target.value)}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: '#fff'
+                }
+              }}
+            />
+            <Stack
+              direction="row"
+              spacing={1}>
+              <Button
+                size="small"
+                variant="contained"
+                onClick={handleEditSubmit}
+                disabled={
+                  !editContent.trim() || editContent === comment.content
+                }>
+                수정
+              </Button>
+              <Button
+                size="small"
+                onClick={handleEditCancel}>
+                취소
+              </Button>
+            </Stack>
+          </Stack>
+        ) : (
+          <Typography
+            variant="body2"
+            sx={{
+              whiteSpace: 'pre-wrap',
+              color: theme.palette.text.primary,
+              lineHeight: 1.5
+            }}>
+            {comment.content}
+          </Typography>
+        )}
 
         {/* 답글 작성 버튼 */}
-        {!comment.parentCommentId && (
+        {!comment.parentCommentId && !isEditing && (
           <Button
             size="small"
             startIcon={<MessageCircle size={14} />}
@@ -310,7 +380,7 @@ const CommentItem: React.FC<CommentItemProps> = memo(
         )}
 
         {/* 답글 입력 폼 */}
-        {replyToId === comment.id && (
+        {replyToId === comment.id && !isEditing && (
           <Box sx={{ mt: 2, ml: 5 }}>
             <CommentInput
               isReply={true}
@@ -329,6 +399,7 @@ const CommentItem: React.FC<CommentItemProps> = memo(
                   comment={reply}
                   onReply={onReply}
                   onDelete={onDelete}
+                  onUpdate={onUpdate}
                   replyToId={replyToId}
                   loading={loading}
                   onSubmitReply={onSubmitReply}
@@ -451,6 +522,19 @@ const CommentSection: React.FC<CommentSectionProps> = ({
     }
   }
 
+  // 댓글 수정
+  const handleUpdate = async (commentId: number, content: string) => {
+    try {
+      setLoading(true)
+      await commentService.updateComment(commentId, content)
+      await fetchComments()
+    } catch (error) {
+      console.error('Error updating comment:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // 대댓글 모드 설정
   const handleReplyClick = useCallback((commentId: number) => {
     setReplyToId(prevId => (prevId === commentId ? null : commentId))
@@ -488,6 +572,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                   comment={comment}
                   onReply={handleReplyClick}
                   onDelete={handleDelete}
+                  onUpdate={handleUpdate}
                   replyToId={replyToId}
                   loading={loading}
                   onSubmitReply={handleSubmitComment}

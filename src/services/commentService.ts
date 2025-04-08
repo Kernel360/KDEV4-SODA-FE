@@ -37,6 +37,16 @@ export const commentService = {
     return response.data.data
   },
 
+  // 댓글 수정
+  async updateComment(commentId: number, content: string): Promise<Comment> {
+    console.log('Updating comment:', { commentId, content })
+    const response = await axiosInstance.put(`/comments/${commentId}`, {
+      content: content
+    })
+    console.log('Update Comment Response:', response.data)
+    return response.data.data
+  },
+
   // 댓글 삭제
   async deleteComment(commentId: number): Promise<void> {
     await axiosInstance.delete(`/comments/${commentId}`)
