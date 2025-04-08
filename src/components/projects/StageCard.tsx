@@ -15,9 +15,21 @@ import {
   TextField,
   Button,
   ListItemIcon,
-  Chip
+  Chip,
+  Stack,
+  Tooltip,
+  Badge
 } from '@mui/material'
-import { MoreVertical, Edit, Plus, Trash2 } from 'lucide-react'
+import {
+  MoreVertical,
+  Edit,
+  Plus,
+  Trash2,
+  GripVertical,
+  Clock,
+  CheckCircle,
+  XCircle
+} from 'lucide-react'
 import type { Stage, Task, TaskStatus } from '../../types/stage'
 import TaskRequestsModal from './TaskRequestsModal'
 import AddTaskModal from './AddTaskModal'
@@ -28,6 +40,8 @@ import {
   DroppableProvided,
   DraggableProvided
 } from '@hello-pangea/dnd'
+import { getTaskRequests } from '../../api/task'
+import type { TaskRequest, TaskRequestsResponse } from '../../types/api'
 
 interface StageCardProps {
   stage: Stage
@@ -112,9 +126,9 @@ const StageCard: React.FC<StageCardProps> = ({
 }) => {
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false)
   const [isEditTitleModalOpen, setIsEditTitleModalOpen] = useState(false)
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [selectedTask, setSelectedTask] = useState<TaskRequest | null>(null)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [newTitle, setNewTitle] = useState(stage.name)
+  const [newTitle, setNewTitle] = useState(stage.title)
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -124,8 +138,15 @@ const StageCard: React.FC<StageCardProps> = ({
     setAnchorEl(null)
   }
 
-  const handleTaskClick = (task: Task) => {
-    setSelectedTask(task)
+  const handleTaskClick = async (task: Task) => {
+    try {
+      const response = await getTaskRequests(task.id)
+      if (response.status === 'success' && Array.isArray(response.data) && response.data.length > 0) {
+        setSelectedTask(response.data[0])
+      }
+    } catch (error) {
+      console.error('요청 목록을 불러오는 중 오류가 발생했습니다:', error)
+    }
   }
 
   const handleAddTask = (
@@ -182,7 +203,7 @@ const StageCard: React.FC<StageCardProps> = ({
         <Typography
           variant="subtitle2"
           sx={{ fontWeight: 500 }}>
-          {stage.name}
+          {stage.title}
         </Typography>
         <IconButton
           size="small"
@@ -265,42 +286,7 @@ const StageCard: React.FC<StageCardProps> = ({
                   flexDirection: 'column',
                   gap: 0
                 }}>
-                {(
-                  [
-                    {
-                      id: 1,
-                      title: '로그인 기능 구현',
-                      description: '사용자 인증 및 로그인 페이지 개발',
-                      status: '신청 대기 중',
-                      createdAt: new Date().toISOString(),
-                      updatedAt: new Date().toISOString()
-                    },
-                    {
-                      id: 2,
-                      title: '회원가입 페이지 디자인',
-                      description: '회원가입 UI/UX 디자인 및 구현',
-                      status: '승인 대기 중',
-                      createdAt: new Date().toISOString(),
-                      updatedAt: new Date().toISOString()
-                    },
-                    {
-                      id: 3,
-                      title: '데이터베이스 설계',
-                      description: '사용자 정보 스키마 설계 및 구현',
-                      status: '승인',
-                      createdAt: new Date().toISOString(),
-                      updatedAt: new Date().toISOString()
-                    },
-                    {
-                      id: 4,
-                      title: '소셜 로그인 구현',
-                      description: '카카오, 네이버 소셜 로그인 기능 추가',
-                      status: '반려',
-                      createdAt: new Date().toISOString(),
-                      updatedAt: new Date().toISOString()
-                    }
-                  ] as Task[]
-                ).map((task, index) => (
+                {stage.tasks.map((task, index) => (
                   <React.Fragment key={task.id}>
                     <Draggable
                       draggableId={`task-${task.id}`}
@@ -347,18 +333,6 @@ const StageCard: React.FC<StageCardProps> = ({
         </DragDropContext>
       </Box>
 
-      <AddTaskModal
-        open={isAddTaskModalOpen}
-        onClose={() => setIsAddTaskModalOpen(false)}
-        onSubmit={task => handleAddTask(0, task)}
-      />
-
-      <TaskRequestsModal
-        open={!!selectedTask}
-        onClose={() => setSelectedTask(null)}
-        task={selectedTask}
-      />
-
       <Dialog
         open={isEditTitleModalOpen}
         onClose={() => setIsEditTitleModalOpen(false)}
@@ -366,26 +340,42 @@ const StageCard: React.FC<StageCardProps> = ({
         fullWidth>
         <DialogTitle>단계 이름 수정</DialogTitle>
         <DialogContent>
-          <Box sx={{ pt: 2 }}>
-            <TextField
-              label="단계명"
-              value={newTitle}
-              onChange={e => setNewTitle(e.target.value)}
-              fullWidth
-              required
-            />
-          </Box>
+          <TextField
+            autoFocus
+            fullWidth
+            value={newTitle}
+            onChange={e => setNewTitle(e.target.value)}
+            placeholder="단계 이름을 입력하세요"
+            sx={{ mt: 1 }}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIsEditTitleModalOpen(false)}>취소</Button>
           <Button
             onClick={handleEditTitle}
             variant="contained"
-            disabled={!newTitle || newTitle === stage.name}>
+            disabled={!newTitle || newTitle === stage.title}>
             수정
           </Button>
         </DialogActions>
       </Dialog>
+
+      <AddTaskModal
+        open={isAddTaskModalOpen}
+        onClose={() => setIsAddTaskModalOpen(false)}
+        onSubmit={task => {
+          handleAddTask(stage.tasks.length, task)
+          setIsAddTaskModalOpen(false)
+        }}
+      />
+
+      {selectedTask && (
+        <TaskRequestsModal
+          open={!!selectedTask}
+          onClose={() => setSelectedTask(null)}
+          task={selectedTask}
+        />
+      )}
     </Paper>
   )
 }

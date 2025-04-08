@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Box,
   Dialog,
@@ -19,17 +19,13 @@ import {
   Stack
 } from '@mui/material'
 import { Plus, X, Link as LinkIcon, FileText } from 'lucide-react'
-import type {
-  Task,
-  Request,
-  RequestAttachment,
-  RequestAction
-} from '../../types/stage'
+import { getTaskRequests } from '../../api/task'
+import type { TaskRequest, TaskRequestsResponse } from '../../types/api'
 
 interface TaskRequestsModalProps {
   open: boolean
   onClose: () => void
-  task: Task | null
+  task: TaskRequest | null
 }
 
 const MAX_ATTACHMENTS = 10
@@ -41,6 +37,9 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
   onClose,
   task
 }) => {
+  const [requests, setRequests] = useState<TaskRequest[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [isCreatingRequest, setIsCreatingRequest] = useState(false)
   const [newRequest, setNewRequest] = useState({
     title: '',
@@ -57,6 +56,31 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(
     null
   )
+
+  useEffect(() => {
+    if (task) {
+      fetchRequests()
+    }
+  }, [task])
+
+  const fetchRequests = async () => {
+    if (!task) return
+
+    try {
+      setIsLoading(true)
+      setError(null)
+      const response = await getTaskRequests(task.taskId)
+      if (response.status === 'success' && response.data) {
+        setRequests(response.data)
+      } else {
+        setError(response.message || '요청 목록을 불러오는데 실패했습니다.')
+      }
+    } catch (error) {
+      setError('요청 목록을 불러오는 중 오류가 발생했습니다.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleCreateRequest = () => {
     if (!task) return
@@ -229,121 +253,23 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
     setRejectionReason('')
     setRejectionAttachments([])
     setSelectedRequestId(null)
+    setRequests([])
+    setError(null)
     onClose()
   }
 
-  // 더미 데이터
-  const dummyRequests: Request[] = [
-    // 1. 승인 대기중인 요청사항만 있는 경우 (새 요청 생성 불가)
-    {
-      id: 1,
-      title: '회원가입 UI 디자인 검토 요청',
-      content: '회원가입 페이지의 UI 디자인 검토 부탁드립니다.',
-      status: '승인 대기중',
-      attachments: [
-        {
-          id: 1,
-          type: 'file',
-          title: '회원가입_디자인.fig',
-          fileName: '회원가입_디자인.fig'
-        },
-        {
-          id: 2,
-          type: 'link',
-          title: '디자인 시안 Figma',
-          url: 'https://figma.com/file/example'
-        }
-      ],
-      createdAt: '2024-02-20T10:00:00',
-      updatedAt: '2024-02-20T10:00:00'
-    },
-    // 2. 승인된 요청사항 (더 이상 요청 생성 불가)
-    {
-      id: 2,
-      title: 'DB 스키마 검토 요청',
-      content: '사용자 정보 스키마 설계 검토 부탁드립니다.',
-      status: '승인됨',
-      attachments: [
-        {
-          id: 3,
-          type: 'file',
-          title: 'DB_설계서.pdf',
-          fileName: 'DB_설계서.pdf'
-        }
-      ],
-      action: {
-        type: '승인',
-        actorName: '김승인',
-        createdAt: '2024-02-19T16:00:00'
-      },
-      createdAt: '2024-02-19T15:00:00',
-      updatedAt: '2024-02-19T16:00:00'
-    },
-    // 3. 반려된 요청사항만 있는 경우 (새 요청 생성 가능)
-    {
-      id: 3,
-      title: '소셜 로그인 구현 검토',
-      content: '카카오, 네이버 소셜 로그인 기능 구현 검토 요청드립니다.',
-      status: '반려됨',
-      attachments: [
-        {
-          id: 4,
-          type: 'file',
-          title: '소셜로그인_명세서.pdf',
-          fileName: '소셜로그인_명세서.pdf'
-        },
-        {
-          id: 5,
-          type: 'link',
-          title: '구현 가이드',
-          url: 'https://example.com/social-login-guide'
-        }
-      ],
-      action: {
-        type: '반려',
-        actorName: '박반려',
-        reason:
-          '보안 이슈가 있어 수정이 필요합니다. 아래 보안 가이드라인을 참고해주세요.',
-        attachments: [
-          {
-            id: 6,
-            type: 'file',
-            title: '보안_가이드라인.pdf',
-            fileName: '보안_가이드라인.pdf'
-          },
-          {
-            id: 7,
-            type: 'link',
-            title: '보안 체크리스트',
-            url: 'https://example.com/security-checklist'
-          }
-        ],
-        createdAt: '2024-02-18T14:00:00'
-      },
-      createdAt: '2024-02-18T11:00:00',
-      updatedAt: '2024-02-18T14:00:00'
-    }
-  ]
-
-  // Task 상태에 따른 요청사항 필터링
-  const getFilteredRequests = () => {
-    if (!task) return []
-
-    switch (task.status) {
-      case '신청 대기 중':
-        return [] // 요청사항이 없는 경우
-      case '승인 대기 중':
-        return dummyRequests.filter(req => req.status === '승인 대기중')
-      case '승인':
-        return dummyRequests.filter(req => req.status === '승인됨')
-      case '반려':
-        return dummyRequests.filter(req => req.status === '반려됨')
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return { color: '#22c55e', backgroundColor: '#f0fdf4' }
+      case 'REJECTED':
+        return { color: '#ef4444', backgroundColor: '#fef2f2' }
+      case 'PENDING':
+        return { color: '#f59e0b', backgroundColor: '#fffbeb' }
       default:
-        return []
+        return { color: 'text.secondary', backgroundColor: 'grey.100' }
     }
   }
-
-  const requests = task ? getFilteredRequests() : dummyRequests
 
   return (
     <Dialog
@@ -371,7 +297,25 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
         </Box>
       </DialogTitle>
       <DialogContent>
-        {isCreatingRequest ? (
+        {isLoading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+            <Typography>로딩 중...</Typography>
+          </Box>
+        )}
+
+        {error && (
+          <Box sx={{ color: 'error.main', p: 2 }}>
+            <Typography>{error}</Typography>
+          </Box>
+        )}
+
+        {!isLoading && !error && requests.length === 0 && (
+          <Box sx={{ p: 2, textAlign: 'center' }}>
+            <Typography>등록된 요청이 없습니다.</Typography>
+          </Box>
+        )}
+
+        {!isLoading && !error && isCreatingRequest ? (
           <Box sx={{ mt: 2 }}>
             <TextField
               label="제목"
@@ -613,7 +557,7 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
           <List>
             {requests.map(request => (
               <Paper
-                key={request.id}
+                key={request.requestId}
                 sx={{ mb: 2, p: 2 }}>
                 <Box
                   sx={{
@@ -625,14 +569,13 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
                   <Typography variant="subtitle1">{request.title}</Typography>
                   <Chip
                     label={request.status}
-                    color={
-                      request.status === '승인됨'
-                        ? 'success'
-                        : request.status === '반려됨'
-                          ? 'error'
-                          : 'warning'
-                    }
                     size="small"
+                    sx={{
+                      color: getStatusColor(request.status).color,
+                      backgroundColor: getStatusColor(request.status).backgroundColor,
+                      borderRadius: '16px',
+                      border: 'none'
+                    }}
                   />
                 </Box>
                 <Typography
@@ -640,44 +583,36 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
                   sx={{ mb: 2 }}>
                   {request.content}
                 </Typography>
-                {request.attachments.length > 0 && (
+                {request.links.length > 0 && (
                   <Box sx={{ mb: 2 }}>
                     <Typography
                       variant="subtitle2"
                       sx={{ fontSize: '0.875rem', mb: 0.5 }}>
-                      첨부파일 및 링크
+                      링크
                     </Typography>
                     <List dense>
-                      {request.attachments.map(attachment => (
+                      {request.links.map(link => (
                         <ListItem
-                          key={attachment.id}
+                          key={link.id}
                           sx={{ py: 0.25 }}>
                           <ListItemText
-                            primary={attachment.title}
+                            primary={link.urlDescription}
                             secondary={
-                              attachment.type === 'link' ? (
-                                <a
-                                  href={attachment.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  style={{
-                                    color: 'inherit',
-                                    textDecoration: 'underline',
-                                    cursor: 'pointer'
-                                  }}>
-                                  {attachment.url}
-                                </a>
-                              ) : (
-                                attachment.fileName
-                              )
+                              <a
+                                href={link.urlAddress}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  color: 'inherit',
+                                  textDecoration: 'underline',
+                                  cursor: 'pointer'
+                                }}>
+                                {link.urlAddress}
+                              </a>
                             }
                             primaryTypographyProps={{
                               variant: 'body2',
                               sx: { fontSize: '0.875rem' }
-                            }}
-                            secondaryTypographyProps={{
-                              variant: 'body2',
-                              sx: { fontSize: '0.75rem' }
                             }}
                           />
                         </ListItem>
@@ -685,113 +620,34 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
                     </List>
                   </Box>
                 )}
-                {request.action && (
-                  <Box
-                    sx={{
-                      mt: 2,
-                      pt: 2,
-                      borderTop: '1px solid',
-                      borderColor: 'divider'
-                    }}>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontSize: '0.875rem', mb: 1 }}>
-                      처리 결과
-                    </Typography>
-                    <Box sx={{ pl: 2 }}>
-                      <Box sx={{ display: 'flex', mb: 1 }}>
-                        <Typography
-                          variant="body2"
-                          sx={{ width: 80, color: 'text.secondary' }}>
-                          처리자
-                        </Typography>
-                        <Typography variant="body2">
-                          {request.action.actorName}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', mb: 1 }}>
-                        <Typography
-                          variant="body2"
-                          sx={{ width: 80, color: 'text.secondary' }}>
-                          처리일시
-                        </Typography>
-                        <Typography variant="body2">
-                          {new Date(request.action.createdAt).toLocaleString(
-                            'ko-KR',
-                            {
-                              year: '2-digit',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: false
-                            }
-                          )}
-                        </Typography>
-                      </Box>
-                      {request.action.type === '반려' &&
-                        request.action.reason && (
-                          <Box sx={{ display: 'flex', mb: 1 }}>
-                            <Typography
-                              variant="body2"
-                              sx={{ width: 80, color: 'text.secondary' }}>
-                              반려사유
-                            </Typography>
-                            <Typography variant="body2">
-                              {request.action.reason}
-                            </Typography>
-                          </Box>
-                        )}
-                    </Box>
-                    {request.action.type === '반려' &&
-                      request.action.attachments &&
-                      request.action.attachments.length > 0 && (
-                        <Box sx={{ mt: 2 }}>
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ fontSize: '0.875rem', mb: 0.5 }}>
-                            반려 관련 첨부파일 및 링크
-                          </Typography>
-                          <List dense>
-                            {request.action.attachments.map(attachment => (
-                              <ListItem
-                                key={attachment.id}
-                                sx={{ py: 0.25 }}>
-                                <ListItemText
-                                  primary={attachment.title}
-                                  secondary={
-                                    attachment.type === 'link' ? (
-                                      <a
-                                        href={attachment.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        style={{
-                                          color: 'inherit',
-                                          textDecoration: 'underline',
-                                          cursor: 'pointer'
-                                        }}>
-                                        {attachment.url}
-                                      </a>
-                                    ) : (
-                                      attachment.fileName
-                                    )
-                                  }
-                                  primaryTypographyProps={{
-                                    variant: 'body2',
-                                    sx: { fontSize: '0.875rem' }
-                                  }}
-                                  secondaryTypographyProps={{
-                                    variant: 'body2',
-                                    sx: { fontSize: '0.75rem' }
-                                  }}
-                                />
-                              </ListItem>
-                            ))}
-                          </List>
-                        </Box>
-                      )}
-                  </Box>
-                )}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mt: 2,
+                    pt: 2,
+                    borderTop: '1px solid',
+                    borderColor: 'divider'
+                  }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary">
+                    {request.memberName}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary">
+                    {new Date(request.createdAt).toLocaleString('ko-KR', {
+                      year: '2-digit',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: false
+                    })}
+                  </Typography>
+                </Box>
                 {request.status === '승인 대기중' && (
                   <Box
                     sx={{
@@ -803,12 +659,12 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
                     <Button
                       variant="outlined"
                       color="error"
-                      onClick={() => handleRejectClick(request.id)}>
+                      onClick={() => handleRejectClick(request.requestId)}>
                       반려
                     </Button>
                     <Button
                       variant="contained"
-                      onClick={() => handleApproveRequest(request.id)}>
+                      onClick={() => handleApproveRequest(request.requestId)}>
                       승인
                     </Button>
                   </Box>

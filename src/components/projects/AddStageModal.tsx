@@ -22,41 +22,39 @@ const AddStageModal: React.FC<AddStageModalProps> = ({
 }) => {
   const [title, setTitle] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = () => {
     onSubmit(title)
     setTitle('')
+    onClose()
   }
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="sm"
+      maxWidth="xs"
       fullWidth>
-      <form onSubmit={handleSubmit}>
-        <DialogTitle>단계 추가</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
-            <TextField
-              label="단계명"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              required
-              fullWidth
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>취소</Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={!title}>
-            추가
-          </Button>
-        </DialogActions>
-      </form>
+      <DialogTitle>단계 추가</DialogTitle>
+      <DialogContent>
+        <Box sx={{ pt: 2 }}>
+          <TextField
+            label="단계명"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            fullWidth
+            required
+          />
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>취소</Button>
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          disabled={!title}>
+          추가
+        </Button>
+      </DialogActions>
     </Dialog>
   )
 }

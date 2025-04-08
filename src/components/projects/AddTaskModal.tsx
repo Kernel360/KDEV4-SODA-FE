@@ -24,15 +24,15 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = () => {
     onSubmit({
       title,
       description,
-      status: '대기중'
+      status: '신청 대기 중'
     })
     setTitle('')
     setDescription('')
+    onClose()
   }
 
   return (
@@ -41,37 +41,35 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
       onClose={onClose}
       maxWidth="sm"
       fullWidth>
-      <form onSubmit={handleSubmit}>
-        <DialogTitle>태스크 추가</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="제목"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              required
-              fullWidth
-            />
-            <TextField
-              label="설명"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              multiline
-              rows={4}
-              fullWidth
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>취소</Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={!title}>
-            추가
-          </Button>
-        </DialogActions>
-      </form>
+      <DialogTitle>태스크 추가</DialogTitle>
+      <DialogContent>
+        <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            label="제목"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            fullWidth
+            required
+          />
+          <TextField
+            label="설명"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            multiline
+            rows={4}
+            fullWidth
+          />
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>취소</Button>
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          disabled={!title}>
+          추가
+        </Button>
+      </DialogActions>
     </Dialog>
   )
 }
