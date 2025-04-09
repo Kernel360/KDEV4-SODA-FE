@@ -5,13 +5,13 @@ import type { ApiResponse } from '../types/api'
 export const client = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
-  },
+    'Content-Type': 'application/json'
+  }
 })
 
 // 응답 인터셉터 설정
 client.interceptors.response.use(
-  (response) => {
+  response => {
     // Authorization 헤더에서 토큰 추출
     const token = response.headers['authorization']
     if (token) {
@@ -20,7 +20,7 @@ client.interceptors.response.use(
     }
     return response
   },
-  (error) => {
+  error => {
     console.error('API Response Error:', error.response?.data || error.message)
     return Promise.reject(error)
   }
@@ -28,17 +28,17 @@ client.interceptors.response.use(
 
 // 요청 인터셉터 설정
 client.interceptors.request.use(
-  (config) => {
+  config => {
     const token = localStorage.getItem('token')
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
     }
-    
+
     // FormData인 경우 Content-Type 헤더 제거 (브라우저가 자동으로 설정)
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type']
     }
-    
+
     console.log('API Request:', {
       method: config.method,
       url: config.url,
@@ -47,14 +47,14 @@ client.interceptors.request.use(
     })
     return config
   },
-  (error) => {
+  error => {
     console.error('API Request Error:', error)
     return Promise.reject(error)
   }
 )
 
 interface ApiRequestOptions {
-  headers?: Record<string, string>;
+  headers?: Record<string, string>
 }
 
 export const apiRequest = async <T>(
@@ -83,6 +83,7 @@ export const apiRequest = async <T>(
       status: 'error',
       code: '500',
       message: '서버와의 통신 중 오류가 발생했습니다.',
+      data: null as T
     }
   }
-} 
+}

@@ -33,59 +33,47 @@ const UserMain: React.FC = () => {
       const dummyProjects: ProjectWithProgress[] = [
         {
           id: 1,
-          projectNumber: 'P001',
-          name: '웹사이트 리뉴얼 프로젝트',
+          title: '웹사이트 리뉴얼 프로젝트',
           description: '기업 웹사이트 리뉴얼',
           startDate: '2024-01-01',
           endDate: '2024-03-15',
           status: '진행중',
-          clientCompany: '클라이언트 A',
-          developmentCompany: '개발사 A',
-          clientManagers: [],
-          clientParticipants: [],
-          developmentManagers: [],
-          developmentParticipants: [],
-          systemManager: '홍길동',
-          managers: [],
-          participants: [],
+          clientCompanyName: '클라이언트 A',
+          devCompanyName: '개발사 A',
+          clientCompanyManagers: [],
+          clientCompanyMembers: [],
+          devCompanyManagers: [],
+          devCompanyMembers: [],
           progress: 75
         },
         {
           id: 2,
-          projectNumber: 'P002',
-          name: '모바일 앱 개발',
+          title: '모바일 앱 개발',
           description: '모바일 앱 개발 프로젝트',
           startDate: '2024-02-01',
           endDate: '2024-03-30',
           status: '진행중',
-          clientCompany: '클라이언트 B',
-          developmentCompany: '개발사 B',
-          clientManagers: [],
-          clientParticipants: [],
-          developmentManagers: [],
-          developmentParticipants: [],
-          systemManager: '김철수',
-          managers: [],
-          participants: [],
+          clientCompanyName: '클라이언트 B',
+          devCompanyName: '개발사 B',
+          clientCompanyManagers: [],
+          clientCompanyMembers: [],
+          devCompanyManagers: [],
+          devCompanyMembers: [],
           progress: 45
         },
         {
           id: 3,
-          projectNumber: 'P003',
-          name: 'ERP 시스템 구축',
+          title: 'ERP 시스템 구축',
           description: 'ERP 시스템 구축 프로젝트',
           startDate: '2024-03-01',
           endDate: '2024-04-15',
           status: '진행중',
-          clientCompany: '클라이언트 C',
-          developmentCompany: '개발사 C',
-          clientManagers: [],
-          clientParticipants: [],
-          developmentManagers: [],
-          developmentParticipants: [],
-          systemManager: '이영희',
-          managers: [],
-          participants: [],
+          clientCompanyName: '클라이언트 C',
+          devCompanyName: '개발사 C',
+          clientCompanyManagers: [],
+          clientCompanyMembers: [],
+          devCompanyManagers: [],
+          devCompanyMembers: [],
           progress: 60
         }
       ]
@@ -175,7 +163,7 @@ const UserMain: React.FC = () => {
               <ProjectCard
                 key={project.id}
                 project={project}
-                onClick={handleProjectClick}
+                onClick={() => handleProjectClick(project.id)}
               />
             ))}
           </Box>

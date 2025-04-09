@@ -8,7 +8,6 @@ import {
   FormControlLabel,
   Radio,
   RadioGroup,
-  Alert,
   CircularProgress,
   Stack,
   Select,
@@ -18,10 +17,10 @@ import {
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, X } from 'lucide-react'
-import { getCompanyList } from '@/api/company'
-import { signup } from '@/api/auth'
-import { useToast } from '@/contexts/ToastContext'
-import type { CompanyListItem } from '@/types/api'
+import { getCompanyList } from '../../../api/company'
+import { signup } from '../../../api/auth'
+import { useToast } from '../../../contexts/ToastContext'
+import type { CompanyListItem } from '../../../types/api'
 
 export default function CreateAccount() {
   const navigate = useNavigate()
@@ -44,10 +43,13 @@ export default function CreateAccount() {
   const fetchCompanies = async () => {
     try {
       const response = await getCompanyList()
-      if (response.status === 'success' && response.data) {
+      if (response.status === 'success' && Array.isArray(response.data)) {
         setCompanies(response.data)
       } else {
-        showToast(response.message || '회사 목록을 불러오는데 실패했습니다.', 'error')
+        showToast(
+          response.message || '회사 목록을 불러오는데 실패했습니다.',
+          'error'
+        )
       }
     } catch (err) {
       console.error('회사 목록 조회 중 오류:', err)
@@ -73,7 +75,13 @@ export default function CreateAccount() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.name || !formData.authId || !formData.password || !formData.confirmPassword || (formData.role === 'USER' && !formData.companyId)) {
+    if (
+      !formData.name ||
+      !formData.authId ||
+      !formData.password ||
+      !formData.confirmPassword ||
+      (formData.role === 'USER' && !formData.companyId)
+    ) {
       showToast('모든 필수 항목을 입력해주세요.', 'error')
       return
     }
@@ -108,12 +116,13 @@ export default function CreateAccount() {
   }
 
   return (
-    <Box sx={{ 
-      p: 3,
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column'
-    }}>
+    <Box
+      sx={{
+        p: 3,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
       <Box
         sx={{
           display: 'flex',
@@ -124,7 +133,7 @@ export default function CreateAccount() {
         <Button
           startIcon={<ArrowLeft size={20} />}
           onClick={() => navigate('/admin/accounts')}
-          sx={{ 
+          sx={{
             color: 'text.primary',
             '&:hover': {
               backgroundColor: 'action.hover'
@@ -161,7 +170,9 @@ export default function CreateAccount() {
             '& .MuiTextField-root': { mb: 3 },
             '& .MuiFormControl-root': { mb: 3 }
           }}>
-          <Stack spacing={3} sx={{ flex: 1 }}>
+          <Stack
+            spacing={3}
+            sx={{ flex: 1 }}>
             <TextField
               fullWidth
               label="이름"
@@ -248,7 +259,9 @@ export default function CreateAccount() {
             </FormControl>
 
             <FormControl component="fieldset">
-              <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{ mb: 1 }}>
                 계정 유형
               </Typography>
               <RadioGroup
@@ -268,10 +281,10 @@ export default function CreateAccount() {
               </RadioGroup>
             </FormControl>
 
-            <Box 
-              sx={{ 
-                display: 'flex', 
-                gap: 2, 
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 2,
                 justifyContent: 'flex-end',
                 mt: 'auto'
               }}>

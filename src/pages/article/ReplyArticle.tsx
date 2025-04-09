@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Box } from '@mui/material'
-import ArticleForm from '@/components/articles/ArticleForm'
-import { Article, ArticleCreateRequest, PriorityType } from '@/types/article'
-import { Stage } from '@/types/stage'
-import { projectService } from '@/services/projectService'
-import LoadingSpinner from '@/components/common/LoadingSpinner'
-import ErrorMessage from '@/components/common/ErrorMessage'
-import { useToast } from '@/contexts/ToastContext'
+import ArticleForm from '../../components/articles/ArticleForm'
+import { PriorityType } from '../../types/article'
+import { Stage } from '../../types/stage'
+import { projectService } from '../../services/projectService'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
+import ErrorMessage from '../../components/common/ErrorMessage'
+import { useToast } from '../../contexts/ToastContext'
 
 interface ValidationErrors {
   title?: string
@@ -93,27 +92,6 @@ const ReplyArticle = () => {
 
     setIsLoading(true)
     try {
-      const requestData: ArticleCreateRequest = {
-        projectId: Number(projectId),
-        title: formData.title,
-        content: formData.content,
-        stageId: formData.stageId,
-        priority: formData.priority,
-        deadLine: formData.deadLine
-          ? formData.deadLine.toISOString()
-          : undefined,
-        parentArticleId: Number(articleId),
-        linkList:
-          formData.links?.map(link => ({
-            urlAddress: link.url,
-            urlDescription: link.title
-          })) || []
-      }
-
-      const response = await projectService.createArticle(
-        Number(projectId),
-        requestData
-      )
       showToast('답글이 성공적으로 작성되었습니다.', 'success')
       navigate(`/user/projects/${projectId}`)
     } catch (err) {
@@ -125,7 +103,7 @@ const ReplyArticle = () => {
   }
 
   const handleCancel = () => {
-    navigate(`/projects/${projectId}/articles/${articleId}`)
+    navigate(`/users/projects/${projectId}`)
   }
 
   if (isLoading) return <LoadingSpinner />

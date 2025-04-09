@@ -1,7 +1,14 @@
 import React, { useState } from 'react'
-import { Box, Typography, Paper, List, ListItem, ListItemText, Divider } from '@mui/material'
+import {
+  Box,
+  Typography,
+  Paper,
+  List,
+  ListItem,
+  ListItemText
+} from '@mui/material'
 import { getTaskRequests } from '../../api/task'
-import type { TaskRequestsResponse } from '../../types/api'
+import type { TaskRequest } from '../../types/api'
 
 interface TaskProps {
   id: number
@@ -11,21 +18,22 @@ interface TaskProps {
 }
 
 const Task: React.FC<TaskProps> = ({ id, title, description, status }) => {
-  const [requests, setRequests] = useState<TaskRequestsResponse['data']>([])
+  const [requests, setRequests] = useState<TaskRequest[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleTaskClick = async () => {
+  const fetchRequests = async () => {
     try {
       setIsLoading(true)
       setError(null)
       const response = await getTaskRequests(id)
-      if (response.status === 'success') {
+      if (response.status === 'success' && Array.isArray(response.data)) {
         setRequests(response.data)
       } else {
-        setError(response.message)
+        setError(response.message || '요청 목록을 불러오는데 실패했습니다.')
       }
-    } catch (err) {
+    } catch (error) {
+      console.error('Error fetching task requests:', error)
       setError('요청 목록을 불러오는 중 오류가 발생했습니다.')
     } finally {
       setIsLoading(false)
@@ -34,7 +42,6 @@ const Task: React.FC<TaskProps> = ({ id, title, description, status }) => {
 
   return (
     <Paper
-      elevation={2}
       sx={{
         p: 2,
         mb: 2,
@@ -43,49 +50,52 @@ const Task: React.FC<TaskProps> = ({ id, title, description, status }) => {
           backgroundColor: 'action.hover'
         }
       }}
-      onClick={handleTaskClick}
-    >
+      onClick={fetchRequests}>
       <Typography variant="h6">{title}</Typography>
-      <Typography variant="body2" color="text.secondary">
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{ mt: 1 }}>
         {description}
       </Typography>
-      <Typography variant="caption" color="text.secondary">
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ mt: 1, display: 'block' }}>
         상태: {status}
       </Typography>
 
-      {isLoading && (
-        <Box sx={{ mt: 2, textAlign: 'center' }}>
-          <Typography>로딩 중...</Typography>
-        </Box>
-      )}
-
-      {error && (
-        <Box sx={{ mt: 2, color: 'error.main' }}>
-          <Typography>{error}</Typography>
-        </Box>
-      )}
+      {isLoading && <Typography>로딩 중...</Typography>}
+      {error && <Typography color="error">{error}</Typography>}
 
       {requests.length > 0 && (
         <Box sx={{ mt: 2 }}>
-          <Typography variant="subtitle2">요청 목록</Typography>
+          <Typography variant="subtitle2">요청 목록:</Typography>
           <List>
-            {requests.map((request) => (
-              <React.Fragment key={request.requestId}>
-                <ListItem>
-                  <ListItemText
-                    primary={request.title}
-                    secondary={
-                      <>
-                        <Typography component="span" variant="body2" color="text.primary">
-                          {request.memberName}
-                        </Typography>
-                        {` — ${request.content}`}
-                      </>
-                    }
-                  />
-                </ListItem>
-                <Divider component="li" />
-              </React.Fragment>
+            {requests.map(request => (
+              <ListItem key={request.requestId}>
+                <ListItemText
+                  primary={request.title}
+                  secondary={
+                    <>
+                      <Typography
+                        component="span"
+                        variant="body2"
+                        color="text.primary">
+                        {request.content}
+                      </Typography>
+                      <br />
+                      <Typography
+                        component="span"
+                        variant="caption"
+                        color="text.secondary">
+                        작성자: {request.memberName} | 작성일:{' '}
+                        {new Date(request.createdAt).toLocaleDateString()}
+                      </Typography>
+                    </>
+                  }
+                />
+              </ListItem>
             ))}
           </List>
         </Box>
@@ -94,4 +104,4 @@ const Task: React.FC<TaskProps> = ({ id, title, description, status }) => {
   )
 }
 
-export default Task 
+export default Task

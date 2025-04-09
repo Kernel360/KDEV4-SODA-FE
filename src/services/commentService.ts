@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { Comment, CreateCommentRequest } from '@/types/comment'
+import type { Comment, CreateCommentRequest } from '../types/comment'
 
 const axiosInstance = axios.create({
   baseURL: 'http://localhost:8080',

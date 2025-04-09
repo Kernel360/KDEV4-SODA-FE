@@ -1,4 +1,8 @@
-export type TaskStatus = 'PENDING' | 'WAITING_APPROVAL' | 'APPROVED' | 'REJECTED'
+export type TaskStatus =
+  | 'PENDING'
+  | 'WAITING_APPROVAL'
+  | 'APPROVED'
+  | 'REJECTED'
 
 export interface Task {
   id: number
@@ -6,7 +10,7 @@ export interface Task {
   description: string
   status: TaskStatus
   taskOrder: number
-  requests?: Request[]
+  requests: any[]
   createdAt: string
   updatedAt: string
 }

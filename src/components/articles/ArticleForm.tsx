@@ -13,8 +13,8 @@ import {
   styled
 } from '@mui/material'
 import { DateTimePicker } from '@mui/x-date-pickers'
-import { Stage } from '@/types/stage'
-import { PriorityType } from '@/types/article'
+import { Stage } from '../../types/stage'
+import { PriorityType } from '../../types/article'
 import { ArrowLeft, Link2, Upload, FileText, Trash2 } from 'lucide-react'
 
 const UploadBox = styled(Box)(({ theme }) => ({

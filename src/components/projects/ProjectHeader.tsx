@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Box, Typography, Chip, IconButton, Collapse } from '@mui/material'
+import { Box, Typography, IconButton, Collapse } from '@mui/material'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { Project } from '../../types/project'
 

@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {
-  Box,
-  Typography,
-  Button,
-  CircularProgress,
-  Alert
-} from '@mui/material'
+import { Box, Typography, Button, CircularProgress, Alert } from '@mui/material'
 import {
   DragDropContext,
   Droppable,
@@ -18,25 +12,27 @@ import type { Stage } from '../../types/stage'
 import AddStageModal from './AddStageModal'
 import StageCard from './StageCard'
 import { getProjectStages } from '../../api/project'
-import type { ProjectStage as ApiStage } from '../../types/api'
+//import type { ProjectStage as ApiStage } from '../../types/api'
 
 interface ProjectStagesProps {
   projectId: number
 }
 
-const defaultStages: Stage[] = [
-  { id: 1, title: '요구사항 정의', order: 1, tasks: [] },
-  { id: 2, title: '화면 설계', order: 2, tasks: [] },
-  { id: 3, title: '디자인', order: 3, tasks: [] },
-  { id: 4, title: '퍼블리싱', order: 4, tasks: [] },
-  { id: 5, title: '개발', order: 5, tasks: [] },
-  { id: 6, title: '검수', order: 6, tasks: [] }
-]
+// const defaultStages: Stage[] = [
+//   { id: 1, title: '요구사항 정의', order: 1, tasks: [] },
+//   { id: 2, title: '화면 설계', order: 2, tasks: [] },
+//   { id: 3, title: '디자인', order: 3, tasks: [] },
+//   { id: 4, title: '퍼블리싱', order: 4, tasks: [] },
+//   { id: 5, title: '개발', order: 5, tasks: [] },
+//   { id: 6, title: '검수', order: 6, tasks: [] }
+// ]
 
 const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
   const [stages, setStages] = useState<Stage[]>([])
   const [isAddStageModalOpen, setIsAddStageModalOpen] = useState(false)
-  const [selectedStageIndex, setSelectedStageIndex] = useState<number | null>(null)
+  const [selectedStageIndex, setSelectedStageIndex] = useState<number | null>(
+    null
+  )
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -47,26 +43,26 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
         // API 응답을 Stage 타입으로 변환
         const convertedStages: Stage[] = response.data.map(apiStage => ({
           id: apiStage.id,
-          title: apiStage.name,
-          order: apiStage.stageOrder,
+          name: apiStage.name,
+          stageOrder: apiStage.stageOrder,
           tasks: apiStage.tasks.map(task => ({
             id: task.taskId,
             title: task.title,
             description: task.content,
-            status: task.status || '신청 대기 중',
+            status: task.status || 'PENDING',
             taskOrder: task.taskOrder,
             requests: [], // 초기에는 빈 배열로 설정, 필요한 경우 별도 API 호출로 채워넣을 수 있음
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           }))
         }))
-        
+
         // taskOrder 기준으로 정렬
         const sortedStages = convertedStages.map(stage => ({
           ...stage,
-          tasks: [...stage.tasks].sort((a, b) => (a as any).taskOrder - (b as any).taskOrder)
+          tasks: [...stage.tasks].sort((a, b) => a.taskOrder - b.taskOrder)
         }))
-        
+
         setStages(sortedStages)
       }
     } catch (err) {
@@ -102,13 +98,13 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
     setIsAddStageModalOpen(true)
   }
 
-  const handleAddStageSubmit = (title: string) => {
+  const handleAddStageSubmit = (name: string) => {
     if (selectedStageIndex === null) return
 
     const newStage: Stage = {
       id: Math.max(...stages.map(s => s.id)) + 1,
-      title,
-      order: selectedStageIndex + 1,
+      name,
+      stageOrder: selectedStageIndex + 1,
       tasks: []
     }
 
@@ -118,7 +114,7 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
       ...stages.slice(selectedStageIndex)
     ].map((stage, index) => ({
       ...stage,
-      order: index + 1
+      stageOrder: index + 1
     }))
 
     setStages(updatedStages)
@@ -126,9 +122,9 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
     setSelectedStageIndex(null)
   }
 
-  const handleUpdateStage = (stageId: number, title: string) => {
+  const handleUpdateStage = (stageId: number, name: string) => {
     const updatedStages = stages.map(stage =>
-      stage.id === stageId ? { ...stage, title } : stage
+      stage.id === stageId ? { ...stage, name } : stage
     )
     setStages(updatedStages)
   }
@@ -138,7 +134,7 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
       .filter(stage => stage.id !== stageId)
       .map((stage, index) => ({
         ...stage,
-        order: index + 1
+        stageOrder: index + 1
       }))
     setStages(updatedStages)
   }

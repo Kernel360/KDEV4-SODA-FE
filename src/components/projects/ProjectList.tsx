@@ -13,11 +13,7 @@ interface ProjectListProps {
   onProjectClick: (projectId: number) => void
 }
 
-const ProjectList: React.FC<ProjectListProps> = ({
-  title,
-  projects,
-  onProjectClick
-}) => {
+const ProjectList: React.FC<ProjectListProps> = ({ title, projects }) => {
   return (
     <Box>
       <Typography
@@ -35,7 +31,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
           <Box key={project.id}>
             <ProjectCard
               project={project}
-              onClick={onProjectClick}
+              //onClick={onProjectClick}
             />
           </Box>
         ))}

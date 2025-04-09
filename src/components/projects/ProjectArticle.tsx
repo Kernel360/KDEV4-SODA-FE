@@ -12,15 +12,14 @@ import {
   Button,
   TextField,
   InputAdornment,
-  IconButton,
   Chip
 } from '@mui/material'
-import { Article, ArticleStatus, PriorityType } from '@/types/article'
-import { Stage } from '@/types/stage'
-import { projectService } from '@/services/projectService'
-import LoadingSpinner from '@/components/common/LoadingSpinner'
-import ErrorMessage from '@/components/common/ErrorMessage'
-import { ChevronLeft, ChevronRight, Search, Plus, Link2 } from 'lucide-react'
+import { Article, ArticleStatus, PriorityType } from '../../types/article'
+import { Stage } from '../../types/stage'
+import { projectService } from '../../services/projectService'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
+import ErrorMessage from '../../components/common/ErrorMessage'
+import { Search, Plus, Link2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 interface ProjectArticleProps {
@@ -115,7 +114,7 @@ const ArticleRow: React.FC<{
       </TableRow>
       {article.children &&
         article.children.length > 0 &&
-        article.children.map(child => (
+        article.children.map((child: any) => (
           <ArticleRow
             key={child.id}
             article={child}

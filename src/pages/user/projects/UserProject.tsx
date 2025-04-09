@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { Box } from '@mui/material'
-import { Project } from '@/types/project'
-import ProjectHeader from '@/components/projects/ProjectHeader'
-import ProjectStages from '@/components/projects/ProjectStages'
-import ProjectArticle from '@/components/projects/ProjectArticle'
-import { projectService } from '@/services/projectService'
-import LoadingSpinner from '@/components/common/LoadingSpinner'
-import ErrorMessage from '@/components/common/ErrorMessage'
+import { Project } from '../../../types/project'
+import ProjectHeader from '../../../components/projects/ProjectHeader'
+import ProjectStages from '../../../components/projects/ProjectStages'
+import ProjectArticle from '../../../components/projects/ProjectArticle'
+import { projectService } from '../../../services/projectService'
+import LoadingSpinner from '../../../components/common/LoadingSpinner'
+import ErrorMessage from '../../../components/common/ErrorMessage'
 
 interface ProjectWithProgress extends Project {
   progress: number

@@ -4,12 +4,11 @@ import { useNavigate, useParams } from 'react-router-dom'
 import ArticleForm, {
   ArticleFormData
 } from '../../components/articles/ArticleForm'
-import { projectService } from '@/services/projectService'
-import { PriorityType } from '@/types/article'
-import { Stage } from '@/types/stage'
-import LoadingSpinner from '@/components/common/LoadingSpinner'
-import ErrorMessage from '@/components/common/ErrorMessage'
-import { useToast } from '@/contexts/ToastContext'
+import { useToast } from '../../contexts/ToastContext'
+import { PriorityType } from '../../types/article'
+import { projectService } from '../../services/projectService'
+import ErrorMessage from '../../components/common/ErrorMessage'
+import { Stage } from '../../types/stage'
 
 const CreateArticle: React.FC = () => {
   const navigate = useNavigate()

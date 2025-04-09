@@ -14,7 +14,7 @@ import {
 import { ArrowLeft } from 'lucide-react'
 import AccountDetailForm, {
   Account
-} from '@/components/accounts/AccountDetailForm'
+} from '../../../components/accounts/AccountDetailForm'
 
 // 더미 데이터
 const dummyAccounts: Account[] = [
@@ -55,7 +55,7 @@ export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [hasChanges, setHasChanges] = useState(false)
+  const [hasChanges] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   // 계정 데이터 가져오기
