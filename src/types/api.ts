@@ -8,13 +8,13 @@ export interface Company {
 }
 
 export interface User {
+  id: number
   name: string
-  authId: string
-  position: string
+  email: string
   phoneNumber: string
-  role: 'USER' | 'ADMIN'
-  firstLogin: boolean
-  company: Company
+  position: string
+  company: string
+  role: string
 }
 
 export interface ApiResponse<T = any> {
@@ -25,13 +25,16 @@ export interface ApiResponse<T = any> {
 }
 
 export interface LoginResponse {
-  name: string
-  authId: string
-  position: string
-  phoneNumber: string
-  role: 'USER' | 'ADMIN'
-  firstLogin: boolean
-  company: Company
+  token: string
+  data: {
+    name: string
+    authId: string
+    position: string
+    phoneNumber: string
+    role: string
+    firstLogin: boolean
+    company?: Company
+  }
 }
 
 export interface LoginRequest {
@@ -95,12 +98,7 @@ export interface CompanyListItem {
   detailAddress: string | null;
 }
 
-export interface CompanyListResponse {
-  status: 'success' | 'error';
-  code: string;
-  message: string;
-  data: CompanyListItem[];
-}
+export interface CompanyListResponse extends ApiResponse<CompanyListItem[]> {}
 
 export interface SignupRequest {
   name: string;
@@ -168,4 +166,46 @@ export interface ProjectStage {
   tasks: ProjectStageTask[];
 }
 
-export interface ProjectStagesResponse extends ApiResponse<ProjectStage[]> {} 
+export interface ProjectStagesResponse extends ApiResponse<ProjectStage[]> {}
+
+export interface MemberListDto {
+  id: number
+  authId: string
+  name: string
+  email: string | null
+  role: 'USER' | 'ADMIN'
+  company: string | null
+  position: string | null
+  createdAt: string
+  updatedAt: string
+  deleted: boolean
+}
+
+export interface PagedData<T> {
+  content: T[]
+  pageable: {
+    pageNumber: number
+    pageSize: number
+    sort: {
+      empty: boolean
+      sorted: boolean
+      unsorted: boolean
+    }
+    offset: number
+    paged: boolean
+    unpaged: boolean
+  }
+  last: boolean
+  totalElements: number
+  totalPages: number
+  size: number
+  number: number
+  sort: {
+    empty: boolean
+    sorted: boolean
+    unsorted: boolean
+  }
+  first: boolean
+  numberOfElements: number
+  empty: boolean
+} 

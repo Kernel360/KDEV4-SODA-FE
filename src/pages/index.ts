@@ -31,3 +31,5 @@ export { default as Article } from './article/Article'
 export { default as CreateArticle } from './article/CreateArticle'
 export { default as EditArticle } from './article/EditArticle'
 export { default as ReplyArticle } from './article/ReplyArticle'
+
+export { default as AccountManagement } from './AccountManagement'

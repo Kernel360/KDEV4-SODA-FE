@@ -1,96 +1,44 @@
-import { useState } from 'react'
-import { Box, Typography, Switch, Button } from '@mui/material'
+import { useState, useEffect } from 'react'
+import { Box, Typography, Switch, Button, TextField, InputAdornment } from '@mui/material'
+import { Search } from 'lucide-react'
 import DataTable from '@/components/common/DataTable'
 import { useNavigate } from 'react-router-dom'
 import { PlusCircle } from 'lucide-react'
-
-interface Account {
-  id: string
-  name: string
-  username: string
-  companyName: string
-  isActive: boolean
-}
-
-// 더미 데이터
-const dummyAccounts: Account[] = [
-  {
-    id: '1',
-    name: '김개발',
-    username: 'dev.kim',
-    companyName: '테크솔루션',
-    isActive: true
-  },
-  {
-    id: '2',
-    name: '이매니저',
-    username: 'manager.lee',
-    companyName: '클라우드시스템',
-    isActive: true
-  },
-  {
-    id: '3',
-    name: '박디자인',
-    username: 'design.park',
-    companyName: '디자인스튜디오',
-    isActive: false
-  },
-  {
-    id: '4',
-    name: '최프론트',
-    username: 'front.choi',
-    companyName: '테크솔루션',
-    isActive: true
-  },
-  {
-    id: '5',
-    name: '정백엔드',
-    username: 'back.jung',
-    companyName: '클라우드시스템',
-    isActive: true
-  },
-  {
-    id: '6',
-    name: '강풀스택',
-    username: 'full.kang',
-    companyName: '디자인스튜디오',
-    isActive: false
-  },
-  {
-    id: '7',
-    name: '조데브옵스',
-    username: 'devops.jo',
-    companyName: '테크솔루션',
-    isActive: true
-  },
-  {
-    id: '8',
-    name: '윤기획',
-    username: 'plan.yoon',
-    companyName: '클라우드시스템',
-    isActive: true
-  },
-  {
-    id: '9',
-    name: '한마케팅',
-    username: 'marketing.han',
-    companyName: '디자인스튜디오',
-    isActive: false
-  },
-  {
-    id: '10',
-    name: '임테스트',
-    username: 'test.im',
-    companyName: '테크솔루션',
-    isActive: true
-  }
-]
+import { getUsers, updateUserStatus } from '@/api/admin'
+import { useToast } from '@/contexts/ToastContext'
+import type { MemberListDto } from '@/types/api'
 
 export default function AccountList() {
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(5)
-  const [accounts, setAccounts] = useState<Account[]>(dummyAccounts)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [accounts, setAccounts] = useState<MemberListDto[]>([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [searchKeyword, setSearchKeyword] = useState('')
+
+  useEffect(() => {
+    fetchUsers()
+  }, [page, rowsPerPage, searchKeyword])
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true)
+      const response = await getUsers(page, rowsPerPage, searchKeyword)
+      if (response.status === 'success' && response.data) {
+        setAccounts(response.data.content)
+        setTotalCount(response.data.totalElements)
+      } else {
+        showToast('사용자 목록을 불러오는데 실패했습니다.', 'error')
+      }
+    } catch (err) {
+      console.error('사용자 목록 조회 중 오류:', err)
+      showToast('사용자 목록을 불러오는데 실패했습니다.', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
@@ -101,62 +49,70 @@ export default function AccountList() {
     setPage(0)
   }
 
-  const handleToggleActive = (accountId: string) => {
-    setAccounts(prevAccounts =>
-      prevAccounts.map(account =>
-        account.id === accountId
-          ? { ...account, isActive: !account.isActive }
-          : account
-      )
-    )
+  const handleToggleActive = async (userId: number, currentActive: boolean) => {
+    try {
+      const response = await updateUserStatus(userId, !currentActive)
+      if (response.status === 'success') {
+        showToast('사용자 상태가 성공적으로 변경되었습니다.', 'success')
+        fetchUsers() // 목록 새로고침
+      } else {
+        showToast(response.message || '사용자 상태 변경에 실패했습니다.', 'error')
+      }
+    } catch (err) {
+      console.error('사용자 상태 변경 중 오류:', err)
+      showToast('사용자 상태 변경에 실패했습니다.', 'error')
+    }
   }
 
-  // 현재 페이지에 해당하는 데이터만 추출
-  const currentPageData = accounts.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  )
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchKeyword(event.target.value)
+    setPage(0) // 검색어가 변경되면 첫 페이지로 이동
+  }
 
   const columns = [
     {
       id: 'name',
       label: '이름',
-      getValue: (row: Account) => row.name,
-      onClick: (row: Account) => navigate(`/admin/accounts/${row.id}`),
-      style: {
-        cursor: 'pointer',
-        color: 'text.primary',
-        '&:hover': {
-          color: 'primary.main',
-          textDecoration: 'underline'
-        }
-      }
+      render: (row: MemberListDto) => (
+        <Box
+          onClick={() => navigate(`/admin/accounts/${row.id}`)}
+          sx={{
+            cursor: 'pointer',
+            color: 'text.primary',
+            '&:hover': {
+              color: 'primary.main',
+              textDecoration: 'underline'
+            }
+          }}>
+          {row.name}
+        </Box>
+      )
     },
     {
-      id: 'username',
+      id: 'authId',
       label: '아이디',
-      getValue: (row: Account) => row.username,
-      style: { cursor: 'default' }
+      render: (row: MemberListDto) => row.authId
     },
     {
-      id: 'companyName',
+      id: 'company',
       label: '회사',
-      getValue: (row: Account) => row.companyName,
-      style: { cursor: 'default' }
+      render: (row: MemberListDto) => row.company || '-'
     },
     {
-      id: 'isActive',
+      id: 'role',
+      label: '권한',
+      render: (row: MemberListDto) => row.role === 'ADMIN' ? '관리자' : '일반 사용자'
+    },
+    {
+      id: 'active',
       label: '활성화',
-      align: 'center' as const,
-      getValue: (row: Account) => ({ value: row.isActive, id: row.id }),
-      format: (data: { value: boolean; id: string }) => (
+      render: (row: MemberListDto) => (
         <Switch
-          checked={data.value}
-          onChange={() => handleToggleActive(data.id)}
+          checked={!row.deleted}
+          onChange={() => handleToggleActive(row.id, !row.deleted)}
           color="primary"
         />
-      ),
-      style: { cursor: 'default' }
+      )
     }
   ]
 
@@ -188,14 +144,37 @@ export default function AccountList() {
         </Button>
       </Box>
 
-      <DataTable<Account>
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          placeholder="이름, 아이디, 회사로 검색"
+          value={searchKeyword}
+          onChange={handleSearchChange}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search size={20} />
+              </InputAdornment>
+            )
+          }}
+          sx={{
+            maxWidth: 400,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2
+            }
+          }}
+        />
+      </Box>
+
+      <DataTable<MemberListDto>
         columns={columns}
-        data={currentPageData}
+        data={accounts}
         page={page}
         rowsPerPage={rowsPerPage}
-        totalCount={accounts.length}
+        totalCount={totalCount}
         onPageChange={handlePageChange}
         onRowsPerPageChange={handleRowsPerPageChange}
+        loading={loading}
       />
     </Box>
   )
