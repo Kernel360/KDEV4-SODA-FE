@@ -1,11 +1,27 @@
 import { useState, useEffect } from 'react'
-import { Box, Typography, TextField, Button, MenuItem, FormControl, InputLabel, Select, SelectChangeEvent, Paper } from '@mui/material'
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  FormControl,
+  FormControlLabel,
+  Radio,
+  RadioGroup,
+  Alert,
+  CircularProgress,
+  Stack,
+  Select,
+  MenuItem,
+  InputLabel,
+  Paper
+} from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Save, X } from 'lucide-react'
 import { getCompanyList } from '@/api/company'
 import { signup } from '@/api/auth'
 import { useToast } from '@/contexts/ToastContext'
-import type { CompanyListItem, CompanyListResponse } from '@/types/api'
+import type { CompanyListItem } from '@/types/api'
 
 export default function CreateAccount() {
   const navigate = useNavigate()
@@ -16,6 +32,7 @@ export default function CreateAccount() {
     name: '',
     authId: '',
     password: '',
+    confirmPassword: '',
     role: 'USER' as 'USER' | 'ADMIN',
     companyId: ''
   })
@@ -43,7 +60,7 @@ export default function CreateAccount() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleSelectChange = (e: SelectChangeEvent<string>) => {
+  const handleSelectChange = (e: any) => {
     const { name, value } = e.target
     setFormData(prev => {
       const newData = { ...prev, [name]: value }
@@ -56,8 +73,13 @@ export default function CreateAccount() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.name || !formData.authId || !formData.password || (formData.role === 'USER' && !formData.companyId)) {
+    if (!formData.name || !formData.authId || !formData.password || !formData.confirmPassword || (formData.role === 'USER' && !formData.companyId)) {
       showToast('모든 필수 항목을 입력해주세요.', 'error')
+      return
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      showToast('비밀번호가 일치하지 않습니다.', 'error')
       return
     }
 
@@ -86,7 +108,12 @@ export default function CreateAccount() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ 
+      p: 3,
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
       <Box
         sx={{
           display: 'flex',
@@ -117,8 +144,9 @@ export default function CreateAccount() {
         elevation={0}
         sx={{
           p: 4,
-          maxWidth: 600,
-          mx: 'auto',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
           border: '1px solid',
           borderColor: 'divider',
           borderRadius: 2
@@ -127,122 +155,154 @@ export default function CreateAccount() {
           component="form"
           onSubmit={handleSubmit}
           sx={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
             '& .MuiTextField-root': { mb: 3 },
             '& .MuiFormControl-root': { mb: 3 }
           }}>
-          <TextField
-            fullWidth
-            label="이름"
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
-            required
-            size="small"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 1
-              }
-            }}
-          />
-          <TextField
-            fullWidth
-            label="아이디"
-            name="authId"
-            value={formData.authId}
-            onChange={handleInputChange}
-            required
-            size="small"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 1
-              }
-            }}
-          />
-          <TextField
-            fullWidth
-            label="비밀번호"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleInputChange}
-            required
-            size="small"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 1
-              }
-            }}
-          />
-          <FormControl
-            fullWidth
-            size="small">
-            <InputLabel>권한</InputLabel>
-            <Select
-              name="role"
-              value={formData.role}
-              onChange={handleSelectChange}
+          <Stack spacing={3} sx={{ flex: 1 }}>
+            <TextField
+              fullWidth
+              label="이름"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
               required
+              size="small"
               sx={{
-                borderRadius: 1
-              }}>
-              <MenuItem value="USER">일반 사용자</MenuItem>
-              <MenuItem value="ADMIN">관리자</MenuItem>
-            </Select>
-          </FormControl>
-          <FormControl
-            fullWidth
-            size="small"
-            disabled={formData.role === 'ADMIN'}>
-            <InputLabel>회사</InputLabel>
-            <Select
-              name="companyId"
-              value={formData.companyId}
-              onChange={handleSelectChange}
-              required={formData.role === 'USER'}
-              sx={{
-                borderRadius: 1
-              }}>
-              {companies.map(company => (
-                <MenuItem
-                  key={company.id}
-                  value={company.id}>
-                  {company.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              gap: 1, 
-              justifyContent: 'flex-end',
-              mt: 4
-            }}>
-            <Button
-              variant="outlined"
-              onClick={() => navigate('/admin/accounts')}
-              sx={{
-                minWidth: 100,
-                borderRadius: 1
-              }}>
-              취소
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={loading}
-              sx={{
-                minWidth: 100,
-                bgcolor: 'black',
-                borderRadius: 1,
-                '&:hover': {
-                  bgcolor: 'rgba(0, 0, 0, 0.8)'
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1
                 }
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="아이디"
+              name="authId"
+              value={formData.authId}
+              onChange={handleInputChange}
+              required
+              size="small"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1
+                }
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="비밀번호"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              required
+              size="small"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1
+                }
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="비밀번호 확인"
+              name="confirmPassword"
+              type="password"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              required
+              size="small"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1
+                }
+              }}
+            />
+
+            <FormControl
+              fullWidth
+              size="small"
+              disabled={formData.role === 'ADMIN'}>
+              <InputLabel>회사</InputLabel>
+              <Select
+                name="companyId"
+                value={formData.companyId}
+                onChange={handleSelectChange}
+                required={formData.role === 'USER'}
+                sx={{
+                  borderRadius: 1
+                }}>
+                {companies.map(company => (
+                  <MenuItem
+                    key={company.id}
+                    value={company.id}>
+                    {company.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl component="fieldset">
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                계정 유형
+              </Typography>
+              <RadioGroup
+                name="role"
+                value={formData.role}
+                onChange={handleSelectChange}>
+                <FormControlLabel
+                  value="USER"
+                  control={<Radio />}
+                  label="일반 사용자"
+                />
+                <FormControlLabel
+                  value="ADMIN"
+                  control={<Radio />}
+                  label="관리자"
+                />
+              </RadioGroup>
+            </FormControl>
+
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                gap: 2, 
+                justifyContent: 'flex-end',
+                mt: 'auto'
               }}>
-              생성
-            </Button>
-          </Box>
+              <Button
+                variant="outlined"
+                startIcon={<X />}
+                onClick={() => navigate('/admin/accounts')}
+                disabled={loading}
+                sx={{
+                  minWidth: 100,
+                  borderRadius: 1
+                }}>
+                취소
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                startIcon={loading ? <CircularProgress size={20} /> : <Save />}
+                disabled={loading}
+                sx={{
+                  minWidth: 100,
+                  bgcolor: 'black',
+                  borderRadius: 1,
+                  '&:hover': {
+                    bgcolor: 'rgba(0, 0, 0, 0.8)'
+                  }
+                }}>
+                {loading ? '생성 중...' : '생성'}
+              </Button>
+            </Box>
+          </Stack>
         </Box>
       </Paper>
     </Box>
