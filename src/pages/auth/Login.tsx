@@ -27,19 +27,34 @@ const Login: React.FC = () => {
 
     try {
       const response = await login(formData)
+      console.log('Login Response:', response) // 디버깅용 로그
+      
       if (response.status === 'success' && response.data) {
-        localStorage.setItem('user', JSON.stringify(response.data))
-        if (response.data.role === 'ADMIN') {
-          navigate(
-            response.data.firstLogin ? '/admin/additional-info' : '/admin'
-          )
+        // 토큰이 없으면 에러 처리
+        if (!response.data.token) {
+          setError('토큰이 없습니다. 다시 시도해주세요.')
+          return
+        }
+
+        // 토큰과 사용자 정보 저장
+        localStorage.setItem('token', response.data.token)
+        localStorage.setItem('user', JSON.stringify(response.data.data))
+        
+        // role에 따른 라우팅 (대소문자 구분 없이 체크)
+        console.log('User Role:', response.data.data.role) // 디버깅용 로그
+        const userRole = response.data.data.role?.toUpperCase()
+        if (userRole === 'ADMIN') {
+          navigate('/admin')
+        } else if (userRole === 'USER') {
+          navigate('/user')
         } else {
-          navigate(response.data.firstLogin ? '/user/additional-info' : '/user')
+          setError('잘못된 사용자 역할입니다.')
         }
       } else {
         setError(response.message || '로그인에 실패했습니다.')
       }
     } catch (error) {
+      console.error('Login Error:', error) // 디버깅용 로그
       setError('로그인 중 오류가 발생했습니다. 다시 시도해주세요.')
     } finally {
       setIsLoading(false)
