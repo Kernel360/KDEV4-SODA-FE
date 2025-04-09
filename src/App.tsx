@@ -80,6 +80,10 @@ const App: React.FC = () => {
                 element={<AdminMain />}
               />
               <Route
+                path="additional-info"
+                element={<UserInfo />}
+              />
+              <Route
                 path="projects"
                 element={<ProjectList />}
               />
@@ -101,7 +105,7 @@ const App: React.FC = () => {
               />
               <Route
                 path="accounts/:id"
-                element={<AccountDetail isAdmin={true} />}
+                element={<AccountDetail />}
               />
               <Route
                 path="accounts/create"
@@ -112,12 +116,12 @@ const App: React.FC = () => {
                 element={<CompanyList />}
               />
               <Route
-                path="companies/:id"
-                element={<Company />}
-              />
-              <Route
                 path="companies/create"
                 element={<CreateCompany />}
+              />
+              <Route
+                path="companies/:id"
+                element={<Company />}
               />
               <Route
                 path="companies/:id/edit"
@@ -136,6 +140,10 @@ const App: React.FC = () => {
               <Route
                 index
                 element={<UserMain />}
+              />
+              <Route
+                path="additional-info"
+                element={<UserInfo />}
               />
               <Route
                 path="projects/:id"
