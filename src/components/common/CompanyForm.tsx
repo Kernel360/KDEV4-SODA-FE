@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Box, Button, TextField } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import { Company } from '../../types/company'
+//import { Company } from '../../types/company'
 
 interface CompanyFormData {
   name: string

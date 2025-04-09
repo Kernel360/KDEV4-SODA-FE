@@ -14,9 +14,9 @@ import {
   DialogContent,
   DialogActions
 } from '@mui/material'
-import { Send, Pencil, Trash2, MessageCircle, Edit } from 'lucide-react'
-import type { Comment } from '@/types/comment'
-import { commentService } from '@/services/commentService'
+import { Send, Trash2, MessageCircle, Edit } from 'lucide-react'
+import type { Comment } from '../../types/comment'
+import { commentService } from '../../services/commentService'
 import dayjs from 'dayjs'
 
 interface CommentInputProps {
@@ -232,7 +232,7 @@ const CommentItem: React.FC<CommentItemProps> = memo(
             <Stack
               spacing={2}
               sx={{ mt: 1 }}>
-              {comment.childComments.map((reply, replyIndex) => (
+              {comment.childComments.map((reply: any, replyIndex: any) => (
                 <Box key={`reply-${reply.id}-${replyIndex}`}>
                   <CommentItem
                     comment={reply}
@@ -409,7 +409,7 @@ const CommentItem: React.FC<CommentItemProps> = memo(
         {/* 대댓글 목록 */}
         {comment.childComments && comment.childComments.length > 0 && (
           <Stack spacing={2}>
-            {comment.childComments.map((reply, replyIndex) => (
+            {comment.childComments.map((reply: any, replyIndex: any) => (
               <Box key={`reply-${reply.id}-${replyIndex}`}>
                 <CommentItem
                   comment={reply}
@@ -473,7 +473,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
 
       // 부모 댓글 필터링 및 정렬
       const sortedComments = (data || [])
-        .filter(comment => {
+        .filter((comment: any) => {
           // 부모 댓글이 아닌 경우 제외
           if (comment.parentCommentId) return false
 
@@ -487,19 +487,19 @@ const CommentSection: React.FC<CommentSectionProps> = ({
 
           return true
         })
-        .map(comment => {
+        .map((comment: any) => {
           // 대댓글 중 삭제되지 않은 것만 유지
           if (comment.childComments) {
             return {
               ...comment,
               childComments: comment.childComments.filter(
-                reply => !reply.deleted
+                (reply: any) => !reply.deleted
               )
             }
           }
           return comment
         })
-        .sort((a, b) => {
+        .sort((a: any, b: any) => {
           return (
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           )

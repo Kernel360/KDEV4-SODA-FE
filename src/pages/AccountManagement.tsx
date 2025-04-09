@@ -7,13 +7,12 @@ import {
   Button,
   Grid,
   CircularProgress,
-  Alert,
-  Divider
+  Alert
 } from '@mui/material'
-import { User } from '../types/api'
+//import { User } from '../types/api'
 
 const AccountManagement = () => {
-  const [user, setUser] = useState<User | null>(null)
+  //const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -109,29 +108,44 @@ const AccountManagement = () => {
 
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
-      <Typography variant="h5" sx={{ mb: 3 }}>
+      <Typography
+        variant="h5"
+        sx={{ mb: 3 }}>
         계정 관리
       </Typography>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+          onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
 
       {success && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(null)}>
+        <Alert
+          severity="success"
+          sx={{ mb: 2 }}
+          onClose={() => setSuccess(null)}>
           {success}
         </Alert>
       )}
 
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
+        <Typography
+          variant="h6"
+          sx={{ mb: 2 }}>
           프로필 정보
         </Typography>
         <form onSubmit={handleProfileUpdate}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+          <Grid
+            container
+            spacing={2}>
+            <Grid
+              item
+              xs={12}
+              sm={6}>
               <TextField
                 fullWidth
                 label="이름"
@@ -140,7 +154,10 @@ const AccountManagement = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid
+              item
+              xs={12}
+              sm={6}>
               <TextField
                 fullWidth
                 label="이메일"
@@ -150,7 +167,10 @@ const AccountManagement = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid
+              item
+              xs={12}
+              sm={6}>
               <TextField
                 fullWidth
                 label="전화번호"
@@ -159,7 +179,10 @@ const AccountManagement = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid
+              item
+              xs={12}
+              sm={6}>
               <TextField
                 fullWidth
                 label="직책"
@@ -168,8 +191,13 @@ const AccountManagement = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item xs={12}>
-              <Button type="submit" variant="contained" sx={{ mt: 2 }}>
+            <Grid
+              item
+              xs={12}>
+              <Button
+                type="submit"
+                variant="contained"
+                sx={{ mt: 2 }}>
                 프로필 업데이트
               </Button>
             </Grid>
@@ -178,12 +206,18 @@ const AccountManagement = () => {
       </Paper>
 
       <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
+        <Typography
+          variant="h6"
+          sx={{ mb: 2 }}>
           비밀번호 변경
         </Typography>
         <form onSubmit={handlePasswordUpdate}>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
+          <Grid
+            container
+            spacing={2}>
+            <Grid
+              item
+              xs={12}>
               <TextField
                 fullWidth
                 label="현재 비밀번호"
@@ -193,7 +227,9 @@ const AccountManagement = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid
+              item
+              xs={12}>
               <TextField
                 fullWidth
                 label="새 비밀번호"
@@ -203,7 +239,9 @@ const AccountManagement = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid
+              item
+              xs={12}>
               <TextField
                 fullWidth
                 label="새 비밀번호 확인"
@@ -213,13 +251,19 @@ const AccountManagement = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid
+              item
+              xs={12}>
               <Button
                 type="submit"
                 variant="contained"
                 color="primary"
                 sx={{ mt: 2 }}
-                disabled={!formData.currentPassword || !formData.newPassword || !formData.confirmPassword}>
+                disabled={
+                  !formData.currentPassword ||
+                  !formData.newPassword ||
+                  !formData.confirmPassword
+                }>
                 비밀번호 변경
               </Button>
             </Grid>
@@ -230,4 +274,4 @@ const AccountManagement = () => {
   )
 }
 
-export default AccountManagement 
+export default AccountManagement

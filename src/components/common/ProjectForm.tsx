@@ -11,16 +11,11 @@ import {
   FormHelperText,
   SelectChangeEvent,
   Paper,
-  IconButton,
-  Card,
   Chip,
-  Tooltip,
   OutlinedInput,
-  Checkbox,
   ListItemText
 } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { X, User, Users, Check } from 'lucide-react'
 import dayjs, { Dayjs } from 'dayjs'
 
 interface Company {
@@ -144,54 +139,54 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
     }
   }
 
-  const handleEmployeeSelect = (employeeId: string, companyId: string) => {
-    if (!formData.selectedEmployees.includes(employeeId)) {
-      setFormData(prev => ({
-        ...prev,
-        selectedEmployees: [...prev.selectedEmployees, employeeId]
-      }))
-    }
-  }
+  // const handleEmployeeSelect = (employeeId: string) => {
+  //   if (!formData.selectedEmployees.includes(employeeId)) {
+  //     setFormData(prev => ({
+  //       ...prev,
+  //       selectedEmployees: [...prev.selectedEmployees, employeeId]
+  //     }))
+  //   }
+  // }
 
-  const handleEmployeeRemove = (employeeId: string, companyId: string) => {
-    if (companyId === formData.clientCompanyId) {
-      setClientManagers(prev => prev.filter(id => id !== employeeId))
-      setClientParticipants(prev => prev.filter(id => id !== employeeId))
-    } else if (companyId === formData.developerCompanyId) {
-      setDeveloperManagers(prev => prev.filter(id => id !== employeeId))
-      setDeveloperParticipants(prev => prev.filter(id => id !== employeeId))
-    }
+  // const handleEmployeeRemove = (employeeId: string, companyId: string) => {
+  //   if (companyId === formData.clientCompanyId) {
+  //     setClientManagers(prev => prev.filter(id => id !== employeeId))
+  //     setClientParticipants(prev => prev.filter(id => id !== employeeId))
+  //   } else if (companyId === formData.developerCompanyId) {
+  //     setDeveloperManagers(prev => prev.filter(id => id !== employeeId))
+  //     setDeveloperParticipants(prev => prev.filter(id => id !== employeeId))
+  //   }
 
-    setFormData(prev => ({
-      ...prev,
-      selectedEmployees: prev.selectedEmployees.filter(id => id !== employeeId),
-      managers: prev.managers.filter(id => id !== employeeId),
-      participants: prev.participants.filter(id => id !== employeeId)
-    }))
-  }
+  //   setFormData(prev => ({
+  //     ...prev,
+  //     selectedEmployees: prev.selectedEmployees.filter(id => id !== employeeId),
+  //     managers: prev.managers.filter(id => id !== employeeId),
+  //     participants: prev.participants.filter(id => id !== employeeId)
+  //   }))
+  // }
 
-  const handleAssignRole = (
-    employeeId: string,
-    role: 'manager' | 'participant'
-  ) => {
-    if (role === 'manager') {
-      if (!formData.managers.includes(employeeId)) {
-        setFormData(prev => ({
-          ...prev,
-          managers: [...prev.managers, employeeId],
-          participants: prev.participants.filter(id => id !== employeeId)
-        }))
-      }
-    } else {
-      if (!formData.participants.includes(employeeId)) {
-        setFormData(prev => ({
-          ...prev,
-          participants: [...prev.participants, employeeId],
-          managers: prev.managers.filter(id => id !== employeeId)
-        }))
-      }
-    }
-  }
+  // const handleAssignRole = (
+  //   employeeId: string,
+  //   role: 'manager' | 'participant'
+  // ) => {
+  //   if (role === 'manager') {
+  //     if (!formData.managers.includes(employeeId)) {
+  //       setFormData(prev => ({
+  //         ...prev,
+  //         managers: [...prev.managers, employeeId],
+  //         participants: prev.participants.filter(id => id !== employeeId)
+  //       }))
+  //     }
+  //   } else {
+  //     if (!formData.participants.includes(employeeId)) {
+  //       setFormData(prev => ({
+  //         ...prev,
+  //         participants: [...prev.participants, employeeId],
+  //         managers: prev.managers.filter(id => id !== employeeId)
+  //       }))
+  //     }
+  //   }
+  // }
 
   const validateForm = () => {
     const newErrors: FormErrors = {}
@@ -222,11 +217,11 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   }
 
   // 직원의 역할 확인
-  const getEmployeeRole = (employeeId: string) => {
-    if (formData.managers.includes(employeeId)) return 'manager'
-    if (formData.participants.includes(employeeId)) return 'participant'
-    return null
-  }
+  // const getEmployeeRole = (employeeId: string) => {
+  //   if (formData.managers.includes(employeeId)) return 'manager'
+  //   if (formData.participants.includes(employeeId)) return 'participant'
+  //   return null
+  // }
 
   // 회사 선택 시 해당 회사의 직원 목록 업데이트
   useEffect(() => {
@@ -432,182 +427,182 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   }
 
   // 직원 역할 변경 처리
-  const handleRoleChange = (
-    employeeId: string,
-    role: 'manager' | 'participant'
-  ) => {
-    if (role === 'manager') {
-      if (!formData.managers.includes(employeeId)) {
-        setFormData(prev => ({
-          ...prev,
-          managers: [...prev.managers, employeeId],
-          participants: prev.participants.filter(id => id !== employeeId)
-        }))
-      }
-    } else {
-      if (!formData.participants.includes(employeeId)) {
-        setFormData(prev => ({
-          ...prev,
-          participants: [...prev.participants, employeeId],
-          managers: prev.managers.filter(id => id !== employeeId)
-        }))
-      }
-    }
-  }
+  // const handleRoleChange = (
+  //   employeeId: string,
+  //   role: 'manager' | 'participant'
+  // ) => {
+  //   if (role === 'manager') {
+  //     if (!formData.managers.includes(employeeId)) {
+  //       setFormData(prev => ({
+  //         ...prev,
+  //         managers: [...prev.managers, employeeId],
+  //         participants: prev.participants.filter(id => id !== employeeId)
+  //       }))
+  //     }
+  //   } else {
+  //     if (!formData.participants.includes(employeeId)) {
+  //       setFormData(prev => ({
+  //         ...prev,
+  //         participants: [...prev.participants, employeeId],
+  //         managers: prev.managers.filter(id => id !== employeeId)
+  //       }))
+  //     }
+  //   }
+  // }
 
   // 직원 카드 렌더링 함수
-  const renderEmployeeCard = (employee: Employee) => {
-    const isSelected = formData.selectedEmployees.includes(employee.id)
-    const role = getEmployeeRole(employee.id)
+  // const renderEmployeeCard = (employee: Employee) => {
+  //   const isSelected = formData.selectedEmployees.includes(employee.id)
+  //   const role = getEmployeeRole(employee.id)
 
-    return (
-      <Card
-        key={employee.id}
-        sx={{
-          width: '100%',
-          height: '50px',
-          position: 'relative',
-          border: isSelected ? '1px solid' : 'none',
-          borderColor:
-            role === 'manager'
-              ? 'primary.main'
-              : role === 'participant'
-                ? 'secondary.main'
-                : 'divider',
-          boxShadow: isSelected ? 2 : 1,
-          transition: 'all 0.2s',
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          p: 1
-        }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {role === 'manager' ? (
-            <User
-              size={16}
-              color="var(--mui-palette-primary-main)"
-            />
-          ) : role === 'participant' ? (
-            <Users
-              size={16}
-              color="var(--mui-palette-secondary-main)"
-            />
-          ) : (
-            <User
-              size={16}
-              color="var(--mui-palette-text-secondary)"
-            />
-          )}
-          <Box>
-            <Typography
-              variant="body2"
-              noWrap
-              sx={{ fontWeight: 'medium', fontSize: '0.875rem' }}>
-              {employee.name}
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontSize: '0.7rem' }}>
-              {employee.position}
-            </Typography>
-          </Box>
-        </Box>
+  //   return (
+  //     <Card
+  //       key={employee.id}
+  //       sx={{
+  //         width: '100%',
+  //         height: '50px',
+  //         position: 'relative',
+  //         border: isSelected ? '1px solid' : 'none',
+  //         borderColor:
+  //           role === 'manager'
+  //             ? 'primary.main'
+  //             : role === 'participant'
+  //               ? 'secondary.main'
+  //               : 'divider',
+  //         boxShadow: isSelected ? 2 : 1,
+  //         transition: 'all 0.2s',
+  //         display: 'flex',
+  //         flexDirection: 'row',
+  //         alignItems: 'center',
+  //         justifyContent: 'space-between',
+  //         p: 1
+  //       }}>
+  //       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+  //         {role === 'manager' ? (
+  //           <User
+  //             size={16}
+  //             color="var(--mui-palette-primary-main)"
+  //           />
+  //         ) : role === 'participant' ? (
+  //           <Users
+  //             size={16}
+  //             color="var(--mui-palette-secondary-main)"
+  //           />
+  //         ) : (
+  //           <User
+  //             size={16}
+  //             color="var(--mui-palette-text-secondary)"
+  //           />
+  //         )}
+  //         <Box>
+  //           <Typography
+  //             variant="body2"
+  //             noWrap
+  //             sx={{ fontWeight: 'medium', fontSize: '0.875rem' }}>
+  //             {employee.name}
+  //           </Typography>
+  //           <Typography
+  //             variant="caption"
+  //             color="text.secondary"
+  //             sx={{ fontSize: '0.7rem' }}>
+  //             {employee.position}
+  //           </Typography>
+  //         </Box>
+  //       </Box>
 
-        {!isSelected ? (
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <Tooltip title="담당자로 지정">
-              <Chip
-                label="담당자"
-                size="small"
-                onClick={() => {
-                  handleEmployeeSelect(employee.id, employee.companyId)
-                  handleAssignRole(employee.id, 'manager')
-                }}
-                color="primary"
-                variant="outlined"
-                sx={{
-                  height: 20,
-                  '& .MuiChip-label': { px: 0.5, fontSize: '0.65rem' }
-                }}
-              />
-            </Tooltip>
-            <Tooltip title="참여자로 지정">
-              <Chip
-                label="참여자"
-                size="small"
-                onClick={() => {
-                  handleEmployeeSelect(employee.id, employee.companyId)
-                  handleAssignRole(employee.id, 'participant')
-                }}
-                color="secondary"
-                variant="outlined"
-                sx={{
-                  height: 20,
-                  '& .MuiChip-label': { px: 0.5, fontSize: '0.65rem' }
-                }}
-              />
-            </Tooltip>
-          </Box>
-        ) : (
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <Chip
-              label={role === 'manager' ? '담당자' : '참여자'}
-              size="small"
-              color={role === 'manager' ? 'primary' : 'secondary'}
-              variant="filled"
-              sx={{
-                height: 20,
-                '& .MuiChip-label': { px: 0.5, fontSize: '0.65rem' }
-              }}
-            />
-            <Tooltip title="선택 취소">
-              <IconButton
-                size="small"
-                onClick={() =>
-                  handleEmployeeRemove(employee.id, employee.companyId)
-                }
-                sx={{ p: 0.5 }}>
-                <X size={16} />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        )}
-      </Card>
-    )
-  }
+  //       {!isSelected ? (
+  //         <Box sx={{ display: 'flex', gap: 0.5 }}>
+  //           <Tooltip title="담당자로 지정">
+  //             <Chip
+  //               label="담당자"
+  //               size="small"
+  //               onClick={() => {
+  //                 handleEmployeeSelect(employee.id, employee.companyId)
+  //                 handleAssignRole(employee.id, 'manager')
+  //               }}
+  //               color="primary"
+  //               variant="outlined"
+  //               sx={{
+  //                 height: 20,
+  //                 '& .MuiChip-label': { px: 0.5, fontSize: '0.65rem' }
+  //               }}
+  //             />
+  //           </Tooltip>
+  //           <Tooltip title="참여자로 지정">
+  //             <Chip
+  //               label="참여자"
+  //               size="small"
+  //               onClick={() => {
+  //                 handleEmployeeSelect(employee.id, employee.companyId)
+  //                 handleAssignRole(employee.id, 'participant')
+  //               }}
+  //               color="secondary"
+  //               variant="outlined"
+  //               sx={{
+  //                 height: 20,
+  //                 '& .MuiChip-label': { px: 0.5, fontSize: '0.65rem' }
+  //               }}
+  //             />
+  //           </Tooltip>
+  //         </Box>
+  //       ) : (
+  //         <Box sx={{ display: 'flex', gap: 0.5 }}>
+  //           <Chip
+  //             label={role === 'manager' ? '담당자' : '참여자'}
+  //             size="small"
+  //             color={role === 'manager' ? 'primary' : 'secondary'}
+  //             variant="filled"
+  //             sx={{
+  //               height: 20,
+  //               '& .MuiChip-label': { px: 0.5, fontSize: '0.65rem' }
+  //             }}
+  //           />
+  //           <Tooltip title="선택 취소">
+  //             <IconButton
+  //               size="small"
+  //               onClick={() =>
+  //                 handleEmployeeRemove(employee.id, employee.companyId)
+  //               }
+  //               sx={{ p: 0.5 }}>
+  //               <X size={16} />
+  //             </IconButton>
+  //           </Tooltip>
+  //         </Box>
+  //       )}
+  //     </Card>
+  //   )
+  // }
 
   // 선택된 직원 목록 렌더링 함수
-  const renderSelectedEmployees = (companyId: string) => {
-    const selectedEmployees = formData.selectedEmployees.filter(id => {
-      const employee = employees.find(emp => emp.id === id)
-      return employee && employee.companyId === companyId
-    })
+  // const renderSelectedEmployees = (companyId: string) => {
+  //   const selectedEmployees = formData.selectedEmployees.filter(id => {
+  //     const employee = employees.find(emp => emp.id === id)
+  //     return employee && employee.companyId === companyId
+  //   })
 
-    if (selectedEmployees.length === 0) return null
+  //   if (selectedEmployees.length === 0) return null
 
-    return (
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-        {selectedEmployees.map(id => {
-          const employee = employees.find(emp => emp.id === id)
-          if (!employee) return null
+  //   return (
+  //     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
+  //       {selectedEmployees.map(id => {
+  //         const employee = employees.find(emp => emp.id === id)
+  //         if (!employee) return null
 
-          const role = getEmployeeRole(id)
-          return (
-            <Chip
-              key={id}
-              label={`${employee.name} (${role === 'manager' ? '담당자' : '참여자'})`}
-              color={role === 'manager' ? 'primary' : 'secondary'}
-              variant="outlined"
-              onDelete={() => handleEmployeeRemove(id, companyId)}
-              sx={{ height: 28 }}
-            />
-          )
-        })}
-      </Box>
-    )
-  }
+  //         const role = getEmployeeRole(id)
+  //         return (
+  //           <Chip
+  //             key={id}
+  //             label={`${employee.name} (${role === 'manager' ? '담당자' : '참여자'})`}
+  //             color={role === 'manager' ? 'primary' : 'secondary'}
+  //             variant="outlined"
+  //             onDelete={() => handleEmployeeRemove(id, companyId)}
+  //             sx={{ height: 28 }}
+  //           />
+  //         )
+  //       })}
+  //     </Box>
+  //   )
+  // }
 
   return (
     <Box

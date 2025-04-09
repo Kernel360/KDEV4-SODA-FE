@@ -103,7 +103,7 @@ const ReplyArticle = () => {
   }
 
   const handleCancel = () => {
-    navigate(`/projects/${projectId}/articles/${articleId}`)
+    navigate(`/users/projects/${projectId}`)
   }
 
   if (isLoading) return <LoadingSpinner />

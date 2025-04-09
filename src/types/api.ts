@@ -21,7 +21,7 @@ export interface ApiResponse<T> {
   status: 'success' | 'error'
   code: string
   message: string
-  data: T
+  data: T | null
 }
 
 export interface LoginResponse {
@@ -165,6 +165,16 @@ export interface ProjectStageTask {
   content: string
   taskOrder: number
   status: 'PENDING' | 'WAITING_APPROVAL' | 'APPROVED' | 'REJECTED'
+  links: Array<{
+    id: number
+    urlAddress: string
+    urlDescription: string
+  }>
+  files: Array<{
+    id: number
+    url: string
+    name?: string
+  }>
 }
 
 export interface ProjectStage {
@@ -245,4 +255,37 @@ export interface PagedData<T> {
   first: boolean
   numberOfElements: number
   empty: boolean
+}
+
+export interface TaskResponse {
+  responseId: number
+  content: string
+  links: Array<{
+    linkId: number
+    urlAddress: string
+    urlDescription: string
+  }>
+  files: Array<{
+    fileId: number
+    fileName: string
+    fileUrl: string
+  }>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateTaskResponseRequest {
+  content: string
+  links?: Array<{
+    urlAddress: string
+    urlDescription: string
+  }>
+}
+
+export interface UpdateTaskResponseRequest {
+  content: string
+  links?: Array<{
+    urlAddress: string
+    urlDescription: string
+  }>
 }

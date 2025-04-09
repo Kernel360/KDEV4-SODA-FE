@@ -15,11 +15,11 @@ import {
   DialogContent,
   DialogActions
 } from '@mui/material'
-import type { Article as ArticleType } from '@/types/article'
-import { projectService } from '@/services/projectService'
-import LoadingSpinner from '@/components/common/LoadingSpinner'
-import ErrorMessage from '@/components/common/ErrorMessage'
-import CommentSection from '@/components/comments/CommentSection'
+import type { Article as ArticleType } from '../../types/article'
+import { projectService } from '../../services/projectService'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
+import ErrorMessage from '../../components/common/ErrorMessage'
+import CommentSection from '../../components/comments/CommentSection'
 import {
   ArrowLeft,
   Link2,
@@ -206,7 +206,7 @@ const Article: React.FC = () => {
               </Typography>
               {article.fileList && article.fileList.length > 0 ? (
                 <Stack spacing={1}>
-                  {article.fileList.map(file => (
+                  {article.fileList.map((file: any) => (
                     <Stack
                       key={file.id}
                       direction="row"
@@ -240,7 +240,7 @@ const Article: React.FC = () => {
               </Typography>
               {article.linkList && article.linkList.length > 0 ? (
                 <Stack spacing={1}>
-                  {article.linkList.map(link => {
+                  {article.linkList.map((link: any) => {
                     const url =
                       link.urlAddress.startsWith('http://') ||
                       link.urlAddress.startsWith('https://')

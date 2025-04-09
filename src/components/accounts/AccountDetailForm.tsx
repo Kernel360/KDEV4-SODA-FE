@@ -62,7 +62,7 @@ export default function AccountDetailForm({
   })
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-  const [hasChanges, setHasChanges] = useState(false)
+  const [, setHasChanges] = useState(false)
 
   // 계정 데이터가 변경될 때 폼 데이터 업데이트
   useEffect(() => {
@@ -124,13 +124,13 @@ export default function AccountDetailForm({
   }
 
   // 취소 핸들러
-  const handleCancel = () => {
-    if (hasChanges) {
-      setShowConfirmDialog(true)
-    } else {
-      onCancel?.()
-    }
-  }
+  // const handleCancel = () => {
+  //   if (hasChanges) {
+  //     setShowConfirmDialog(true)
+  //   } else {
+  //     onCancel?.()
+  //   }
+  // }
 
   // 확인 모달에서 취소 확인
   const handleConfirmCancel = () => {

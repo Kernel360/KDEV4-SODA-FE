@@ -17,15 +17,15 @@ import {
 import { ArrowLeft, Edit, LayoutDashboard } from 'lucide-react'
 import { projectService } from '../../../services/projectService'
 import { formatDate } from '../../../utils/dateUtils'
-import type { Project } from '../../../types/project'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
 import { useToast } from '../../../contexts/ToastContext'
+import type { Project as ProjectType } from '../../../types/project'
 
 const Project: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [project, setProject] = useState<Project | null>(null)
+  const [project, setProject] = useState<ProjectType | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { showToast } = useToast()

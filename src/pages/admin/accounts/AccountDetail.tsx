@@ -55,7 +55,7 @@ export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [hasChanges, setHasChanges] = useState(false)
+  const [hasChanges] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   // 계정 데이터 가져오기
