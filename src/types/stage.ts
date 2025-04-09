@@ -1,10 +1,11 @@
-export type TaskStatus = '신청 대기 중' | '승인 대기 중' | '승인' | '반려'
+export type TaskStatus = 'PENDING' | 'WAITING_APPROVAL' | 'APPROVED' | 'REJECTED'
 
 export interface Task {
   id: number
   title: string
   description: string
   status: TaskStatus
+  taskOrder: number
   requests?: Request[]
   createdAt: string
   updatedAt: string

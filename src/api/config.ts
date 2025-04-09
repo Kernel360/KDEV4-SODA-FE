@@ -12,4 +12,6 @@ export const API_ENDPOINTS = {
   SIGNUP: '/signup',
   GET_TASK_REQUESTS: (taskId: number) => `/tasks/${taskId}/requests`,
   GET_PROJECT_STAGES: (projectId: number) => `/projects/${projectId}/stages`,
+  APPROVE_REQUEST: (requestId: number) => `/requests/${requestId}/approval`,
+  REJECT_REQUEST: (requestId: number) => `/requests/${requestId}/rejection`,
 } as const 

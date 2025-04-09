@@ -41,10 +41,11 @@ import {
   DraggableProvided
 } from '@hello-pangea/dnd'
 import { getTaskRequests } from '../../api/task'
-import type { TaskRequest, TaskRequestsResponse } from '../../types/api'
+import type { TaskRequest, TaskRequestsResponse, ProjectStageTask } from '../../types/api'
 
 interface StageCardProps {
   stage: Stage
+  projectId: number
   onUpdateStage?: (stageId: number, title: string) => void
   onDeleteStage?: (stageId: number) => void
   onMoveTask?: (dragIndex: number, hoverIndex: number, stageId: number) => void
@@ -59,12 +60,14 @@ const TaskItem: React.FC<{
 }> = ({ task, provided, isDragging, onClick }) => {
   const getStatusColor = (status: TaskStatus) => {
     switch (status) {
-      case '승인':
+      case 'APPROVED':
         return 'success'
-      case '반려':
+      case 'REJECTED':
         return 'error'
-      case '승인 대기 중':
+      case 'WAITING_APPROVAL':
         return 'warning'
+      case 'PENDING':
+        return 'default'
       default:
         return 'default'
     }
@@ -120,13 +123,14 @@ const TaskItem: React.FC<{
 
 const StageCard: React.FC<StageCardProps> = ({
   stage,
+  projectId,
   onUpdateStage,
   onDeleteStage,
   onMoveTask
 }) => {
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false)
   const [isEditTitleModalOpen, setIsEditTitleModalOpen] = useState(false)
-  const [selectedTask, setSelectedTask] = useState<TaskRequest | null>(null)
+  const [selectedTask, setSelectedTask] = useState<ProjectStageTask | null>(null)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [newTitle, setNewTitle] = useState(stage.title)
 
@@ -140,9 +144,20 @@ const StageCard: React.FC<StageCardProps> = ({
 
   const handleTaskClick = async (task: Task) => {
     try {
+      const projectStageTask: ProjectStageTask = {
+        taskId: task.id,
+        title: task.title,
+        content: task.description,
+        taskOrder: task.taskOrder || 0,
+        status: task.status,
+        projectId: projectId,
+        stageId: stage.id
+      }
+      setSelectedTask(projectStageTask)
+
       const response = await getTaskRequests(task.id)
-      if (response.status === 'success' && Array.isArray(response.data) && response.data.length > 0) {
-        setSelectedTask(response.data[0])
+      if (response.status === 'success' && Array.isArray(response.data)) {
+        console.log('Fetched requests:', response.data)
       }
     } catch (error) {
       console.error('요청 목록을 불러오는 중 오류가 발생했습니다:', error)
@@ -374,6 +389,8 @@ const StageCard: React.FC<StageCardProps> = ({
           open={!!selectedTask}
           onClose={() => setSelectedTask(null)}
           task={selectedTask}
+          projectId={projectId}
+          stageId={stage.id}
         />
       )}
     </Paper>

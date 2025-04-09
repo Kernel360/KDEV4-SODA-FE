@@ -134,31 +134,39 @@ export interface CompanyMemberListResponse {
 }
 
 export interface TaskRequest {
-  requestId: number;
-  taskId: number;
-  memberId: number;
-  memberName: string;
-  title: string;
-  content: string;
-  links: {
-    id: number;
-    urlAddress: string;
-    urlDescription: string;
-  }[];
-  files: any[]; // 파일 타입은 추후 정의
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  createdAt: string;
-  updatedAt: string;
+  requestId: number
+  title: string
+  content: string
+  status: string
+  memberName: string
+  createdAt: string
+  links: Array<{
+    id: number
+    urlAddress: string
+    urlDescription: string
+  }>
+  files: Array<{
+    id: number
+    url: string
+    name?: string
+  }>
+  newFiles?: Array<{
+    id: number
+    name: string
+    inputId: string
+  }>
 }
 
 export interface TaskRequestsResponse extends ApiResponse<TaskRequest[]> {}
 
 export interface ProjectStageTask {
   taskId: number;
+  projectId: number;
+  stageId: number;
   title: string;
   content: string;
   taskOrder: number;
-  status: '신청 대기 중' | '승인 대기 중' | '승인' | '반려';
+  status: 'PENDING' | 'WAITING_APPROVAL' | 'APPROVED' | 'REJECTED';
 }
 
 export interface ProjectStage {
@@ -168,4 +176,33 @@ export interface ProjectStage {
   tasks: ProjectStageTask[];
 }
 
-export interface ProjectStagesResponse extends ApiResponse<ProjectStage[]> {} 
+export interface ProjectStagesResponse extends ApiResponse<ProjectStage[]> {}
+
+export interface CreateTaskRequestRequest {
+  title: string
+  content: string
+  projectId: number
+  stageId: number
+  taskId: number
+  links: Array<{
+    urlAddress: string
+    urlDescription: string
+  }>
+}
+
+export interface CreateTaskRequestResponse {
+  status: string
+  code: string
+  message: string
+  data?: {
+    requestId: number
+    title: string
+    content: string
+    status: string
+    links: Array<{
+      id: number
+      urlAddress: string
+      urlDescription: string
+    }>
+  }
+} 

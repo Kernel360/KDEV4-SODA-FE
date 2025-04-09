@@ -260,7 +260,9 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
                           {...provided.dragHandleProps}
                           sx={{ px: 0.5 }}>
                           <StageCard
+                            key={stage.id}
                             stage={stage}
+                            projectId={projectId}
                             onUpdateStage={handleUpdateStage}
                             onDeleteStage={handleDeleteStage}
                           />
