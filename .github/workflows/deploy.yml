@@ -27,6 +27,6 @@ jobs:
           destination-repository-name: KDEV4-SODA-FE
           user-email: ${{ secrets.SEOYEON_EMAIL }}
           commit-message: ${{ github.event.commits[0].message }}
-          target-branch: main
+          target-branch: develop
       - name: Test get variable exported by push-to-another-repository
         run: echo $DESTINATION_CLONED_DIRECTORY
