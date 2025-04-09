@@ -6,30 +6,30 @@ export interface ProjectParticipant {
 
 export interface Project {
   id: number
-  name: string
+  title: string
   description: string
   projectNumber: string
   status: string
   startDate: string
   endDate: string
-  clientCompany: string
-  clientManagers: {
+  clientCompanyName: string
+  clientCompanyManagers: {
     name: string
     position: string
     email: string
   }[]
-  clientParticipants: {
+  clientCompanyMembers: {
     name: string
     position: string
     email: string
   }[]
-  developmentCompany: string
-  developmentManagers: {
+  devCompanyName: string
+  devCompanyManagers: {
     name: string
     position: string
     email: string
   }[]
-  developmentParticipants: {
+  devCompanyMembers: {
     name: string
     position: string
     email: string
