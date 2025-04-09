@@ -33,6 +33,12 @@ client.interceptors.request.use(
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
     }
+    
+    // FormData인 경우 Content-Type 헤더 제거 (브라우저가 자동으로 설정)
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']
+    }
+    
     console.log('API Request:', {
       method: config.method,
       url: config.url,
