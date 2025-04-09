@@ -1,104 +1,147 @@
-import React, { useState, useEffect } from 'react'
-import { Box } from '@mui/material'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import ArticleForm, {
-  ArticleFormData,
-  ParentArticle
-} from '../../components/articles/ArticleForm'
-import type { Article } from '../../types/article'
+import { Box } from '@mui/material'
+import ArticleForm from '@/components/articles/ArticleForm'
+import { Article, ArticleCreateRequest, PriorityType } from '@/types/article'
+import { Stage } from '@/types/stage'
+import { projectService } from '@/services/projectService'
+import LoadingSpinner from '@/components/common/LoadingSpinner'
+import ErrorMessage from '@/components/common/ErrorMessage'
+import { useToast } from '@/contexts/ToastContext'
 
-const ReplyArticle: React.FC = () => {
+interface ValidationErrors {
+  title?: string
+  content?: string
+  stageId?: string
+}
+
+interface FormData {
+  title: string
+  content: string
+  stageId: number
+  priority: PriorityType
+  deadLine: Date | null
+  files?: File[]
+  links?: { title: string; url: string }[]
+}
+
+const ReplyArticle = () => {
+  const { projectId, articleId } = useParams()
   const navigate = useNavigate()
-  const { projectId, articleId } = useParams<{
-    projectId: string
-    articleId: string
-  }>()
+  const { showToast } = useToast()
 
-  const [formData, setFormData] = useState<ArticleFormData>({
+  const [stages, setStages] = useState<Stage[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
+  const [formData, setFormData] = useState<FormData>({
     title: '',
     content: '',
-    stage: '요구사항',
-    priority: '보통',
+    stageId: 0,
+    priority: PriorityType.MEDIUM,
+    deadLine: null,
     files: [],
     links: []
   })
 
-  const [parentArticle, setParentArticle] = useState<
-    ParentArticle | undefined
-  >()
-
   useEffect(() => {
-    if (!projectId || !articleId) {
-      navigate('/user/projects')
-      return
-    }
-
-    // TODO: API 호출하여 원본 게시글 데이터 가져오기
-    // 임시 데이터
     const fetchData = async () => {
-      // 임시 데이터
-      const mockArticle: Article = {
-        id: Number(articleId),
-        title: '로그인 기능 구현 관련 논의',
-        content:
-          '로그인 기능 구현과 관련하여 다음과 같은 사항들을 논의해야 합니다.',
-        stage: '개발',
-        priority: '높음',
-        files: [],
-        links: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        author: {
-          id: 1,
-          name: '홍길동',
-          email: 'hong@example.com'
+      if (!projectId || !articleId) return
+      setIsLoading(true)
+      setError(null)
+      try {
+        const [stagesData, articleData] = await Promise.all([
+          projectService.getProjectStages(Number(projectId)),
+          projectService.getArticleDetail(Number(projectId), Number(articleId))
+        ])
+        setStages(stagesData)
+        if (articleData) {
+          setFormData(prev => ({
+            ...prev,
+            title: `Re: ${articleData.title}`,
+            stageId: stagesData[0]?.id || prev.stageId
+          }))
         }
+      } catch (err) {
+        setError('데이터를 불러오는 중 오류가 발생했습니다.')
+        console.error('Error fetching data:', err)
+      } finally {
+        setIsLoading(false)
       }
-
-      const parentData: ParentArticle = {
-        id: mockArticle.id,
-        title: mockArticle.title,
-        content: mockArticle.content,
-        author: {
-          name: mockArticle.author.name
-        },
-        createdAt: mockArticle.createdAt
-      }
-
-      setParentArticle(parentData)
-      setFormData(prev => ({
-        ...prev,
-        title: `Re: ${mockArticle.title}`,
-        stage: mockArticle.stage,
-        priority: mockArticle.priority
-      }))
     }
-
     fetchData()
-  }, [projectId, articleId, navigate])
+  }, [projectId, articleId])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {}
+    if (!formData.title.trim()) {
+      errors.title = '제목을 입력해주세요.'
+    }
+    if (!formData.content.trim()) {
+      errors.content = '내용을 입력해주세요.'
+    }
+    if (!formData.stageId) {
+      errors.stageId = '단계를 선택해주세요.'
+    }
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: API 호출
-    console.log('Submit:', formData)
-    navigate(`/user/projects/${projectId}/articles/${articleId}`)
+    if (!validateForm() || !projectId || !articleId) return
+
+    setIsLoading(true)
+    try {
+      const requestData: ArticleCreateRequest = {
+        projectId: Number(projectId),
+        title: formData.title,
+        content: formData.content,
+        stageId: formData.stageId,
+        priority: formData.priority,
+        deadLine: formData.deadLine
+          ? formData.deadLine.toISOString()
+          : undefined,
+        parentArticleId: Number(articleId),
+        linkList:
+          formData.links?.map(link => ({
+            urlAddress: link.url,
+            urlDescription: link.title
+          })) || []
+      }
+
+      const response = await projectService.createArticle(
+        Number(projectId),
+        requestData
+      )
+      showToast('답글이 성공적으로 작성되었습니다.', 'success')
+      navigate(`/user/projects/${projectId}`)
+    } catch (err) {
+      console.error('Error creating reply:', err)
+      showToast('답글 작성 중 오류가 발생했습니다.', 'error')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleCancel = () => {
-    navigate(`/user/projects/${projectId}/articles/${articleId}`)
+    navigate(`/projects/${projectId}/articles/${articleId}`)
   }
 
+  if (isLoading) return <LoadingSpinner />
+  if (error) return <ErrorMessage message={error} />
+
   return (
-    <Box sx={{ p: 3 }}>
-      <ArticleForm
-        mode="reply"
-        formData={formData}
-        parentArticle={parentArticle}
-        onSubmit={handleSubmit}
-        onChange={setFormData}
-        onCancel={handleCancel}
-      />
-    </Box>
+    <ArticleForm
+      mode="create"
+      formData={formData}
+      stages={stages}
+      isLoading={isLoading}
+      validationErrors={validationErrors}
+      onChange={setFormData}
+      onSubmit={handleSubmit}
+      onCancel={handleCancel}
+    />
   )
 }
 

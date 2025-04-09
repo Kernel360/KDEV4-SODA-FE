@@ -3,6 +3,11 @@ import type { Project } from '../types/project'
 import type { Stage } from '../types/stage'
 import type { Task } from '../types/task'
 import { client } from '../api/client'
+import {
+  Article,
+  ArticleCreateRequest,
+  ArticleCreateResponse
+} from '../types/article'
 
 const API_BASE_URL = 'http://localhost:8080'
 
@@ -92,5 +97,101 @@ export const projectService = {
       console.error('Error fetching stage tasks:', error)
       throw error
     }
+  },
+
+  async getProjectArticles(
+    projectId: number,
+    stageId?: number | null
+  ): Promise<Article[]> {
+    try {
+      const response = await client.get(`/projects/${projectId}/articles`, {
+        params: { stageId }
+      })
+      return response.data.data
+    } catch (error) {
+      console.error('Error fetching project articles:', error)
+      throw error
+    }
+  },
+
+  async createArticle(
+    projectId: number,
+    request: ArticleCreateRequest
+  ): Promise<ArticleCreateResponse> {
+    try {
+      const response = await client.post('/articles', {
+        projectId,
+        title: request.title,
+        content: request.content,
+        priority: request.priority,
+        deadLine: request.deadLine,
+        stageId: request.stageId,
+        parentArticleId: request.parentArticleId,
+        linkList: request.linkList || []
+      })
+      console.log('Create article response:', response.data)
+      if (!response.data || !response.data.data || !response.data.data.id) {
+        throw new Error('Invalid response format from create article API')
+      }
+      return response.data.data
+    } catch (error) {
+      console.error('Error creating article:', error)
+      throw error
+    }
+  },
+
+  async uploadArticleFiles(articleId: number, files: File[]): Promise<void> {
+    try {
+      if (!articleId) {
+        throw new Error('Article ID is required for file upload')
+      }
+
+      const formData = new FormData()
+      files.forEach(file => {
+        formData.append('file', file)
+      })
+
+      const response = await client.post(
+        `/articles/${articleId}/files`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      )
+      console.log('File upload response:', response.data)
+    } catch (error) {
+      console.error('Error uploading files:', error)
+      throw error
+    }
+  },
+
+  async getArticleDetail(
+    projectId: number,
+    articleId: number
+  ): Promise<Article> {
+    try {
+      console.log('Fetching article detail for:', { projectId, articleId })
+      const response = await client.get(
+        `/projects/${projectId}/articles/${articleId}`
+      )
+      console.log('API Response:', response)
+      if (!response.data) {
+        throw new Error('No data received from API')
+      }
+      if (!response.data.data) {
+        throw new Error('Article data is missing in response')
+      }
+      return response.data.data
+    } catch (error) {
+      console.error('Error fetching article detail:', error)
+      throw error
+    }
+  },
+
+  // 게시글 삭제
+  async deleteArticle(projectId: number, articleId: number): Promise<void> {
+    await client.delete(`/projects/${projectId}/articles/${articleId}`)
   }
 }
