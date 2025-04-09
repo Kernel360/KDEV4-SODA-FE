@@ -5,6 +5,7 @@ import CreateProjectForm from '@/components/projects/CreateProjectForm'
 import { getCompanyList } from '../../../api/company'
 import { useToast } from '../../../contexts/ToastContext'
 import type { CompanyListItem } from '../../../types/api'
+import { projectService } from '@/services/projectService'
 
 export default function CreateProject() {
   const navigate = useNavigate()
@@ -22,9 +23,12 @@ export default function CreateProject() {
     try {
       const response = await getCompanyList()
       if (response.status === 'success') {
-        setCompanies(response.data)
+        setCompanies(response.data || [])
       } else {
-        showToast(response.message || '회사 목록을 불러오는데 실패했습니다.', 'error')
+        showToast(
+          response.message || '회사 목록을 불러오는데 실패했습니다.',
+          'error'
+        )
       }
     } catch (err) {
       console.error('회사 목록 조회 중 오류:', err)
@@ -40,6 +44,10 @@ export default function CreateProject() {
     endDate: string
     clientCompanyId: string
     developmentCompanyId: string
+    clientManagers: string[]
+    clientParticipants: string[]
+    developmentManagers: string[]
+    developmentParticipants: string[]
   }) => {
     try {
       setLoading(true)
@@ -51,8 +59,19 @@ export default function CreateProject() {
         return
       }
 
-      // 실제로는 API 호출을 통해 프로젝트를 생성해야 함
-      console.log('생성할 프로젝트 데이터:', formData)
+      // API 호출을 통해 프로젝트 생성
+      const response = await projectService.createProject({
+        title: formData.name,
+        description: formData.description,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        clientCompanyId: Number(formData.clientCompanyId),
+        devCompanyId: Number(formData.developmentCompanyId),
+        devManagers: formData.developmentManagers.map(Number),
+        devMembers: formData.developmentParticipants.map(Number),
+        clientManagers: formData.clientManagers.map(Number),
+        clientMembers: formData.clientParticipants.map(Number)
+      })
 
       // 성공 메시지 표시
       setSuccess('프로젝트가 성공적으로 생성되었습니다.')
