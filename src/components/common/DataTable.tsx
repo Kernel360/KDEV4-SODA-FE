@@ -8,7 +8,8 @@ import {
   TableRow,
   Paper,
   Box,
-  IconButton
+  IconButton,
+  CircularProgress
 } from '@mui/material'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -27,6 +28,7 @@ interface DataTableProps<T> {
   totalCount: number
   onPageChange: (newPage: number) => void
   onRowsPerPageChange: (newRowsPerPage: number) => void
+  loading?: boolean
 }
 
 const DataTable = <T extends Record<string, any>>({
@@ -35,7 +37,8 @@ const DataTable = <T extends Record<string, any>>({
   page,
   rowsPerPage,
   totalCount,
-  onPageChange
+  onPageChange,
+  loading = false
 }: DataTableProps<T>) => {
   const totalPages = Math.ceil(totalCount / rowsPerPage)
 
@@ -79,24 +82,35 @@ const DataTable = <T extends Record<string, any>>({
             </TableRow>
           </TableHead>
           <TableBody>
-            {data.map((row, index) => (
-              <TableRow
-                key={index}
-                hover
-                onClick={
-                  columns[0].onClick
-                    ? () => columns[0].onClick?.(row)
-                    : undefined
-                }
-                sx={{
-                  cursor: columns[0].onClick ? 'pointer' : 'default',
-                  '&:last-child td, &:last-child th': { border: 0 }
-                }}>
-                {columns.map(column => (
-                  <TableCell key={column.id}>{column.render(row)}</TableCell>
-                ))}
+            {loading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  align="center"
+                  sx={{ py: 8 }}>
+                  <CircularProgress />
+                </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              data.map((row, index) => (
+                <TableRow
+                  key={index}
+                  hover
+                  onClick={
+                    columns[0].onClick
+                      ? () => columns[0].onClick?.(row)
+                      : undefined
+                  }
+                  sx={{
+                    cursor: columns[0].onClick ? 'pointer' : 'default',
+                    '&:last-child td, &:last-child th': { border: 0 }
+                  }}>
+                  {columns.map(column => (
+                    <TableCell key={column.id}>{column.render(row)}</TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
@@ -113,7 +127,7 @@ const DataTable = <T extends Record<string, any>>({
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <IconButton
             onClick={() => handlePageChange(page - 1)}
-            disabled={page === 0}
+            disabled={page === 0 || loading}
             size="small"
             sx={{ p: 0.5 }}>
             <ChevronLeft size={16} />
@@ -123,6 +137,7 @@ const DataTable = <T extends Record<string, any>>({
             <IconButton
               key={pageNumber}
               onClick={() => handlePageChange(pageNumber)}
+              disabled={loading}
               sx={{
                 mx: 0.5,
                 minWidth: 24,
@@ -143,7 +158,7 @@ const DataTable = <T extends Record<string, any>>({
 
           <IconButton
             onClick={() => handlePageChange(page + 1)}
-            disabled={page >= totalPages - 1}
+            disabled={page >= totalPages - 1 || loading}
             size="small"
             sx={{ p: 0.5 }}>
             <ChevronRight size={16} />

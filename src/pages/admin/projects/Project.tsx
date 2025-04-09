@@ -8,7 +8,11 @@ import {
   List,
   ListItem,
   ListItemText,
-  Grid
+  Grid,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle
 } from '@mui/material'
 import { ArrowLeft, Edit, LayoutDashboard } from 'lucide-react'
 import { projectService } from '../../../services/projectService'
@@ -16,6 +20,7 @@ import { formatDate } from '../../../utils/dateUtils'
 import type { Project } from '../../../types/project'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
+import { useToast } from '../../../contexts/ToastContext'
 
 const Project: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -23,6 +28,8 @@ const Project: React.FC = () => {
   const [project, setProject] = useState<Project | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { showToast } = useToast()
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -55,6 +62,18 @@ const Project: React.FC = () => {
 
   if (!project) {
     return <ErrorMessage message="프로젝트가 존재하지 않습니다." />
+  }
+
+  const handleDelete = async () => {
+    try {
+      await projectService.deleteProject(project.id)
+      showToast('프로젝트가 성공적으로 삭제되었습니다.', 'success')
+      setOpenDeleteDialog(false)
+      navigate('/admin/projects')
+    } catch (error) {
+      console.error('프로젝트 삭제 중 오류:', error)
+      showToast('프로젝트 삭제 중 오류가 발생했습니다.', 'error')
+    }
   }
 
   return (
@@ -116,7 +135,8 @@ const Project: React.FC = () => {
                 borderColor: '#d32f2f',
                 backgroundColor: 'transparent'
               }
-            }}>
+            }}
+            onClick={() => setOpenDeleteDialog(true)}>
             삭제
           </Button>
         </Box>
@@ -174,7 +194,7 @@ const Project: React.FC = () => {
                   <ListItem
                     key={index}
                     sx={{ px: 0 }}>
-                    <ListItemText primary={manager} />
+                    <ListItemText primary={manager.name} />
                   </ListItem>
                 ))}
               </List>
@@ -223,7 +243,7 @@ const Project: React.FC = () => {
                   <ListItem
                     key={index}
                     sx={{ px: 0 }}>
-                    <ListItemText primary={manager} />
+                    <ListItemText primary={manager.name} />
                   </ListItem>
                 ))}
               </List>
@@ -248,7 +268,7 @@ const Project: React.FC = () => {
                   <ListItem
                     key={index}
                     sx={{ px: 0 }}>
-                    <ListItemText primary={member} />
+                    <ListItemText primary={member.name} />
                   </ListItem>
                 ))}
               </List>
@@ -273,7 +293,7 @@ const Project: React.FC = () => {
                   <ListItem
                     key={index}
                     sx={{ px: 0 }}>
-                    <ListItemText primary={member} />
+                    <ListItemText primary={member.name} />
                   </ListItem>
                 ))}
               </List>
@@ -281,6 +301,27 @@ const Project: React.FC = () => {
           </Grid>
         </Grid>
       </Paper>
+
+      <Dialog
+        open={openDeleteDialog}
+        onClose={() => setOpenDeleteDialog(false)}>
+        <DialogTitle>삭제 확인</DialogTitle>
+        <DialogContent>
+          <Typography>정말로 이 프로젝트를 삭제하시겠습니까?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setOpenDeleteDialog(false)}
+            color="primary">
+            취소
+          </Button>
+          <Button
+            onClick={handleDelete}
+            color="error">
+            삭제
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

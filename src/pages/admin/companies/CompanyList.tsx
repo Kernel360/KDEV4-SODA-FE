@@ -8,10 +8,10 @@ import { useToast } from '../../../contexts/ToastContext'
 import type { CompanyListItem } from '../../../types/api'
 
 interface Column<T> {
-  id: string;
-  label: string;
-  getValue: (row: T) => any;
-  style?: React.CSSProperties;
+  id: string
+  label: string
+  render: (row: T) => React.ReactNode
+  onClick?: (row: T) => void
 }
 
 const CompanyList: React.FC = () => {
@@ -51,32 +51,31 @@ const CompanyList: React.FC = () => {
     setPage(0)
   }
 
+  const handleRowClick = (row: CompanyListItem) => {
+    navigate(`/admin/companies/${row.id}`)
+  }
+
   const columns: Column<CompanyListItem>[] = [
     {
       id: 'name',
       label: '회사명',
-      getValue: (row) => row.name,
-      style: {
-        cursor: 'pointer',
-        '&:hover': {
-          textDecoration: 'underline'
-        }
-      }
+      render: (row) => row.name,
+      onClick: handleRowClick
     },
     {
       id: 'phoneNumber',
       label: '전화번호',
-      getValue: (row) => row.phoneNumber
+      render: (row) => row.phoneNumber
     },
     {
       id: 'companyNumber',
       label: '사업자번호',
-      getValue: (row) => row.companyNumber
+      render: (row) => row.companyNumber
     },
     {
       id: 'address',
       label: '주소',
-      getValue: (row) => row.address
+      render: (row) => row.address
     }
   ]
 
@@ -125,6 +124,7 @@ const CompanyList: React.FC = () => {
         totalCount={companies.length}
         onPageChange={handlePageChange}
         onRowsPerPageChange={handleRowsPerPageChange}
+        loading={loading}
       />
     </Box>
   )

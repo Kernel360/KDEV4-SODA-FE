@@ -12,11 +12,11 @@ export const client = axios.create({
 // 응답 인터셉터 설정
 client.interceptors.response.use(
   (response) => {
-    // Authorization 헤더에서 액세스 토큰 추출
-    const accessToken = response.headers['authorization']
-    if (accessToken) {
+    // Authorization 헤더에서 토큰 추출
+    const token = response.headers['authorization']
+    if (token) {
       // Bearer 제거하고 토큰만 저장
-      localStorage.setItem('accessToken', accessToken.replace('Bearer ', ''))
+      localStorage.setItem('token', token.replace('Bearer ', ''))
     }
     return response
   },
@@ -29,7 +29,7 @@ client.interceptors.response.use(
 // 요청 인터셉터 설정
 client.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken')
+    const token = localStorage.getItem('token')
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
     }

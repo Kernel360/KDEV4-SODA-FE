@@ -1,9 +1,20 @@
 import { API_ENDPOINTS } from './config'
 import { apiRequest } from './client'
-import type { LoginRequest, LoginResponse, FindIdRequest, FindIdResponse, RequestPasswordResetRequest, VerifyCodeRequest, ResetPasswordRequest, SignupRequest, SignupResponse } from '../types/api'
+import type { LoginRequest, LoginResponse, FindIdRequest, FindIdResponse, RequestPasswordResetRequest, VerifyCodeRequest, ResetPasswordRequest, SignupRequest, SignupResponse, User } from '../types/api'
+import { instance } from './config'
 
 export const login = async (data: LoginRequest) => {
-  return apiRequest<LoginResponse>('POST', API_ENDPOINTS.LOGIN, data)
+  const response = await instance.post<LoginResponse>(API_ENDPOINTS.LOGIN, data)
+  const token = response.headers.authorization
+  return {
+    status: 'success',
+    code: '200',
+    message: 'OK',
+    data: {
+      ...response.data,
+      token: token?.replace('Bearer ', '')
+    }
+  }
 }
 
 export async function findId(data: FindIdRequest) {
@@ -39,4 +50,24 @@ export const resetPassword = async (data: ResetPasswordRequest) => {
 
 export const signup = async (data: SignupRequest) => {
   return apiRequest<SignupResponse>('POST', API_ENDPOINTS.SIGNUP, data)
+}
+
+export const getUserInfo = () => {
+  return instance.get<User>('/members/me')
+}
+
+export const updateProfile = (data: {
+  name: string
+  email: string
+  phoneNumber: string
+  position: string
+}) => {
+  return instance.put('/members/me', data)
+}
+
+export const updatePassword = (data: {
+  currentPassword: string
+  newPassword: string
+}) => {
+  return instance.put('/members/me/password', data)
 } 

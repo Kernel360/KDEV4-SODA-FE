@@ -1,237 +1,191 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   Box,
-  Stack,
+  Typography,
   TextField,
+  Button,
+  FormControl,
   Select,
   MenuItem,
-  FormControl,
-  InputLabel,
-  Button,
-  Typography,
+  FormHelperText,
+  Stack,
   IconButton,
-  InputAdornment,
-  Container,
-  Paper
+  styled
 } from '@mui/material'
-import { ArrowLeft, Link2 } from 'lucide-react'
+import { DateTimePicker } from '@mui/x-date-pickers'
+import { Stage } from '@/types/stage'
+import { PriorityType } from '@/types/article'
+import { ArrowLeft, Link2, Upload, FileText, Trash2 } from 'lucide-react'
 
-export interface Link {
-  title: string
-  url: string
-}
+const UploadBox = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(3),
+  backgroundColor: '#F8F9FA',
+  borderRadius: theme.shape.borderRadius,
+  border: '1px dashed #DDE2E6',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  position: 'relative',
+  '&:hover': {
+    backgroundColor: '#F0F2F4'
+  }
+}))
 
 export interface ArticleFormData {
   title: string
   content: string
-  stage: string
-  priority: string
-  files: File[]
-  links: Link[]
-  dueDate?: string
-}
-
-export interface ParentArticle {
-  id: number
-  title: string
-  content: string
-  author: {
-    name: string
-  }
-  createdAt: string
+  stageId: number
+  priority: PriorityType
+  deadLine: Date | null
+  files?: File[]
+  links?: { title: string; url: string }[]
 }
 
 interface ArticleFormProps {
-  mode: 'create' | 'edit' | 'reply'
+  mode: 'create' | 'edit'
   formData: ArticleFormData
-  parentArticle?: ParentArticle
-  onSubmit: (e: React.FormEvent) => void
+  stages: Stage[]
+  isLoading?: boolean
+  validationErrors?: {
+    title?: string
+    content?: string
+    stageId?: string
+  }
   onChange: (data: ArticleFormData) => void
+  onSubmit: (e: React.FormEvent) => void
   onCancel: () => void
 }
 
 const ArticleForm: React.FC<ArticleFormProps> = ({
   mode,
   formData,
-  parentArticle,
-  onSubmit,
+  stages,
+  isLoading,
+  validationErrors = {},
   onChange,
+  onSubmit,
   onCancel
 }) => {
   const [linkTitle, setLinkTitle] = useState('')
   const [linkUrl, setLinkUrl] = useState('')
 
+  const handleChange = (
+    field: keyof ArticleFormData,
+    value:
+      | string
+      | number
+      | Date
+      | null
+      | File[]
+      | { title: string; url: string }[]
+  ) => {
+    onChange({ ...formData, [field]: value })
+  }
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
-    if (files && files.length > 0) {
-      onChange({
-        ...formData,
-        files: [...formData.files, ...Array.from(files)]
-      })
+    if (files) {
+      handleChange('files', [...(formData.files || []), ...Array.from(files)])
     }
   }
 
-  const handleAddLink = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
+  const handleAddLink = () => {
     if (linkTitle && linkUrl) {
-      onChange({
-        ...formData,
-        links: [...formData.links, { title: linkTitle, url: linkUrl }]
-      })
+      handleChange('links', [
+        ...(formData.links || []),
+        { title: linkTitle, url: linkUrl }
+      ])
       setLinkTitle('')
       setLinkUrl('')
     }
   }
 
-  const getFormTitle = () => {
-    switch (mode) {
-      case 'create':
-        return '새 게시글 작성'
-      case 'edit':
-        return '게시글 수정'
-      case 'reply':
-        return '답글 작성'
-      default:
-        return ''
-    }
-  }
-
   return (
-    <Box
-      component="form"
-      onSubmit={onSubmit}
-      sx={{
-        p: 3,
-        width: '100%',
-        maxWidth: '100%'
-      }}>
-      <Container maxWidth="xl">
-        <Stack spacing={4}>
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={1}>
-            <IconButton onClick={onCancel}>
-              <ArrowLeft />
-            </IconButton>
-            <Typography variant="h6">{getFormTitle()}</Typography>
-          </Stack>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
+      <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <IconButton onClick={onCancel}>
+          <ArrowLeft />
+        </IconButton>
+        <Typography variant="h6">새 게시글 작성</Typography>
+      </Box>
 
-          {mode === 'reply' && parentArticle && (
-            <Paper
-              variant="outlined"
-              sx={{ p: 2 }}>
-              <Stack spacing={1}>
-                <Typography
-                  variant="subtitle2"
-                  color="text.secondary">
-                  원본 글
-                </Typography>
-                <Typography
-                  variant="subtitle1"
-                  fontWeight="bold">
-                  {parentArticle.title}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  noWrap>
-                  {parentArticle.content}
-                </Typography>
+      <form onSubmit={onSubmit}>
+        <Box sx={{ display: 'flex', gap: 4 }}>
+          {/* 필수사항 */}
+          <Box sx={{ flex: 2 }}>
+            <Typography
+              variant="subtitle1"
+              color="primary"
+              sx={{ mb: 2 }}>
+              필수사항
+            </Typography>
+            <Stack spacing={3}>
+              <FormControl error={!!validationErrors.stageId}>
                 <Typography
                   variant="caption"
-                  color="text.secondary">
-                  작성자: {parentArticle.author.name} · 작성일:{' '}
-                  {new Date(parentArticle.createdAt).toLocaleDateString()}
+                  color="text.secondary"
+                  sx={{ mb: 1 }}>
+                  단계
                 </Typography>
-              </Stack>
-            </Paper>
-          )}
-
-          <Stack
-            direction="row"
-            spacing={3}>
-            {/* 필수사항 */}
-            <Stack
-              spacing={3}
-              sx={{ flex: 2 }}>
-              <Typography
-                variant="subtitle1"
-                color="primary">
-                필수사항
-              </Typography>
-
-              <FormControl fullWidth>
-                <InputLabel>단계</InputLabel>
                 <Select
-                  value={formData.stage}
-                  label="단계"
+                  value={formData.stageId}
                   onChange={e =>
-                    onChange({ ...formData, stage: e.target.value })
-                  }>
-                  <MenuItem value="요구사항">요구사항</MenuItem>
-                  <MenuItem value="설계">설계</MenuItem>
-                  <MenuItem value="개발">개발</MenuItem>
-                  <MenuItem value="테스트">테스트</MenuItem>
-                  <MenuItem value="배포">배포</MenuItem>
+                    handleChange('stageId', e.target.value as number)
+                  }
+                  required
+                  size="small">
+                  {stages.map(stage => (
+                    <MenuItem
+                      key={stage.id}
+                      value={stage.id}>
+                      {stage.name}
+                    </MenuItem>
+                  ))}
                 </Select>
+                {validationErrors.stageId && (
+                  <FormHelperText>{validationErrors.stageId}</FormHelperText>
+                )}
               </FormControl>
-
-              <TextField
-                label="제목"
-                value={formData.title}
-                onChange={e => onChange({ ...formData, title: e.target.value })}
-                required
-                fullWidth
-                placeholder="제목을 입력하세요"
-              />
-
-              <TextField
-                label="내용"
-                value={formData.content}
-                onChange={e =>
-                  onChange({ ...formData, content: e.target.value })
-                }
-                multiline
-                rows={10}
-                required
-                fullWidth
-                placeholder="내용을 입력하세요"
-              />
 
               <Box>
                 <Typography
                   variant="caption"
                   color="text.secondary"
-                  sx={{ mb: 1, display: 'block' }}>
-                  첨부파일 선택사항 (최대 10개)
+                  sx={{ mb: 1 }}>
+                  제목
                 </Typography>
-                <Box
-                  sx={{
-                    p: 3,
-                    bgcolor: '#F8F9FA',
-                    borderRadius: 1,
-                    textAlign: 'center',
-                    border: '1px dashed #DDE2E6',
-                    cursor: 'pointer',
-                    position: 'relative'
-                  }}>
-                  <Typography>파일을 드래그하거나 클릭하여 업로드</Typography>
-                  <input
-                    type="file"
-                    multiple
-                    onChange={handleFileChange}
-                    style={{
-                      position: 'absolute',
-                      width: '100%',
-                      height: '100%',
-                      top: 0,
-                      left: 0,
-                      opacity: 0,
-                      cursor: 'pointer'
-                    }}
-                  />
-                </Box>
+                <TextField
+                  fullWidth
+                  size="small"
+                  value={formData.title}
+                  onChange={e => handleChange('title', e.target.value)}
+                  error={!!validationErrors.title}
+                  helperText={validationErrors.title}
+                  required
+                  placeholder="제목을 입력하세요"
+                />
+              </Box>
+
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}>
+                  내용
+                </Typography>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={6}
+                  value={formData.content}
+                  onChange={e => handleChange('content', e.target.value)}
+                  error={!!validationErrors.content}
+                  helperText={validationErrors.content}
+                  required
+                  placeholder="내용을 입력하세요"
+                />
               </Box>
 
               <Box>
@@ -239,101 +193,222 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   variant="caption"
                   color="text.secondary"
                   sx={{ mb: 1, display: 'block' }}>
-                  관련 링크 선택사항 (최대 10개)
+                  관련 링크 (선택사항, 최대 10개)
                 </Typography>
-                <Stack
-                  direction="row"
-                  spacing={1}>
-                  <TextField
-                    value={linkTitle}
-                    onChange={e => setLinkTitle(e.target.value)}
-                    placeholder="링크 제목"
-                    size="small"
-                    fullWidth
-                  />
-                  <TextField
-                    value={linkUrl}
-                    onChange={e => setLinkUrl(e.target.value)}
-                    placeholder="URL"
-                    size="small"
-                    fullWidth
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Link2 size={16} />
-                        </InputAdornment>
-                      )
-                    }}
-                  />
-                  <Button
-                    onClick={handleAddLink}
-                    variant="outlined"
-                    size="small"
-                    sx={{ minWidth: 64 }}>
-                    추가
-                  </Button>
+                <Stack spacing={2}>
+                  <Stack
+                    direction="row"
+                    spacing={1}>
+                    <TextField
+                      size="small"
+                      placeholder="링크 제목"
+                      value={linkTitle}
+                      onChange={e => setLinkTitle(e.target.value)}
+                    />
+                    <TextField
+                      size="small"
+                      placeholder="URL"
+                      value={linkUrl}
+                      onChange={e => setLinkUrl(e.target.value)}
+                      InputProps={{
+                        startAdornment: (
+                          <Link2
+                            size={16}
+                            color="#6B7280"
+                          />
+                        )
+                      }}
+                      sx={{ flex: 1 }}
+                    />
+                    <Button
+                      variant="outlined"
+                      onClick={handleAddLink}
+                      disabled={
+                        !linkTitle ||
+                        !linkUrl ||
+                        (formData.links?.length ?? 0) >= 10
+                      }
+                      size="small">
+                      추가
+                    </Button>
+                  </Stack>
+                  {formData.links && formData.links.length > 0 && (
+                    <Box sx={{ mt: 1 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ mb: 1, display: 'block' }}>
+                        추가된 링크
+                      </Typography>
+                      <Stack spacing={1}>
+                        {formData.links.map((link, index) => (
+                          <Box
+                            key={index}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                              p: 1,
+                              bgcolor: 'grey.50',
+                              borderRadius: 1
+                            }}>
+                            <Link2 size={16} />
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="body2">
+                                {link.title}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary">
+                                {link.url}
+                              </Typography>
+                            </Box>
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                const newLinks = [...(formData.links || [])]
+                                newLinks.splice(index, 1)
+                                handleChange('links', newLinks)
+                              }}>
+                              <Trash2 size={16} />
+                            </IconButton>
+                          </Box>
+                        ))}
+                      </Stack>
+                    </Box>
+                  )}
                 </Stack>
               </Box>
+
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mb: 1, display: 'block' }}>
+                  첨부 파일 (선택사항)
+                </Typography>
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileChange}
+                  style={{ display: 'none' }}
+                  id="file-input"
+                />
+                <label htmlFor="file-input">
+                  <UploadBox>
+                    <Upload size={24} />
+                    <Typography
+                      variant="body2"
+                      sx={{ mt: 1 }}>
+                      클릭하여 파일 선택
+                    </Typography>
+                  </UploadBox>
+                </label>
+                {formData.files && formData.files.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mb: 1, display: 'block' }}>
+                      첨부된 파일
+                    </Typography>
+                    <Stack spacing={1}>
+                      {formData.files.map((file, index) => (
+                        <Box
+                          key={index}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            p: 1,
+                            bgcolor: 'grey.50',
+                            borderRadius: 1
+                          }}>
+                          <FileText size={16} />
+                          <Typography
+                            variant="body2"
+                            sx={{ flex: 1 }}>
+                            {file.name}
+                          </Typography>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              const newFiles = [...(formData.files || [])]
+                              newFiles.splice(index, 1)
+                              handleChange('files', newFiles)
+                            }}>
+                            <Trash2 size={16} />
+                          </IconButton>
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+              </Box>
             </Stack>
+          </Box>
 
-            {/* 선택사항 */}
-            <Stack
-              spacing={3}
-              sx={{ flex: 1 }}>
-              <Typography
-                variant="subtitle1"
-                color="primary">
-                선택사항
-              </Typography>
-
-              <FormControl fullWidth>
-                <InputLabel>우선순위</InputLabel>
+          {/* 선택사항 */}
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              variant="subtitle1"
+              color="primary"
+              sx={{ mb: 2 }}>
+              선택사항
+            </Typography>
+            <Stack spacing={3}>
+              <FormControl>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}>
+                  우선순위
+                </Typography>
                 <Select
                   value={formData.priority}
-                  label="우선순위"
                   onChange={e =>
-                    onChange({ ...formData, priority: e.target.value })
-                  }>
-                  <MenuItem value="낮음">낮음</MenuItem>
-                  <MenuItem value="보통">보통</MenuItem>
-                  <MenuItem value="높음">높음</MenuItem>
+                    handleChange('priority', e.target.value as PriorityType)
+                  }
+                  size="small">
+                  <MenuItem value={PriorityType.HIGH}>높음</MenuItem>
+                  <MenuItem value={PriorityType.MEDIUM}>중간</MenuItem>
+                  <MenuItem value={PriorityType.LOW}>낮음</MenuItem>
                 </Select>
               </FormControl>
 
-              <TextField
-                label="마감일"
-                type="date"
-                value={formData.dueDate || ''}
-                onChange={e =>
-                  onChange({ ...formData, dueDate: e.target.value })
-                }
-                fullWidth
-                InputLabelProps={{
-                  shrink: true
-                }}
-              />
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}>
+                  마감일
+                </Typography>
+                <DateTimePicker
+                  value={formData.deadLine}
+                  onChange={newValue => handleChange('deadLine', newValue)}
+                  slotProps={{ textField: { size: 'small', fullWidth: true } }}
+                />
+              </Box>
             </Stack>
-          </Stack>
+          </Box>
+        </Box>
 
-          <Stack
-            direction="row"
-            spacing={1}
-            justifyContent="flex-start">
-            <Button
-              variant="outlined"
-              onClick={onCancel}
-              sx={{ minWidth: 120 }}>
-              취소
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              sx={{ minWidth: 120 }}>
-              {mode === 'edit' ? '수정' : '등록'}
-            </Button>
-          </Stack>
-        </Stack>
-      </Container>
+        <Box sx={{ mt: 4, display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            onClick={onCancel}
+            sx={{ minWidth: 120 }}>
+            취소
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={isLoading}
+            sx={{ minWidth: 120 }}>
+            {isLoading ? '처리 중...' : mode === 'create' ? '등록' : '수정'}
+          </Button>
+        </Box>
+      </form>
     </Box>
   )
 }
