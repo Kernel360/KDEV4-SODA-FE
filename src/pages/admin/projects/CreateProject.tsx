@@ -5,7 +5,9 @@ import { getCompanyList } from '../../../api/company'
 import { useToast } from '../../../contexts/ToastContext'
 import type { CompanyListItem } from '../../../types/api'
 import { projectService } from '../../../services/projectService'
+import type { CreateProjectRequest } from '../../../services/projectService'
 import CreateProjectForm from '../../../components/projects/CreateProjectForm'
+import axios from 'axios'
 
 export default function CreateProject() {
   const navigate = useNavigate()
@@ -36,7 +38,6 @@ export default function CreateProject() {
     }
   }
 
-  // 프로젝트 생성 핸들러
   const handleSave = async (formData: {
     name: string
     description: string
@@ -49,6 +50,19 @@ export default function CreateProject() {
     developmentManagers: string[]
     developmentParticipants: string[]
   }) => {
+    let requestData: CreateProjectRequest = {
+      title: '',
+      description: '',
+      startDate: '',
+      endDate: '',
+      clientCompanyId: 0,
+      devCompanyId: 0,
+      devManagers: [],
+      devMembers: [],
+      clientManagers: [],
+      clientMembers: []
+    }
+
     try {
       setLoading(true)
       setError(null)
@@ -59,36 +73,21 @@ export default function CreateProject() {
         return
       }
 
-      // API 호출을 통해 프로젝트 생성
-      await projectService.createProject({
+      requestData = {
         title: formData.name,
         description: formData.description,
-        status: '진행중',
         startDate: formData.startDate,
         endDate: formData.endDate,
-        clientCompanyName: formData.clientCompanyId,
-        devCompanyName: formData.developmentCompanyId,
-        clientCompanyManagers: formData.clientManagers.map(id => ({
-          name: id,
-          position: '',
-          email: ''
-        })),
-        clientCompanyMembers: formData.clientParticipants.map(id => ({
-          name: id,
-          position: '',
-          email: ''
-        })),
-        devCompanyManagers: formData.developmentManagers.map(id => ({
-          name: id,
-          position: '',
-          email: ''
-        })),
-        devCompanyMembers: formData.developmentParticipants.map(id => ({
-          name: id,
-          position: '',
-          email: ''
-        }))
-      })
+        clientCompanyId: parseInt(formData.clientCompanyId),
+        devCompanyId: parseInt(formData.developmentCompanyId),
+        devManagers: formData.developmentManagers.map(id => parseInt(id)),
+        devMembers: formData.developmentParticipants.map(id => parseInt(id)),
+        clientManagers: formData.clientManagers.map(id => parseInt(id)),
+        clientMembers: formData.clientParticipants.map(id => parseInt(id))
+      }
+
+      // API 호출을 통해 프로젝트 생성
+      await projectService.createProject(requestData)
 
       // 성공 메시지 표시
       setSuccess('프로젝트가 성공적으로 생성되었습니다.')
@@ -99,13 +98,17 @@ export default function CreateProject() {
       }, 1000)
     } catch (err) {
       console.error('프로젝트 생성 중 오류:', err)
+      if (axios.isAxiosError(err)) {
+        console.error('API 응답:', err.response?.data)
+        console.error('상태 코드:', err.response?.status)
+        console.error('요청 데이터:', requestData)
+      }
       setError('프로젝트 생성 중 오류가 발생했습니다.')
     } finally {
       setLoading(false)
     }
   }
 
-  // 취소 핸들러
   const handleCancel = () => {
     navigate('/admin/projects')
   }

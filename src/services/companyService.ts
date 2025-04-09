@@ -1,4 +1,5 @@
 import { client } from '../api/client'
+import axios from 'axios'
 
 interface Company {
   id: number
@@ -8,6 +9,10 @@ interface Company {
   businessNumber: string
   address: string
   isActive: boolean
+}
+
+interface CompanyMember {
+  // Define the structure of a company member
 }
 
 export const companyService = {
@@ -31,5 +36,37 @@ export const companyService = {
       console.error('Error updating company status:', error)
       throw error
     }
+  },
+
+  async getCompanyMembers(companyId: number): Promise<CompanyMember[]> {
+    try {
+      const response = await client.get(`/companies/${companyId}/members`)
+      return response.data.data
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.message ||
+            '회사 멤버 목록을 불러오는데 실패했습니다.'
+        )
+      }
+      throw error
+    }
+  }
+}
+
+export const getCompanyMembers = async (
+  companyId: number
+): Promise<CompanyMember[]> => {
+  try {
+    const response = await client.get(`/companies/${companyId}/members`)
+    return response.data.data
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(
+        error.response?.data?.message ||
+          '회사 멤버 목록을 불러오는데 실패했습니다.'
+      )
+    }
+    throw error
   }
 }

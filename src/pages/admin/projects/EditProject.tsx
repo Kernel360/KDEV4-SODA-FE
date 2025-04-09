@@ -7,12 +7,7 @@ import { useToast } from '../../../contexts/ToastContext'
 import dayjs from 'dayjs'
 import { projectService } from '../../../services/projectService'
 import { getCompanyList, getCompanyMembers } from '../../../api/company'
-import type {
-  CompanyListItem,
-  CompanyMember,
-  CompanyMemberListResponse,
-  ApiResponse
-} from '../../../types/api'
+import type { CompanyListItem, CompanyMember } from '../../../types/api'
 
 const EditProject: React.FC = () => {
   const { id } = useParams<{ id: string }>()

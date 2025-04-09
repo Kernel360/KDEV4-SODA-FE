@@ -9,6 +9,19 @@ import {
   ArticleCreateResponse
 } from '../types/article'
 
+export interface CreateProjectRequest {
+  title: string
+  description: string
+  startDate: string
+  endDate: string
+  clientCompanyId: number
+  devCompanyId: number
+  devManagers: number[]
+  devMembers: number[]
+  clientManagers: number[]
+  clientMembers: number[]
+}
+
 // Request interceptor to add auth token
 client.interceptors.request.use(
   config => {
@@ -71,7 +84,7 @@ export const projectService = {
   },
 
   // 프로젝트 생성
-  async createProject(project: Omit<Project, 'id'>): Promise<Project> {
+  async createProject(project: CreateProjectRequest): Promise<Project> {
     const response = await client.post('/projects', project)
     return response.data.data
   },

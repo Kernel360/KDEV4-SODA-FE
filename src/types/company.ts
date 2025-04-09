@@ -7,3 +7,11 @@ export interface Company {
   address: string
   addressDetail: string
 }
+
+export interface CompanyMember {
+  id: number
+  name: string
+  email: string
+  role: string
+  isActive: boolean
+}
