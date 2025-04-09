@@ -37,15 +37,17 @@ const EditCompany: React.FC = () => {
     fetchCompany()
   }, [id, navigate, showToast])
 
-  const handleSubmit = async (data: Omit<Company, 'id'>) => {
-    try {
-      // TODO: API 호출로 대체
-      showToast('회사 정보가 수정되었습니다.', 'success')
-      navigate(`/admin/companies/${id}`)
-    } catch (err) {
-      showToast('회사 정보 수정에 실패했습니다.', 'error')
+  const handleSubmit = async () =>
+    //data: Omit<Company, 'id'>
+    {
+      try {
+        // TODO: API 호출로 대체
+        showToast('회사 정보가 수정되었습니다.', 'success')
+        navigate(`/admin/companies/${id}`)
+      } catch (err) {
+        showToast('회사 정보 수정에 실패했습니다.', 'error')
+      }
     }
-  }
 
   if (loading) return <div>Loading...</div>
   if (!company) return <div>회사를 찾을 수 없습니다.</div>

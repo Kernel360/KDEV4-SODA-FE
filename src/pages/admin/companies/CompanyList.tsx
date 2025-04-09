@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Box, Typography, Button } from '@mui/material'
-import DataTable from '@/components/common/DataTable'
 import { useNavigate } from 'react-router-dom'
 import { PlusCircle } from 'lucide-react'
 import { getCompanyList } from '../../../api/company'
 import { useToast } from '../../../contexts/ToastContext'
 import type { CompanyListItem } from '../../../types/api'
+import DataTable from '../../../components/common/DataTable'
 
 interface Column<T> {
   id: string
@@ -29,10 +29,13 @@ const CompanyList: React.FC = () => {
   const fetchCompanies = async () => {
     try {
       const response = await getCompanyList()
-      if (response.status === 'success') {
+      if (response.status === 'success' && response.data) {
         setCompanies(response.data)
       } else {
-        showToast(response.message || '회사 목록을 불러오는데 실패했습니다.', 'error')
+        showToast(
+          response.message || '회사 목록을 불러오는데 실패했습니다.',
+          'error'
+        )
       }
     } catch (err) {
       console.error('회사 목록 조회 중 오류:', err)
@@ -59,23 +62,23 @@ const CompanyList: React.FC = () => {
     {
       id: 'name',
       label: '회사명',
-      render: (row) => row.name,
+      render: row => row.name,
       onClick: handleRowClick
     },
     {
       id: 'phoneNumber',
       label: '전화번호',
-      render: (row) => row.phoneNumber
+      render: row => row.phoneNumber
     },
     {
       id: 'companyNumber',
       label: '사업자번호',
-      render: (row) => row.companyNumber
+      render: row => row.companyNumber
     },
     {
       id: 'address',
       label: '주소',
-      render: (row) => row.address
+      render: row => row.address
     }
   ]
 
