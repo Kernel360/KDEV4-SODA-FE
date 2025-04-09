@@ -29,11 +29,7 @@ import {
   DraggableProvided
 } from '@hello-pangea/dnd'
 import { getTaskRequests } from '../../api/task'
-<<<<<<< HEAD
 import type { TaskRequest, TaskRequestsResponse, ProjectStageTask } from '../../types/api'
-=======
-import type { TaskRequest } from '../../types/api'
->>>>>>> develop
 
 interface StageCardProps {
   stage: Stage
@@ -148,17 +144,13 @@ const StageCard: React.FC<StageCardProps> = ({
       setSelectedTask(projectStageTask)
 
       const response = await getTaskRequests(task.id)
-<<<<<<< HEAD
-      if (response.status === 'success' && Array.isArray(response.data)) {
-        console.log('Fetched requests:', response.data)
-=======
+
       if (
         response.status === 'success' &&
         Array.isArray(response.data) &&
         response.data.length > 0
       ) {
         setSelectedTask(response.data[0])
->>>>>>> develop
       }
     } catch (error) {
       console.error('요청 목록을 불러오는 중 오류가 발생했습니다:', error)
