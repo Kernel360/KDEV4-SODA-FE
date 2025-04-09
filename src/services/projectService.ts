@@ -9,8 +9,6 @@ import {
   ArticleCreateResponse
 } from '../types/article'
 
-const API_BASE_URL = 'http://localhost:8080'
-
 // Request interceptor to add auth token
 client.interceptors.request.use(
   config => {

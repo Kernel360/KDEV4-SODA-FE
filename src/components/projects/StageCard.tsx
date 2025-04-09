@@ -15,21 +15,9 @@ import {
   TextField,
   Button,
   ListItemIcon,
-  Chip,
-  Stack,
-  Tooltip,
-  Badge
+  Chip
 } from '@mui/material'
-import {
-  MoreVertical,
-  Edit,
-  Plus,
-  Trash2,
-  GripVertical,
-  Clock,
-  CheckCircle,
-  XCircle
-} from 'lucide-react'
+import { MoreVertical, Edit, Plus, Trash2 } from 'lucide-react'
 import type { Stage, Task, TaskStatus } from '../../types/stage'
 import TaskRequestsModal from './TaskRequestsModal'
 import AddTaskModal from './AddTaskModal'
@@ -41,7 +29,7 @@ import {
   DraggableProvided
 } from '@hello-pangea/dnd'
 import { getTaskRequests } from '../../api/task'
-import type { TaskRequest, TaskRequestsResponse } from '../../types/api'
+import type { TaskRequest } from '../../types/api'
 
 interface StageCardProps {
   stage: Stage
@@ -128,7 +116,7 @@ const StageCard: React.FC<StageCardProps> = ({
   const [isEditTitleModalOpen, setIsEditTitleModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<TaskRequest | null>(null)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [newTitle, setNewTitle] = useState(stage.title)
+  const [newTitle, setNewTitle] = useState(stage.name)
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -141,7 +129,11 @@ const StageCard: React.FC<StageCardProps> = ({
   const handleTaskClick = async (task: Task) => {
     try {
       const response = await getTaskRequests(task.id)
-      if (response.status === 'success' && Array.isArray(response.data) && response.data.length > 0) {
+      if (
+        response.status === 'success' &&
+        Array.isArray(response.data) &&
+        response.data.length > 0
+      ) {
         setSelectedTask(response.data[0])
       }
     } catch (error) {
@@ -203,7 +195,7 @@ const StageCard: React.FC<StageCardProps> = ({
         <Typography
           variant="subtitle2"
           sx={{ fontWeight: 500 }}>
-          {stage.title}
+          {stage.name}
         </Typography>
         <IconButton
           size="small"
@@ -354,7 +346,7 @@ const StageCard: React.FC<StageCardProps> = ({
           <Button
             onClick={handleEditTitle}
             variant="contained"
-            disabled={!newTitle || newTitle === stage.title}>
+            disabled={!newTitle || newTitle === stage.name}>
             수정
           </Button>
         </DialogActions>
