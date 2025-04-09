@@ -1,12 +1,19 @@
 import { useState, useEffect } from 'react'
-import { Box, Typography, Switch, Button, TextField, InputAdornment } from '@mui/material'
+import {
+  Box,
+  Typography,
+  Switch,
+  Button,
+  TextField,
+  InputAdornment
+} from '@mui/material'
 import { Search } from 'lucide-react'
-import DataTable from '@/components/common/DataTable'
 import { useNavigate } from 'react-router-dom'
 import { PlusCircle } from 'lucide-react'
-import { getUsers, updateUserStatus } from '@/api/admin'
-import { useToast } from '@/contexts/ToastContext'
-import type { MemberListDto } from '@/types/api'
+import { useToast } from '../../../contexts/ToastContext'
+import { MemberListDto } from '../../../types/api'
+import { getUsers, updateUserStatus } from '../../../api/admin'
+import DataTable from '../../../components/common/DataTable'
 
 export default function AccountList() {
   const navigate = useNavigate()
@@ -56,7 +63,10 @@ export default function AccountList() {
         showToast('사용자 상태가 성공적으로 변경되었습니다.', 'success')
         fetchUsers() // 목록 새로고침
       } else {
-        showToast(response.message || '사용자 상태 변경에 실패했습니다.', 'error')
+        showToast(
+          response.message || '사용자 상태 변경에 실패했습니다.',
+          'error'
+        )
       }
     } catch (err) {
       console.error('사용자 상태 변경 중 오류:', err)
@@ -101,7 +111,8 @@ export default function AccountList() {
     {
       id: 'role',
       label: '권한',
-      render: (row: MemberListDto) => row.role === 'ADMIN' ? '관리자' : '일반 사용자'
+      render: (row: MemberListDto) =>
+        row.role === 'ADMIN' ? '관리자' : '일반 사용자'
     },
     {
       id: 'active',

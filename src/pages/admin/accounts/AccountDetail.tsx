@@ -14,7 +14,7 @@ import {
 import { ArrowLeft } from 'lucide-react'
 import AccountDetailForm, {
   Account
-} from '@/components/accounts/AccountDetailForm'
+} from '../../../components/accounts/AccountDetailForm'
 
 // 더미 데이터
 const dummyAccounts: Account[] = [
