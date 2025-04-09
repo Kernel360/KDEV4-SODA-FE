@@ -17,11 +17,11 @@ export interface User {
   role: string
 }
 
-export interface ApiResponse<T = any> {
-  status: 'success' | 'error';
-  code: string;
-  message: string;
-  data?: T;
+export interface ApiResponse<T> {
+  status: 'success' | 'error'
+  code: string
+  message: string
+  data: T
 }
 
 export interface LoginResponse {
@@ -43,76 +43,76 @@ export interface LoginRequest {
 }
 
 export interface FindIdRequest {
-  name: string;
-  email: string;
+  name: string
+  email: string
 }
 
 export interface FindIdResponse {
-  maskedAuthId: string;
+  maskedAuthId: string
 }
 
 export interface RequestPasswordResetRequest {
-  email: string;
+  email: string
 }
 
 export interface VerifyCodeRequest {
-  email: string;
-  code: string;
+  email: string
+  code: string
 }
 
 export interface ResetPasswordRequest {
-  email: string;
-  newPassword: string;
+  email: string
+  newPassword: string
 }
 
 export interface CompanyCreateRequest {
-  name: string;
-  phoneNumber: string;
-  ownerName: string;
-  companyNumber: string;
-  address: string;
-  detailaddress: string;
+  name: string
+  phoneNumber: string
+  ownerName: string
+  companyNumber: string
+  address: string
+  detailaddress: string
 }
 
 export interface CompanyCreateResponse {
-  status: 'success' | 'error';
-  code: string;
-  message: string;
+  status: 'success' | 'error'
+  code: string
+  message: string
   data: {
-    id: number;
-    name: string;
-    phoneNumber: string;
-    ownerName: string;
-    companyNumber: string;
-    address: string;
-    detailaddress: string;
-  } | null;
+    id: number
+    name: string
+    phoneNumber: string
+    ownerName: string
+    companyNumber: string
+    address: string
+    detailaddress: string
+  } | null
 }
 
 export interface CompanyListItem {
-  id: number;
-  name: string;
-  phoneNumber: string;
-  companyNumber: string;
-  address: string;
-  detailAddress: string | null;
+  id: number
+  name: string
+  phoneNumber: string
+  companyNumber: string
+  address: string
+  detailAddress: string | null
 }
 
 export interface CompanyListResponse extends ApiResponse<CompanyListItem[]> {}
 
 export interface SignupRequest {
-  name: string;
-  authId: string;
-  password: string;
-  role: 'USER' | 'ADMIN';
-  companyId: number;
+  name: string
+  authId: string
+  password: string
+  role: 'USER' | 'ADMIN'
+  companyId: number
 }
 
 export interface SignupResponse {
-  status: 'success' | 'error';
-  code: string;
-  message: string;
-  data: null;
+  status: 'success' | 'error'
+  code: string
+  message: string
+  data: null
 }
 
 export interface CompanyMember {
@@ -158,24 +158,23 @@ export interface TaskRequest {
 export interface TaskRequestsResponse extends ApiResponse<TaskRequest[]> {}
 
 export interface ProjectStageTask {
-  taskId: number;
-  projectId: number;
-  stageId: number;
-  title: string;
-  content: string;
-  taskOrder: number;
-  status: 'PENDING' | 'WAITING_APPROVAL' | 'APPROVED' | 'REJECTED';
+  taskId: number
+  projectId: number
+  stageId: number
+  title: string
+  content: string
+  taskOrder: number
+  status: 'PENDING' | 'WAITING_APPROVAL' | 'APPROVED' | 'REJECTED'
 }
 
 export interface ProjectStage {
-  id: number;
-  name: string;
-  stageOrder: number;
-  tasks: ProjectStageTask[];
+  id: number
+  name: string
+  stageOrder: number
+  tasks: ProjectStageTask[]
 }
 
 export interface ProjectStagesResponse extends ApiResponse<ProjectStage[]> {}
-
 
 export interface CreateTaskRequestRequest {
   title: string
@@ -246,4 +245,4 @@ export interface PagedData<T> {
   first: boolean
   numberOfElements: number
   empty: boolean
-} 
+}

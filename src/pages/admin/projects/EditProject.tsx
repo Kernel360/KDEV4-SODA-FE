@@ -5,40 +5,14 @@ import ProjectForm from '../../../components/common/ProjectForm'
 import { Project } from '../../../types/project'
 import { useToast } from '../../../contexts/ToastContext'
 import dayjs from 'dayjs'
-
-// 임시 데이터 (실제로는 API에서 가져올 데이터)
-const mockCompanies = [
-  { id: '1', name: '개발사 A' },
-  { id: '2', name: '개발사 B' },
-  { id: '3', name: '고객사 A' },
-  { id: '4', name: '고객사 B' }
-]
-
-const mockEmployees = [
-  // 개발사 A 직원
-  { id: '1', name: '김개발', companyId: '1', position: '개발자' },
-  { id: '2', name: '이개발', companyId: '1', position: '개발자' },
-  { id: '3', name: '박개발', companyId: '1', position: '개발자' },
-  { id: '4', name: '최개발', companyId: '1', position: '개발자' },
-
-  // 개발사 B 직원
-  { id: '5', name: '정개발', companyId: '2', position: '개발자' },
-  { id: '6', name: '강개발', companyId: '2', position: '개발자' },
-  { id: '7', name: '조개발', companyId: '2', position: '개발자' },
-  { id: '8', name: '윤개발', companyId: '2', position: '개발자' },
-
-  // 고객사 A 직원
-  { id: '9', name: '김고객', companyId: '3', position: '매니저' },
-  { id: '10', name: '이고객', companyId: '3', position: '매니저' },
-  { id: '11', name: '박고객', companyId: '3', position: '매니저' },
-  { id: '12', name: '최고객', companyId: '3', position: '매니저' },
-
-  // 고객사 B 직원
-  { id: '13', name: '정고객', companyId: '4', position: '매니저' },
-  { id: '14', name: '강고객', companyId: '4', position: '매니저' },
-  { id: '15', name: '조고객', companyId: '4', position: '매니저' },
-  { id: '16', name: '윤고객', companyId: '4', position: '매니저' }
-]
+import { projectService } from '../../../services/projectService'
+import { getCompanyList, getCompanyMembers } from '../../../api/company'
+import type {
+  CompanyListItem,
+  CompanyMember,
+  CompanyMemberListResponse,
+  ApiResponse
+} from '../../../types/api'
 
 const EditProject: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -46,112 +20,80 @@ const EditProject: React.FC = () => {
   const { showToast } = useToast()
   const [loading, setLoading] = React.useState(true)
   const [project, setProject] = React.useState<Project | null>(null)
+  const [companies, setCompanies] = React.useState<CompanyListItem[]>([])
+  const [employees, setEmployees] = React.useState<CompanyMember[]>([])
 
   React.useEffect(() => {
-    // 실제로는 API에서 프로젝트 데이터를 가져옵니다
-    // 임시로 더미 데이터를 사용합니다
-    const dummyProject: Project = {
-      id: Number(id),
-      name: '프로젝트 A',
-      description: '프로젝트 A에 대한 설명입니다.',
-      projectNumber: 'PRJ-2024-001',
-      status: '진행중',
-      startDate: '2024-03-01',
-      endDate: '2024-12-31',
-      clientCompany: '고객사 A',
-      clientManagers: [
-        { name: '김고객', position: '매니저', email: 'kim@client.com' }
-      ],
-      clientParticipants: [
-        { name: '이고객', position: '매니저', email: 'lee@client.com' },
-        { name: '박고객', position: '매니저', email: 'park@client.com' }
-      ],
-      developmentCompany: '개발사 A',
-      developmentManagers: [
-        { name: '김개발', position: '개발자', email: 'kim@dev.com' }
-      ],
-      developmentParticipants: [
-        { name: '이개발', position: '개발자', email: 'lee@dev.com' },
-        { name: '박개발', position: '개발자', email: 'park@dev.com' }
-      ],
-      systemManager: '최개발'
-    }
-
-    setProject(dummyProject)
-    setLoading(false)
+    fetchProject()
+    fetchCompanies()
   }, [id])
+
+  const fetchProject = async () => {
+    try {
+      if (!id) return
+      const response = await projectService.getProjectById(Number(id))
+      setProject(response)
+    } catch (error) {
+      console.error('프로젝트 조회 중 오류:', error)
+      showToast('프로젝트 정보를 불러오는데 실패했습니다.', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchCompanies = async () => {
+    try {
+      const response = await getCompanyList()
+      if (response.status === 'success' && Array.isArray(response.data)) {
+        setCompanies(response.data)
+        // 각 회사의 직원 정보를 가져옵니다
+        const employeePromises = response.data.map(company =>
+          getCompanyMembers(company.id)
+        )
+        const employeeResponses = await Promise.all(employeePromises)
+        const allEmployees = employeeResponses.reduce<CompanyMember[]>(
+          (acc, response) => {
+            if (response.status === 'success' && Array.isArray(response.data)) {
+              return [...acc, ...response.data]
+            }
+            return acc
+          },
+          []
+        )
+        setEmployees(allEmployees)
+      }
+    } catch (error) {
+      console.error('회사 목록 조회 중 오류:', error)
+      showToast('회사 목록을 불러오는데 실패했습니다.', 'error')
+    }
+  }
 
   const handleSubmit = async (formData: any) => {
     try {
+      if (!id) return
+
       // ProjectFormData를 Project 타입으로 변환
       const projectData: Project = {
         id: Number(id),
-        name: formData.name,
+        title: formData.name,
         description: formData.description,
-        projectNumber: project?.projectNumber || '',
         status: project?.status || '진행중',
         startDate: formData.startDate?.format('YYYY-MM-DD') || '',
         endDate: formData.endDate?.format('YYYY-MM-DD') || '',
-        clientCompany:
-          mockCompanies.find(c => c.id === formData.clientCompanyId)?.name ||
-          '',
-        clientManagers: mockEmployees
-          .filter(
-            emp =>
-              formData.managers.includes(emp.id) &&
-              emp.companyId === formData.clientCompanyId
-          )
-          .map(emp => ({
-            name: emp.name,
-            position: emp.position,
-            email: `${emp.name.toLowerCase()}@client.com`
-          })),
-        clientParticipants: mockEmployees
-          .filter(
-            emp =>
-              formData.participants.includes(emp.id) &&
-              emp.companyId === formData.clientCompanyId
-          )
-          .map(emp => ({
-            name: emp.name,
-            position: emp.position,
-            email: `${emp.name.toLowerCase()}@client.com`
-          })),
-        developmentCompany:
-          mockCompanies.find(c => c.id === formData.developerCompanyId)?.name ||
-          '',
-        developmentManagers: mockEmployees
-          .filter(
-            emp =>
-              formData.managers.includes(emp.id) &&
-              emp.companyId === formData.developerCompanyId
-          )
-          .map(emp => ({
-            name: emp.name,
-            position: emp.position,
-            email: `${emp.name.toLowerCase()}@dev.com`
-          })),
-        developmentParticipants: mockEmployees
-          .filter(
-            emp =>
-              formData.participants.includes(emp.id) &&
-              emp.companyId === formData.developerCompanyId
-          )
-          .map(emp => ({
-            name: emp.name,
-            position: emp.position,
-            email: `${emp.name.toLowerCase()}@dev.com`
-          })),
-        systemManager:
-          mockEmployees.find(emp => formData.managers.includes(emp.id))?.name ||
-          ''
+        clientCompanyName: formData.clientCompanyId,
+        devCompanyName: formData.developmentCompanyId,
+        clientCompanyManagers: formData.clientManagers,
+        clientCompanyMembers: formData.clientParticipants,
+        devCompanyManagers: formData.developmentManagers,
+        devCompanyMembers: formData.developmentParticipants
       }
 
-      // 실제로는 API를 호출하여 프로젝트를 업데이트합니다
-      console.log('Updated project:', projectData)
+      // API를 호출하여 프로젝트를 업데이트
+      await projectService.updateProject(Number(id), projectData)
       showToast('프로젝트가 성공적으로 수정되었습니다.', 'success')
       navigate(`/admin/projects/${id}`)
     } catch (error) {
+      console.error('프로젝트 수정 중 오류:', error)
       showToast('프로젝트 수정 중 오류가 발생했습니다.', 'error')
     }
   }
@@ -166,45 +108,31 @@ const EditProject: React.FC = () => {
 
   // ProjectFormData 형식으로 변환
   const initialFormData = {
-    name: project.name,
+    name: project.title,
     description: project.description,
     startDate: project.startDate ? dayjs(project.startDate) : null,
     endDate: project.endDate ? dayjs(project.endDate) : null,
-    clientCompanyId:
-      mockCompanies.find(c => c.name === project.clientCompany)?.id || '',
-    developerCompanyId:
-      mockCompanies.find(c => c.name === project.developmentCompany)?.id || '',
-    selectedEmployees: [
-      ...project.clientManagers.map(
-        m => mockEmployees.find(e => e.name === m.name)?.id || ''
-      ),
-      ...project.clientParticipants.map(
-        p => mockEmployees.find(e => e.name === p.name)?.id || ''
-      ),
-      ...project.developmentManagers.map(
-        m => mockEmployees.find(e => e.name === m.name)?.id || ''
-      ),
-      ...project.developmentParticipants.map(
-        p => mockEmployees.find(e => e.name === p.name)?.id || ''
-      )
-    ].filter(id => id !== ''),
-    managers: [
-      ...project.clientManagers.map(
-        m => mockEmployees.find(e => e.name === m.name)?.id || ''
-      ),
-      ...project.developmentManagers.map(
-        m => mockEmployees.find(e => e.name === m.name)?.id || ''
-      )
-    ].filter(id => id !== ''),
-    participants: [
-      ...project.clientParticipants.map(
-        p => mockEmployees.find(e => e.name === p.name)?.id || ''
-      ),
-      ...project.developmentParticipants.map(
-        p => mockEmployees.find(e => e.name === p.name)?.id || ''
-      )
-    ].filter(id => id !== '')
+    clientCompanyId: project.clientCompanyName,
+    developmentCompanyId: project.devCompanyName,
+    clientManagers: project.clientCompanyManagers,
+    clientParticipants: project.clientCompanyMembers,
+    developmentManagers: project.devCompanyManagers,
+    developmentParticipants: project.devCompanyMembers
   }
+
+  // CompanyListItem을 Company 타입으로 변환
+  const formattedCompanies = companies.map(company => ({
+    id: company.id.toString(),
+    name: company.name
+  }))
+
+  // CompanyMember를 Employee 타입으로 변환
+  const formattedEmployees = employees.map(employee => ({
+    id: employee.id.toString(),
+    name: employee.name,
+    companyId: employee.authId,
+    position: employee.position || ''
+  }))
 
   return (
     <Box sx={{ p: 3 }}>
@@ -212,11 +140,11 @@ const EditProject: React.FC = () => {
         <Typography
           variant="h5"
           sx={{ mb: 3 }}>
-          {project.name}
+          {project.title}
         </Typography>
         <ProjectForm
-          companies={mockCompanies}
-          employees={mockEmployees}
+          companies={formattedCompanies}
+          employees={formattedEmployees}
           onSubmit={handleSubmit}
           initialData={initialFormData}
           isEdit={true}

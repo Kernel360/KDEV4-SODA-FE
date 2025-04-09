@@ -194,7 +194,7 @@ const Project: React.FC = () => {
                   <ListItem
                     key={index}
                     sx={{ px: 0 }}>
-                    <ListItemText primary={manager.name} />
+                    <ListItemText primary={manager} />
                   </ListItem>
                 ))}
               </List>
@@ -243,7 +243,7 @@ const Project: React.FC = () => {
                   <ListItem
                     key={index}
                     sx={{ px: 0 }}>
-                    <ListItemText primary={manager.name} />
+                    <ListItemText primary={manager} />
                   </ListItem>
                 ))}
               </List>
@@ -268,7 +268,7 @@ const Project: React.FC = () => {
                   <ListItem
                     key={index}
                     sx={{ px: 0 }}>
-                    <ListItemText primary={member.name} />
+                    <ListItemText primary={member} />
                   </ListItem>
                 ))}
               </List>
@@ -293,7 +293,7 @@ const Project: React.FC = () => {
                   <ListItem
                     key={index}
                     sx={{ px: 0 }}>
-                    <ListItemText primary={member.name} />
+                    <ListItemText primary={member} />
                   </ListItem>
                 ))}
               </List>

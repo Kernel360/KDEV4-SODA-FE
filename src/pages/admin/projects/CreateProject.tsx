@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Typography } from '@mui/material'
-import CreateProjectForm from '@/components/projects/CreateProjectForm'
 import { getCompanyList } from '../../../api/company'
 import { useToast } from '../../../contexts/ToastContext'
 import type { CompanyListItem } from '../../../types/api'
-import { projectService } from '@/services/projectService'
+import { projectService } from '../../../services/projectService'
+import CreateProjectForm from '../../../components/projects/CreateProjectForm'
 
 export default function CreateProject() {
   const navigate = useNavigate()
@@ -22,8 +22,8 @@ export default function CreateProject() {
   const fetchCompanies = async () => {
     try {
       const response = await getCompanyList()
-      if (response.status === 'success') {
-        setCompanies(response.data || [])
+      if (response.status === 'success' && Array.isArray(response.data)) {
+        setCompanies(response.data)
       } else {
         showToast(
           response.message || '회사 목록을 불러오는데 실패했습니다.',
@@ -60,17 +60,34 @@ export default function CreateProject() {
       }
 
       // API 호출을 통해 프로젝트 생성
-      const response = await projectService.createProject({
+      await projectService.createProject({
         title: formData.name,
         description: formData.description,
+        status: '진행중',
         startDate: formData.startDate,
         endDate: formData.endDate,
-        clientCompanyId: Number(formData.clientCompanyId),
-        devCompanyId: Number(formData.developmentCompanyId),
-        devManagers: formData.developmentManagers.map(Number),
-        devMembers: formData.developmentParticipants.map(Number),
-        clientManagers: formData.clientManagers.map(Number),
-        clientMembers: formData.clientParticipants.map(Number)
+        clientCompanyName: formData.clientCompanyId,
+        devCompanyName: formData.developmentCompanyId,
+        clientCompanyManagers: formData.clientManagers.map(id => ({
+          name: id,
+          position: '',
+          email: ''
+        })),
+        clientCompanyMembers: formData.clientParticipants.map(id => ({
+          name: id,
+          position: '',
+          email: ''
+        })),
+        devCompanyManagers: formData.developmentManagers.map(id => ({
+          name: id,
+          position: '',
+          email: ''
+        })),
+        devCompanyMembers: formData.developmentParticipants.map(id => ({
+          name: id,
+          position: '',
+          email: ''
+        }))
       })
 
       // 성공 메시지 표시
