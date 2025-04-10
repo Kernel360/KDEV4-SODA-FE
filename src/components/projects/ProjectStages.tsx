@@ -33,20 +33,20 @@ const transformApiStageToStage = (apiStage: ApiStage): Stage => {
     throw new Error('Invalid API stage response')
   }
   return {
-    id: apiStage.id,
+          id: apiStage.id,
     title: apiStage.name, // Changed name to title to match Stage type
     order: apiStage.stageOrder, // Changed stageOrder to order to match Stage type
-    name: apiStage.name,
-    stageOrder: apiStage.stageOrder,
+          name: apiStage.name,
+          stageOrder: apiStage.stageOrder,
     status: '대기' as StageStatus,
     tasks: (apiStage.tasks || []).map(task => ({
-      id: task.taskId,
-      title: task.title,
+            id: task.taskId,
+            title: task.title,
       description: task.content || '',
       status: '대기' as TaskStatus,
       order: task.taskOrder || 0,
       stageId: apiStage.id,
-      createdAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       requests: []
     }))
@@ -72,84 +72,108 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
     if (!result.destination) return
 
     const { source, destination, type } = result
+    let isMoved = false
 
     // Stage 이동
     if (type === 'stage') {
-      const items = Array.from(transformedStages)
-      const [reorderedItem] = items.splice(source.index, 1)
-      items.splice(destination.index, 0, reorderedItem)
+      const sourceIndex = source.index
+      const destinationIndex = destination.index
 
-      // 이동된 위치의 앞뒤 스테이지 ID 찾기
-      const prevStage = items[destination.index - 1]
-      const nextStage = items[destination.index + 1]
-      
-      // UI를 먼저 업데이트
-      setTransformedStages(items)
-      if (onStagesChange) {
-        onStagesChange(items)
-      }
-      
+      if (sourceIndex === destinationIndex) return
+
       try {
+        // Optimistic update: 먼저 UI 업데이트
+        const updatedStages = [...transformedStages]
+        const [removed] = updatedStages.splice(sourceIndex, 1)
+        updatedStages.splice(destinationIndex, 0, removed)
+
+        // stageOrder 업데이트
+        updatedStages.forEach((stage, index) => {
+          stage.stageOrder = index
+        })
+
+        setTransformedStages(updatedStages)
+        if (onStagesChange) {
+          onStagesChange(updatedStages)
+        }
+
         // API 호출
-        await client.put(`/stages/${reorderedItem.id}/move`, {
+        const movedStage = updatedStages[destinationIndex]
+        const prevStage = destinationIndex > 0 ? updatedStages[destinationIndex - 1] : null
+        const nextStage = destinationIndex < updatedStages.length - 1 ? updatedStages[destinationIndex + 1] : null
+
+        await client.put(`/stages/${movedStage.id}/move`, {
           prevStageId: prevStage?.id || null,
           nextStageId: nextStage?.id || null
         })
+        isMoved = true
       } catch (error) {
         console.error('Failed to move stage:', error)
-        // API 호출 실패 시 원래 위치로 되돌리기
-        const originalItems = Array.from(transformedStages)
-        setTransformedStages(originalItems)
+        // API 호출 실패 시에도 UI는 유지
+      }
+    } else {
+      // Task 이동
+      const sourceStageId = parseInt(source.droppableId.split('-')[1])
+      const destinationStageId = parseInt(destination.droppableId.split('-')[1])
+      
+      const sourceStage = transformedStages.find(s => s.id === sourceStageId)
+      const destinationStage = transformedStages.find(s => s.id === destinationStageId)
+      
+      if (!sourceStage || !destinationStage) return
+
+      try {
+        // Optimistic update: 먼저 UI 업데이트
+        const newStages = transformedStages.map(stage => ({...stage}))
+        const newSourceStage = newStages.find(s => s.id === sourceStageId)!
+        const newDestinationStage = newStages.find(s => s.id === destinationStageId)!
+
+        const [movedTask] = newSourceStage.tasks.splice(source.index, 1)
+        newDestinationStage.tasks.splice(destination.index, 0, movedTask)
+
+        // taskOrder 업데이트
+        newDestinationStage.tasks.forEach((task, index) => {
+          task.order = index
+        })
+
+        setTransformedStages(newStages)
         if (onStagesChange) {
-          onStagesChange(originalItems)
+          onStagesChange(newStages)
         }
-        // 사용자에게 알림
-        alert('스테이지 이동에 실패했습니다. 다시 시도해주세요.')
+
+        // API 호출
+        const destinationTasks = newDestinationStage.tasks
+        const movedTaskIndex = destination.index
+
+        // 이전 task와 다음 task 찾기
+        const prevTask = movedTaskIndex > 0 ? destinationTasks[movedTaskIndex - 1] : null
+        const nextTask = movedTaskIndex < destinationTasks.length - 1 ? destinationTasks[movedTaskIndex + 1] : null
+
+        // API 호출 시 prevTaskId와 nextTaskId 설정
+        await client.patch(`/tasks/${movedTask.id}/move`, {
+          prevTaskId: prevTask?.id || null,
+          nextTaskId: nextTask?.id || null
+        })
+        isMoved = true
+      } catch (error) {
+        console.error('Failed to move task:', error)
+        // API 호출 실패 시에도 UI는 유지
       }
-      return
     }
 
-    // Task 이동
-    const sourceStageId = parseInt(source.droppableId.split('-')[1])
-    const destinationStageId = parseInt(destination.droppableId.split('-')[1])
-    
-    const sourceStage = transformedStages.find(s => s.id === sourceStageId)
-    const destinationStage = transformedStages.find(s => s.id === destinationStageId)
-    
-    if (!sourceStage || !destinationStage) return
-
-    const newStages = transformedStages.map(stage => ({...stage}))
-    const newSourceStage = newStages.find(s => s.id === sourceStageId)!
-    const newDestinationStage = newStages.find(s => s.id === destinationStageId)!
-
-    const [movedTask] = newSourceStage.tasks.splice(source.index, 1)
-    newDestinationStage.tasks.splice(destination.index, 0, movedTask)
-
-    // 이동된 위치의 앞뒤 task ID 찾기
-    const prevTask = newDestinationStage.tasks[destination.index - 1]
-    const nextTask = newDestinationStage.tasks[destination.index + 1]
-
-    // UI를 먼저 업데이트
-    setTransformedStages(newStages)
-    if (onStagesChange) {
-      onStagesChange(newStages)
-    }
-
-    try {
-      // API 호출
-      await client.patch(`/tasks/${movedTask.id}/move`, {
-        prevTaskId: prevTask?.id || null,
-        nextTaskId: nextTask?.id || null
-      })
-    } catch (error) {
-      console.error('Failed to move task:', error)
-      // API 호출 실패 시 원래 위치로 되돌리기
-      setTransformedStages(transformedStages)
-      if (onStagesChange) {
-        onStagesChange(transformedStages)
+    // 이동이 성공적으로 완료된 경우에만 stage 목록 새로고침
+    if (isMoved) {
+      try {
+        const stagesResponse = await client.get(`/projects/${projectId}/stages`)
+        if (stagesResponse.data && stagesResponse.data.data && Array.isArray(stagesResponse.data.data)) {
+          const refreshedStages = stagesResponse.data.data.map((stage: ApiStage) => transformApiStageToStage(stage))
+          setTransformedStages(refreshedStages)
+          if (onStagesChange) {
+            onStagesChange(refreshedStages)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to refresh stages:', error)
       }
-      // 사용자에게 알림
-      alert('작업 이동에 실패했습니다. 다시 시도해주세요.')
     }
   }
 
@@ -266,16 +290,6 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
 
       // API 호출
       await deleteStage(stageId)
-
-      // 게시판 쪽 stage 목록 새로고침
-      const stagesResponse = await client.get(`/projects/${projectId}/stages`)
-      if (stagesResponse.data && stagesResponse.data.data && Array.isArray(stagesResponse.data.data)) {
-        const refreshedStages = stagesResponse.data.data.map((stage: ApiStage) => transformApiStageToStage(stage))
-        setTransformedStages(refreshedStages)
-        if (onStagesChange) {
-          onStagesChange(refreshedStages)
-        }
-      }
     } catch (error) {
       console.error('Failed to delete stage:', error)
       // 실패 시 원래 상태로 복구
