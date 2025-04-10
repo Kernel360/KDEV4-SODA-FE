@@ -13,6 +13,8 @@ import {
   Typography,
   Box
 } from '@mui/material'
+import { useUserStore } from '../../stores/userStore'
+import Cookies from 'js-cookie'
 
 interface Notification {
   id: number
@@ -20,11 +22,6 @@ interface Notification {
   type: 'approval_request' | 'approval_accepted' | 'approval_rejected'
   createdAt: string
   isRead: boolean
-}
-
-interface UserProfile {
-  name: string
-  role: 'client' | 'developer'
 }
 
 interface HeaderProps {
@@ -37,13 +34,9 @@ const Header: React.FC<HeaderProps> = ({ sx }) => {
   const [notificationAnchor, setNotificationAnchor] =
     useState<null | HTMLElement>(null)
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null)
+  const { user, clearUser } = useUserStore()
 
   // Mock data - replace with actual data from your backend
-  const user: UserProfile = {
-    name: '홍길동',
-    role: 'client'
-  }
-
   const notifications: Notification[] = [
     {
       id: 1,
@@ -85,12 +78,27 @@ const Header: React.FC<HeaderProps> = ({ sx }) => {
   }
 
   const handleLogout = () => {
-    // Implement logout logic
+    // Clear localStorage
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+
+    // Clear cookies
+    Cookies.remove('refreshToken')
+
+    // Clear user state
+    clearUser()
+
+    // Close profile menu
     handleProfileClose()
+
+    // Navigate to main page
+    navigate('/')
   }
 
   const handleMyPage = () => {
-    navigate('/mypage')
+    if (user?.authId) {
+      navigate(`/user/${user.authId}`)
+    }
     handleProfileClose()
   }
 
@@ -165,7 +173,7 @@ const Header: React.FC<HeaderProps> = ({ sx }) => {
                 color: 'text.primary',
                 transition: 'color 0.2s'
               }}>
-              {user.name}
+              {user?.name || '사용자'}
             </Typography>
             <ChevronDown
               size={20}
