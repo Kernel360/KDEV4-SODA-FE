@@ -1,11 +1,11 @@
 import { API_ENDPOINTS } from './config'
 import { apiRequest } from './api'
 import type {
-  TaskRequestsResponse,
   ProjectStageTask,
   ApiResponse
 } from '../types/api'
 import { client } from './client'
+import { TaskStatus } from '../types/project'
 
 // API 응답 타입 정의
 export interface ApprovalResponse {
@@ -28,10 +28,13 @@ export interface CreateRequestResponse {
 }
 
 export const getTaskRequests = async (taskId: number) => {
-  return apiRequest<TaskRequestsResponse>(
-    'GET',
-    API_ENDPOINTS.GET_TASK_REQUESTS(taskId)
-  )
+  try {
+    const response = await client.get(`/tasks/${taskId}/requests`)
+    return response.data
+  } catch (error) {
+    console.error('Failed to fetch task requests:', error)
+    throw error
+  }
 }
 
 export interface ApprovalRequestBody {
@@ -209,11 +212,26 @@ export const getTaskDetail = async (
   return apiRequest<ApiResponse<ProjectStageTask>>('GET', `/tasks/${taskId}`)
 }
 
-export const updateTask = async (
-  taskId: number,
-  data: Partial<ProjectStageTask>
-) => {
-  return apiRequest<ProjectStageTask>('PUT', `/tasks/${taskId}`, data)
+export interface UpdateTaskData {
+  title: string
+  content: string
+}
+
+export const updateTask = async (taskId: number, data: UpdateTaskData) => {
+  console.log('Updating task with:', taskId, data)
+  const response = await client.patch(`/tasks/${taskId}`, data)
+  console.log('Update task response:', response)
+  return {
+    id: response.data.taskId,
+    title: response.data.title,
+    description: response.data.content,
+    status: 'TODO' as TaskStatus,
+    order: response.data.taskOrder,
+    stageId: response.data.stageId,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    requests: []
+  }
 }
 
 export const deleteTask = async (
@@ -232,5 +250,15 @@ interface CreateTaskData {
 
 export const createTask = async (data: CreateTaskData) => {
   const response = await client.post('http://localhost:8080/tasks', data)
-  return response.data
+  return {
+    id: response.data.taskId,
+    title: response.data.title,
+    description: response.data.content,
+    status: 'TODO' as TaskStatus,
+    order: response.data.taskOrder,
+    stageId: response.data.stageId,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    requests: []
+  }
 }
