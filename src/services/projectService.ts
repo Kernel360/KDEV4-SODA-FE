@@ -6,7 +6,8 @@ import { client } from '../api/client'
 import {
   Article,
   ArticleCreateRequest,
-  ArticleCreateResponse
+  ArticleCreateResponse,
+  PriorityType
 } from '../types/article'
 
 export interface CreateProjectRequest {
@@ -218,5 +219,27 @@ export const projectService = {
   // 게시글 삭제
   async deleteArticle(projectId: number, articleId: number): Promise<void> {
     await client.delete(`/projects/${projectId}/articles/${articleId}`)
+  },
+
+  async updateArticle(
+    articleId: number,
+    data: {
+      projectId: number
+      title: string
+      content: string
+      priority: PriorityType
+      deadLine: string
+      memberId: number
+      stageId: number
+      linkList: { urlAddress: string; urlDescription: string }[]
+    }
+  ): Promise<Article> {
+    try {
+      const response = await client.put(`/articles/${articleId}`, data)
+      return response.data.data
+    } catch (error) {
+      console.error('Error updating article:', error)
+      throw error
+    }
   }
 }
