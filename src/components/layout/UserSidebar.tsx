@@ -12,22 +12,35 @@ import {
 } from '@mui/material'
 import { ClipboardList, LayoutDashboard } from 'lucide-react'
 import { projectService } from '../../services/projectService'
-import type { Project } from '../../types/project'
+import useProjectStore from '../../stores/projectStore'
 
 const UserSidebar: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const [projects, setProjects] = useState<Project[]>([])
   const [error, setError] = useState<string | null>(null)
+  const { projects, fetchAllProjects } = useProjectStore()
 
   useEffect(() => {
-    const fetchUserProjects = async () => {
+    const fetchProjects = async () => {
       try {
-        const projects = await projectService.getUserProjects()
-        if (projects && projects.length > 0) {
-          setProjects(projects)
+        const userData = localStorage.getItem('user')
+        if (!userData) {
+          setError('사용자 정보를 찾을 수 없습니다.')
+          return
+        }
+
+        const user = JSON.parse(userData)
+        if (user.role === 'ADMIN') {
+          // 관리자인 경우 전체 프로젝트 조회
+          await fetchAllProjects()
         } else {
-          setError('참여 중인 프로젝트가 없습니다.')
+          // 일반 사용자인 경우 참여 중인 프로젝트만 조회
+          const userProjects = await projectService.getUserProjects()
+          if (userProjects && userProjects.length > 0) {
+            useProjectStore.setState({ projects: userProjects })
+          } else {
+            setError('프로젝트가 없습니다.')
+          }
         }
       } catch (error) {
         console.error('Error fetching projects:', error)
@@ -35,8 +48,8 @@ const UserSidebar: React.FC = () => {
       }
     }
 
-    fetchUserProjects()
-  }, [])
+    fetchProjects()
+  }, [fetchAllProjects])
 
   const isActive = (path: string) => {
     return location.pathname === path
@@ -135,7 +148,11 @@ const UserSidebar: React.FC = () => {
           color: 'text.secondary',
           fontWeight: 500
         }}>
-        참여 중인 프로젝트
+        {localStorage.getItem('user')
+          ? JSON.parse(localStorage.getItem('user')!).role === 'ADMIN'
+            ? '전체 프로젝트 목록'
+            : '참여 중인 프로젝트'
+          : '프로젝트 목록'}
       </Typography>
       <List sx={{ flexGrow: 1, overflow: 'auto' }}>
         {error ? (
