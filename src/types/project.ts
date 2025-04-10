@@ -42,6 +42,8 @@ export interface Task {
 }
 
 export interface Stage {
+  stageOrder: any | number
+  name: any | string
   id: number
   title: string
   order: number
