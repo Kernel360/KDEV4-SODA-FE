@@ -38,9 +38,14 @@ const UserMain: React.FC = () => {
         const userProjects = await projectService.getUserProjects()
 
         // 프로젝트 데이터에 progress 추가 (임시로 0으로 설정)
+        const calculateProgress = (): number => {
+          // 임시로 0 반환
+          return 0
+        }
+
         const projectsWithProgress = userProjects.map(project => ({
           ...project,
-          progress: 0
+          progress: calculateProgress()
         }))
 
         setProjects(projectsWithProgress)
@@ -55,7 +60,7 @@ const UserMain: React.FC = () => {
             createdAt: '2024-02-20T10:00:00',
             updatedAt: '2024-02-20T10:00:00',
             type: '수정',
-            projectName: userProjects[0]?.title || '프로젝트 1'
+            projectName: userProjects[0]?.projectName || '프로젝트 1'
           },
           {
             id: 2,
@@ -66,7 +71,7 @@ const UserMain: React.FC = () => {
             createdAt: '2024-02-19T15:00:00',
             updatedAt: '2024-02-19T16:30:00',
             type: '추가',
-            projectName: userProjects[1]?.title || '프로젝트 2'
+            projectName: userProjects[1]?.projectName || '프로젝트 2'
           }
         ]
 

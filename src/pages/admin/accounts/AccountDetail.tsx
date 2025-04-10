@@ -14,10 +14,9 @@ import {
 import { ArrowLeft } from 'lucide-react'
 import { useToast } from '../../../contexts/ToastContext'
 import { getUserDetail, updateUserStatus, updateUser } from '../../../api/admin'
-import AccountDetailForm, {
-} from '../../../components/accounts/AccountDetailForm'
+import AccountDetailForm from '../../../components/accounts/AccountDetailForm'
+import type { Account } from '../../../components/accounts/AccountDetailForm'
 
-// 더미 데이터
 
 interface AccountDetailProps {
   isAdmin?: boolean
@@ -27,48 +26,84 @@ export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { showToast } = useToast()
-  const [account, setAccount] = useState<any>(null)
+  const [account, setAccount] = useState<Partial<Account> | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [formData, setFormData] = useState<{
+    name: string
+    email: string
+    role: string
+    companyId: number
+    position: string
+    phoneNumber: string
+  }>({
+    name: '',
+    email: '',
+    role: '',
+    companyId: 0,
+    position: '',
+    phoneNumber: ''
+  })
 
   useEffect(() => {
+    const fetchUserDetail = async () => {
+      try {
+        setLoading(true)
+        const response = await getUserDetail(Number(id))
+        if (response.status === 'success' && response.data) {
+          setAccount(response.data)
+          setFormData({
+            name: response.data.name || '',
+            email: response.data.email || '',
+            role: response.data.role || '',
+            companyId: response.data.companyId || 0,
+            position: response.data.position || '',
+            phoneNumber: response.data.phoneNumber || ''
+          })
+        } else {
+          setError(response.message || '사용자 정보를 불러오는데 실패했습니다.')
+          showToast('사용자 정보를 불러오는데 실패했습니다.', 'error')
+        }
+      } catch (err) {
+        console.error('사용자 정보 조회 중 오류:', err)
+        setError('사용자 정보를 불러오는데 실패했습니다.')
+        showToast('사용자 정보를 불러오는데 실패했습니다.', 'error')
+      } finally {
+        setLoading(false)
+      }
+    }
+
     if (id) {
       fetchUserDetail()
     }
-  }, [id])
+  }, [id, showToast])
 
-  const fetchUserDetail = async () => {
+  const handleSave = async () => {
     try {
-      setLoading(true)
-      const response = await getUserDetail(Number(id))
-      if (response.status === 'success' && response.data) {
-        setAccount(response.data)
-      } else {
-        setError(response.message || '사용자 정보를 불러오는데 실패했습니다.')
-      }
-    } catch (err) {
-      console.error('사용자 정보 조회 중 오류:', err)
-      setError('사용자 정보를 불러오는데 실패했습니다.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleSave = async (formData: any) => {
-    try {
-      setLoading(true)
-      // TODO: Implement update user API
       const response = await updateUser(Number(id), {
-        ...formData,
-        role: formData.role || 'USER'
+        name: formData.name,
+        email: formData.email,
+        role: formData.role,
+        companyId: formData.companyId,
+        position: formData.position,
+        phoneNumber: formData.phoneNumber
       })
       if (response.status === 'success') {
         setHasChanges(false)
         setSuccess('사용자 정보가 성공적으로 수정되었습니다.')
         showToast('사용자 정보가 성공적으로 수정되었습니다.', 'success')
+        setAccount(response.data)
+        setFormData({
+          name: response.data.name || '',
+          email: response.data.email || '',
+          role: response.data.role || '',
+          companyId: response.data.companyId || 0,
+          position: response.data.position || '',
+          phoneNumber: response.data.phoneNumber || ''
+        })
       } else {
         setError(response.message || '사용자 정보 수정에 실패했습니다.')
         showToast('사용자 정보 수정에 실패했습니다.', 'error')
@@ -77,8 +112,6 @@ export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
       console.error('사용자 정보 수정 중 오류:', err)
       setError('사용자 정보 수정에 실패했습니다.')
       showToast('사용자 정보 수정에 실패했습니다.', 'error')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -172,25 +205,15 @@ export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
 
       {account && (
         <AccountDetailForm
-          account={{
-            id: account.id.toString(),
-            name: account.name,
-            username: account.authId,
-            email: account.email || '',
-            phoneNumber: account.phoneNumber || '',
-            companyName: account.companyName || '',
-            position: account.position || '',
-            role: account.role,
-            isActive: !account.deleted
-          }}
-          loading={loading}
+          account={account}
+          loading={false}
           error={error}
           success={success}
           isAdmin={isAdmin}
           onSave={handleSave}
           onPasswordChange={handlePasswordChange}
           onCancel={handleCancel}
-          onToggleActive={() => handleToggleActive(account.id, !account.deleted)}
+          onToggleActive={() => account.id && handleToggleActive(account.id, !account.deleted)}
         />
       )}
 

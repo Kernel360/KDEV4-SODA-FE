@@ -290,7 +290,7 @@ const Article: React.FC = () => {
       <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
         <Button
           variant="outlined"
-          onClick={() => navigate(`/user/projects/${projectId}/articles`)}
+          onClick={() => navigate(`/user/projects/${projectId}`)}
           startIcon={<ArrowLeft size={16} />}>
           목록
         </Button>
