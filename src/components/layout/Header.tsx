@@ -96,7 +96,9 @@ const Header: React.FC<HeaderProps> = ({ sx }) => {
   }
 
   const handleMyPage = () => {
-    navigate('/mypage')
+    if (user?.authId) {
+      navigate(`/user/${user.authId}`)
+    }
     handleProfileClose()
   }
 
