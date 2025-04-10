@@ -34,6 +34,7 @@ export interface Article {
   status: ArticleStatus
   children: Article[]
   parentArticleId?: number
+  stageId?: number
 }
 
 export interface ArticleFile {
@@ -79,4 +80,39 @@ export interface ArticleCreateResponse {
   data: {
     id: number
   }
+}
+
+export interface ArticleUpdateRequest {
+  projectId: number
+  title: string
+  content: string
+  priority: PriorityType
+  deadLine: string
+  memberId: number
+  stageId: number
+  linkList: LinkUploadDTO[]
+}
+
+export interface ArticleUpdateResponse {
+  id: number
+  title: string
+  content: string
+  priority: PriorityType
+  deadLine: string
+  memberName: string
+  stageName: string
+  fileList: ArticleFileDTO[]
+  linkList: ArticleLinkDTO[]
+}
+
+export interface ArticleFileDTO {
+  id: number
+  fileName: string
+  fileUrl: string
+}
+
+export interface ArticleLinkDTO {
+  id: number
+  urlAddress: string
+  urlDescription: string
 }

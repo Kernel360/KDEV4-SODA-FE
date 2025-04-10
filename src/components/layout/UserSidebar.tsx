@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   List,
@@ -11,26 +11,32 @@ import {
   Divider
 } from '@mui/material'
 import { ClipboardList, LayoutDashboard } from 'lucide-react'
-
-// 실제로는 API에서 받아올 데이터
-const mockProjects = [
-  {
-    id: 1,
-    title: '웹사이트 리뉴얼 프로젝트'
-  },
-  {
-    id: 2,
-    title: '모바일 앱 개발'
-  },
-  {
-    id: 3,
-    title: 'ERP 시스템 구축'
-  }
-]
+import { projectService } from '../../services/projectService'
+import type { Project } from '../../types/project'
 
 const UserSidebar: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const [projects, setProjects] = useState<Project[]>([])
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchUserProjects = async () => {
+      try {
+        const projects = await projectService.getUserProjects()
+        if (projects && projects.length > 0) {
+          setProjects(projects)
+        } else {
+          setError('참여 중인 프로젝트가 없습니다.')
+        }
+      } catch (error) {
+        console.error('Error fetching projects:', error)
+        setError('프로젝트 목록을 불러오는데 실패했습니다.')
+      }
+    }
+
+    fetchUserProjects()
+  }, [])
 
   const isActive = (path: string) => {
     return location.pathname === path
@@ -132,13 +138,25 @@ const UserSidebar: React.FC = () => {
         참여 중인 프로젝트
       </Typography>
       <List sx={{ flexGrow: 1, overflow: 'auto' }}>
-        {mockProjects.map(project => (
-          <ProjectItem
-            key={project.id}
-            id={project.id}
-            title={project.title}
-          />
-        ))}
+        {error ? (
+          <Typography
+            color="error"
+            sx={{ px: 2, py: 1 }}>
+            {error}
+          </Typography>
+        ) : projects.length === 0 ? (
+          <Typography sx={{ px: 2, py: 1, color: 'text.secondary' }}>
+            참여 중인 프로젝트가 없습니다.
+          </Typography>
+        ) : (
+          projects.map(project => (
+            <ProjectItem
+              key={project.id}
+              id={project.id}
+              title={project.title}
+            />
+          ))
+        )}
       </List>
     </Box>
   )
