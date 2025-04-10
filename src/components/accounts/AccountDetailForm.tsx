@@ -16,7 +16,7 @@ import {
   DialogContent,
   DialogActions
 } from '@mui/material'
-import { Save, X, Edit } from 'lucide-react'
+import { Save, X, Edit, Lock } from 'lucide-react'
 import { getCompanies } from '../../api/admin'
 
 // 계정 인터페이스 정의
@@ -33,19 +33,18 @@ export interface Account {
 }
 
 interface AccountDetailFormProps {
-  account: Account | null
-  loading: boolean
-  error: string | null
-  success: string | null
+  account: Partial<Account>
+  loading?: boolean
+  error?: string | null
+  success?: string | null
   isAdmin?: boolean
-  onSave: (formData: Partial<Account>) => Promise<void>
-  onPasswordChange?: (passwordData: {
+  onSave?: (formData: Partial<Account>) => void
+  onPasswordChange?: (data: {
     currentPassword: string
     newPassword: string
     confirmPassword: string
-  }) => Promise<void>
+  }) => void
   onCancel?: () => void
-  onToggleActive?: () => Promise<void>
 }
 
 export default function AccountDetailForm({
@@ -56,8 +55,7 @@ export default function AccountDetailForm({
   isAdmin = false,
   onSave,
   onPasswordChange,
-  onCancel,
-  onToggleActive
+  onCancel
 }: AccountDetailFormProps) {
   const [formData, setFormData] = useState<Partial<Account>>({
     name: '',
@@ -133,11 +131,11 @@ export default function AccountDetailForm({
   // 계정 정보 저장 핸들러
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await onSave(formData)
+    await onSave?.(formData)
   }
 
   // 비밀번호 변경 핸들러
-  const handlePasswordSubmit = async () => {
+  const handlePasswordChange = async () => {
     // 비밀번호 유효성 검사
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setPasswordError('새 비밀번호와 확인 비밀번호가 일치하지 않습니다.')
@@ -152,7 +150,7 @@ export default function AccountDetailForm({
     setPasswordError(null)
 
     if (onPasswordChange) {
-      await onPasswordChange(passwordData)
+      onPasswordChange(passwordData)
       setShowPasswordForm(false)
       setPasswordData({
         currentPassword: '',
@@ -336,7 +334,8 @@ export default function AccountDetailForm({
                 '& .MuiInputBase-input.Mui-disabled': {
                   WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
                   backgroundColor: 'transparent'
-                }
+                },
+                maxWidth: '200px'
               }}
               SelectProps={{
                 native: true
@@ -344,20 +343,6 @@ export default function AccountDetailForm({
               <option value="USER">일반 사용자</option>
               <option value="ADMIN">관리자</option>
             </TextField>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.isActive || false}
-                    onChange={onToggleActive}
-                    name="isActive"
-                    color="primary"
-                    disabled={!isEditing}
-                  />
-                }
-                label="계정 활성화"
-              />
-            </Box>
           </Stack>
         )}
 
@@ -388,72 +373,89 @@ export default function AccountDetailForm({
           )}
         </Box>
 
-        {showPasswordForm && onPasswordChange && (
-          <>
-            <Divider sx={{ my: 3 }} />
-            <Typography
-              variant="h6"
-              sx={{ mb: 2 }}>
-              비밀번호 변경
-            </Typography>
+        <Divider />
+
+        <Box>
+          <Button
+            variant="outlined"
+            onClick={() => setShowPasswordForm(true)}
+            startIcon={<Lock />}>
+            비밀번호 변경
+          </Button>
+        </Box>
+      </Stack>
+
+      {/* 비밀번호 변경 모달 */}
+      <Dialog
+        open={showPasswordForm}
+        onClose={() => setShowPasswordForm(false)}>
+        <DialogTitle>비밀번호 변경</DialogTitle>
+        <DialogContent>
+          <Stack
+            spacing={2}
+            sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="현재 비밀번호"
+              type="password"
+              value={passwordData.currentPassword}
+              onChange={e =>
+                setPasswordData(prev => ({
+                  ...prev,
+                  currentPassword: e.target.value
+                }))
+              }
+            />
+            <TextField
+              fullWidth
+              label="새 비밀번호"
+              type="password"
+              value={passwordData.newPassword}
+              onChange={e =>
+                setPasswordData(prev => ({
+                  ...prev,
+                  newPassword: e.target.value
+                }))
+              }
+            />
+            <TextField
+              fullWidth
+              label="새 비밀번호 확인"
+              type="password"
+              value={passwordData.confirmPassword}
+              onChange={e =>
+                setPasswordData(prev => ({
+                  ...prev,
+                  confirmPassword: e.target.value
+                }))
+              }
+            />
             {passwordError && (
               <Alert
                 severity="error"
-                sx={{ mb: 2 }}>
+                sx={{ mt: 2 }}>
                 {passwordError}
               </Alert>
             )}
-            <Stack spacing={2}>
-              <Stack
-                direction={{ xs: 'column', md: 'row' }}
-                spacing={2}>
-                <TextField
-                  fullWidth
-                  label="현재 비밀번호"
-                  name="currentPassword"
-                  type="password"
-                  value={passwordData.currentPassword}
-                  onChange={handlePasswordInputChange}
-                />
-                <TextField
-                  fullWidth
-                  label="새 비밀번호"
-                  name="newPassword"
-                  type="password"
-                  value={passwordData.newPassword}
-                  onChange={handlePasswordInputChange}
-                />
-                <TextField
-                  fullWidth
-                  label="새 비밀번호 확인"
-                  name="confirmPassword"
-                  type="password"
-                  value={passwordData.confirmPassword}
-                  onChange={handlePasswordInputChange}
-                />
-              </Stack>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  variant="contained"
-                  onClick={handlePasswordSubmit}
-                  disabled={loading}>
-                  {loading ? <CircularProgress size={24} /> : '비밀번호 변경'}
-                </Button>
-              </Box>
-            </Stack>
-          </>
-        )}
-      </Stack>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowPasswordForm(false)}>취소</Button>
+          <Button
+            onClick={handlePasswordChange}
+            variant="contained">
+            변경
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* 수정사항 확인 모달 */}
       <Dialog
         open={showConfirmDialog}
         onClose={() => setShowConfirmDialog(false)}>
-        <DialogTitle>수정사항 저장</DialogTitle>
+        <DialogTitle>수정사항이 있습니다</DialogTitle>
         <DialogContent>
-          <Typography>
-            수정사항이 있습니다. 저장하지 않고 나가시겠습니까?
-          </Typography>
+          저장하지 않은 수정사항이 있습니다. 정말로 나가시겠습니까?
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowConfirmDialog(false)}>취소</Button>
