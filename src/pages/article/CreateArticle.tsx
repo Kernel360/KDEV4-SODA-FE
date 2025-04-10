@@ -39,9 +39,21 @@ const CreateArticle: React.FC = () => {
       try {
         if (!projectId) return
         const data = await projectService.getProjectStages(parseInt(projectId))
-        setStages(data)
-        if (data.length > 0) {
-          setFormData(prev => ({ ...prev, stageId: data[0].id }))
+        const mappedStages = data.map(stage => ({
+          ...stage,
+          order: stage.stageOrder,
+          tasks: stage.tasks.map(task => ({
+            id: task.taskId,
+            title: task.title,
+            description: task.content,
+            status: 'TODO',
+            order: task.taskOrder,
+            stageId: stage.id
+          }))
+        }))
+        setStages(mappedStages)
+        if (mappedStages.length > 0) {
+          setFormData(prev => ({ ...prev, stageId: mappedStages[0].id }))
         }
       } catch (err) {
         console.error('Error fetching stages:', err)
