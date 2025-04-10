@@ -48,6 +48,7 @@ interface ArticleFormProps {
   formData: ArticleFormData
   stages: Stage[]
   isLoading?: boolean
+  isReply?: boolean
   validationErrors?: {
     title?: string
     content?: string
@@ -63,6 +64,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   formData,
   stages,
   isLoading,
+  isReply = false,
   validationErrors = {},
   onChange,
   onSubmit,
@@ -102,13 +104,19 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     }
   }
 
+  const getTitle = () => {
+    if (mode === 'edit') return '게시글 수정'
+    if (isReply) return '답글 작성'
+    return '새 게시글 작성'
+  }
+
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
       <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
         <IconButton onClick={onCancel}>
           <ArrowLeft />
         </IconButton>
-        <Typography variant="h6">새 게시글 작성</Typography>
+        <Typography variant="h6">{getTitle()}</Typography>
       </Box>
 
       <form onSubmit={onSubmit}>
