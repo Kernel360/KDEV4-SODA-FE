@@ -31,6 +31,7 @@ const AddStageModal = ({ open, onClose, onAddStage }: AddStageModalProps) => {
       setIsSubmitting(true)
       await onAddStage(title.trim())
       setTitle('')
+      onClose()
     } catch (error) {
       console.error('Failed to add stage:', error)
       alert('스테이지 생성에 실패했습니다. 다시 시도해주세요.')

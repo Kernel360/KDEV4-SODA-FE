@@ -6,6 +6,7 @@ import type { Stage, StageStatus, TaskStatus } from '../../types/project'
 import AddStageModal from './AddStageModal'
 import StageCard from './StageCard'
 import { createStage, updateStage, deleteStage } from '../../api/stage'
+import { updateTask } from '../../api/task'
 import { client } from '../../api/client'
 
 interface ApiStage {
@@ -22,9 +23,37 @@ interface ApiStage {
 
 interface ProjectStagesProps {
   projectId: number
-  stages: ApiStage[]
+  stages: Stage[]
   onStagesChange?: (stages: Stage[]) => void
 }
+
+// API 응답을 Stage 타입으로 변환하는 함수
+const transformApiStageToStage = (apiStage: ApiStage): Stage => {
+  if (!apiStage) {
+    throw new Error('Invalid API stage response')
+  }
+  return {
+    id: apiStage.id,
+    title: apiStage.name, // Changed name to title to match Stage type
+    order: apiStage.stageOrder, // Changed stageOrder to order to match Stage type
+    name: apiStage.name,
+    stageOrder: apiStage.stageOrder,
+    status: '대기' as StageStatus,
+    tasks: (apiStage.tasks || []).map(task => ({
+      id: task.taskId,
+      title: task.title,
+      description: task.content || '',
+      status: '대기' as TaskStatus,
+      order: task.taskOrder || 0,
+      stageId: apiStage.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      requests: []
+    }))
+  }
+}
+
+// Stage 타입을 API 요청 형식으로 변환하는 함수
 
 export const ProjectStages = ({ projectId, stages = [], onStagesChange }: ProjectStagesProps) => {
   const [isAddStageModalOpen, setIsAddStageModalOpen] = useState(false)
@@ -33,25 +62,9 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
   const [selectedPosition, setSelectedPosition] = useState<number | null>(null)
   const [transformedStages, setTransformedStages] = useState<Stage[]>([])
 
-  // API 응답 데이터를 Stage 인터페이스에 맞게 변환
+  // stages prop이 변경될 때 transformedStages 업데이트
   useEffect(() => {
-    const transformed = stages.map(stage => ({
-      id: stage.id,
-      title: stage.name,
-      order: stage.stageOrder,
-      status: '대기' as StageStatus,
-      tasks: stage.tasks.map(task => ({
-        id: task.taskId,
-        title: task.title,
-        description: task.content,
-        status: '대기' as TaskStatus,
-        order: task.taskOrder,
-        stageId: stage.id,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        requests: []
-      }))
-    }))
+    const transformed = stages.map(stage => transformApiStageToStage(stage as unknown as ApiStage))
     setTransformedStages(transformed)
   }, [stages])
 
@@ -112,18 +125,31 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
     const [movedTask] = newSourceStage.tasks.splice(source.index, 1)
     newDestinationStage.tasks.splice(destination.index, 0, movedTask)
 
-    // 이동된 위치의 앞뒤 task ID 출력
+    // 이동된 위치의 앞뒤 task ID 찾기
     const prevTask = newDestinationStage.tasks[destination.index - 1]
     const nextTask = newDestinationStage.tasks[destination.index + 1]
-    console.log('Task moved. Surrounding tasks:', {
-      stageId: destinationStageId,
-      prevTaskId: prevTask?.id,
-      movedTaskId: movedTask.id,
-      nextTaskId: nextTask?.id
-    })
 
+    // UI를 먼저 업데이트
+    setTransformedStages(newStages)
     if (onStagesChange) {
       onStagesChange(newStages)
+    }
+
+    try {
+      // API 호출
+      await client.patch(`/tasks/${movedTask.id}/move`, {
+        prevTaskId: prevTask?.id || null,
+        nextTaskId: nextTask?.id || null
+      })
+    } catch (error) {
+      console.error('Failed to move task:', error)
+      // API 호출 실패 시 원래 위치로 되돌리기
+      setTransformedStages(transformedStages)
+      if (onStagesChange) {
+        onStagesChange(transformedStages)
+      }
+      // 사용자에게 알림
+      alert('작업 이동에 실패했습니다. 다시 시도해주세요.')
     }
   }
 
@@ -137,26 +163,45 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
       const prevStageId = prevStage?.id || null
       const nextStageId = nextStage?.id || null
 
-      // API 호출 먼저 수행
-      const response = await createStage(projectId, title, prevStageId, nextStageId)
-      
-      // API 응답으로 stage 객체 생성
+      // Optimistic update: 먼저 UI에 stage 추가
       const newStage: Stage = {
-        id: response.id,
+        id: Date.now(), // 임시 ID
         title: title,
         order: position,
         status: '대기' as StageStatus,
-        tasks: []
+        tasks: [],
+        stageOrder: undefined,
+        name: undefined
       }
 
-      // 새로운 stages 배열 생성
       const updatedStages = [...transformedStages]
       updatedStages.splice(position, 0, newStage)
 
-      // 상태 업데이트
       setTransformedStages(updatedStages)
       if (onStagesChange) {
         onStagesChange(updatedStages)
+      }
+
+      // API 호출
+      const response = await createStage(projectId, title, prevStageId, nextStageId)
+      if (!response) {
+        throw new Error('Invalid API response')
+      }
+
+      // API 응답으로 실제 stage로 교체
+      const finalUpdatedStages = updatedStages.map(stage => 
+        stage.id === newStage.id ? {
+          id: response.id,
+          title: response.name,
+          order: response.stageOrder,
+          status: '대기' as StageStatus,
+          tasks: []
+        } : stage
+      )
+
+      setTransformedStages(finalUpdatedStages as Stage[])
+      if (onStagesChange) {
+        onStagesChange(finalUpdatedStages as Stage[])
       }
 
       // 모달 닫기
@@ -164,6 +209,11 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
       setSelectedPosition(null)
     } catch (error) {
       console.error('Failed to add stage:', error)
+      // 실패 시 원래 상태로 복구
+      setTransformedStages(transformedStages)
+      if (onStagesChange) {
+        onStagesChange(transformedStages)
+      }
       throw error
     }
   }
@@ -188,27 +238,26 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
 
   const handleStageEdit = async (stageId: number, newTitle: string) => {
     try {
-      await updateStage(stageId, newTitle)
-      // 스테이지 목록을 업데이트
+      const response = await updateStage(stageId, newTitle) as ApiStage
+      const updatedStage = transformApiStageToStage(response)
+      
       const updatedStages = transformedStages.map(stage => 
-        stage.id === stageId ? { ...stage, title: newTitle } : stage
+        stage.id === stageId ? updatedStage : stage
       )
+      
       setTransformedStages(updatedStages)
       if (onStagesChange) {
         onStagesChange(updatedStages)
       }
     } catch (error) {
       console.error('Failed to update stage:', error)
+      throw error
     }
   }
 
   const handleStageDelete = async (stageId: number) => {
     try {
-      // 삭제할 stage의 정보 저장
-      const stageToDelete = transformedStages.find(stage => stage.id === stageId)
-      if (!stageToDelete) return
-
-      // 로컬 상태에서 즉시 삭제 (optimistic update)
+      // Optimistic update: 먼저 UI에서 stage 제거
       const updatedStages = transformedStages.filter(stage => stage.id !== stageId)
       setTransformedStages(updatedStages)
       if (onStagesChange) {
@@ -217,6 +266,16 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
 
       // API 호출
       await deleteStage(stageId)
+
+      // 게시판 쪽 stage 목록 새로고침
+      const stagesResponse = await client.get(`/projects/${projectId}/stages`)
+      if (stagesResponse.data && stagesResponse.data.data && Array.isArray(stagesResponse.data.data)) {
+        const refreshedStages = stagesResponse.data.data.map((stage: ApiStage) => transformApiStageToStage(stage))
+        setTransformedStages(refreshedStages)
+        if (onStagesChange) {
+          onStagesChange(refreshedStages)
+        }
+      }
     } catch (error) {
       console.error('Failed to delete stage:', error)
       // 실패 시 원래 상태로 복구
@@ -224,7 +283,40 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
       if (onStagesChange) {
         onStagesChange(transformedStages)
       }
-      alert('스테이지 삭제에 실패했습니다. 다시 시도해주세요.')
+      throw error
+    }
+  }
+
+
+  const handleTaskEdit = async (taskId: number, title: string, content: string) => {
+    try {
+      // Optimistic update: 먼저 UI 업데이트
+      const updatedStages = transformedStages.map(stage => ({
+        ...stage,
+        tasks: stage.tasks.map(task => 
+          task.id === taskId ? {
+            ...task,
+            title,
+            description: content,
+            updatedAt: new Date().toISOString()
+          } : task
+        )
+      }))
+
+      setTransformedStages(updatedStages)
+      if (onStagesChange) {
+        onStagesChange(updatedStages)
+      }
+
+      // API 호출
+      await updateTask(taskId, { title, content })
+    } catch (error) {
+      // 실패 시 원래 상태로 복구
+      setTransformedStages(transformedStages)
+      if (onStagesChange) {
+        onStagesChange(transformedStages)
+      }
+      throw error
     }
   }
 
@@ -257,15 +349,16 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
               }}
             >
               {transformedStages.map((stage, index) => (
-                <React.Fragment key={stage.id}>
+                <React.Fragment key={`stage-${stage.id}-${index}`}>
                   {isEditMode ? (
                     <Box
+                      key={`add-button-${index}`}
                       onMouseEnter={() => setHoveredIndex(index)}
                       onMouseLeave={() => setHoveredIndex(null)}
                       sx={{
                         width: '24px',
                         minWidth: '24px',
-                        height: '600px',
+                        height: '400px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -279,8 +372,8 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
                       }}
                     >
                       {hoveredIndex === index && (
-                        <Button
-                          sx={{
+                      <Button
+                        sx={{
                             minWidth: '32px',
                             width: '32px',
                             height: '32px',
@@ -288,10 +381,10 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
                             left: '50%',
                             transform: 'translateX(-50%)',
                             backgroundColor: 'background.paper',
-                            boxShadow: 1,
-                            borderRadius: '50%',
+                          boxShadow: 1,
+                          borderRadius: '50%',
                             p: 0,
-                            '&:hover': {
+                          '&:hover': {
                               backgroundColor: 'primary.main',
                               color: 'primary.contrastText',
                               transform: 'translateX(-50%) scale(1.1)',
@@ -301,94 +394,46 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
                           onClick={() => handleAddStageClick(index)}
                         >
                           <Plus size={20} />
-                        </Button>
+                      </Button>
                       )}
                     </Box>
                   ) : (
-                    <Box sx={{ width: '16px', minWidth: '16px' }} />
+                    <Box key={`spacer-${index}`} sx={{ width: '16px', minWidth: '16px' }} />
                   )}
-                  <Draggable 
-                    draggableId={stage.id.toString()} 
+                    <Draggable
+                    key={`draggable-${stage.id}`}
+                    draggableId={stage?.id?.toString() || `stage-${index}`} 
                     index={index}
                     isDragDisabled={!isEditMode}
                   >
                     {(provided) => (
-                      <Box
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
+                        <Box
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
                         sx={{
                           cursor: isEditMode ? 'grab' : 'default',
                           position: 'relative',
                           zIndex: 0
                         }}
                       >
-                        <StageCard
-                          key={stage.id}
-                          stage={stage}
+                          <StageCard
+                          key={`stage-card-${stage.id}`}
+                            stage={stage}
                           stages={transformedStages}
-                          projectId={projectId}
+                            projectId={projectId}
                           isEditMode={isEditMode}
                           isDragging={false}
                           onStagesChange={onStagesChange}
                           onStageEdit={handleStageEdit}
                           onStageDelete={handleStageDelete}
-                        />
-                      </Box>
-                    )}
-                  </Draggable>
+                          onTaskEdit={handleTaskEdit}
+                          />
+                        </Box>
+                      )}
+                    </Draggable>
                 </React.Fragment>
               ))}
-              {/* 마지막 스테이지 뒤의 + 버튼 또는 간격 */}
-              {isEditMode ? (
-                <Box
-                  onMouseEnter={() => setHoveredIndex(transformedStages.length)}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                  sx={{
-                    width: '24px',
-                    minWidth: '24px',
-                    height: '600px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
-                    zIndex: 1,
-                    transition: 'width 0.2s ease',
-                    '&:hover': {
-                      width: '40px',
-                      minWidth: '40px'
-                    }
-                  }}
-                >
-                  {hoveredIndex === transformedStages.length && (
-                    <Button
-                      sx={{
-                        minWidth: '32px',
-                        width: '32px',
-                        height: '32px',
-                        position: 'absolute',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        backgroundColor: 'background.paper',
-                        boxShadow: 1,
-                        borderRadius: '50%',
-                        p: 0,
-                        '&:hover': {
-                          backgroundColor: 'primary.main',
-                          color: 'primary.contrastText',
-                          transform: 'translateX(-50%) scale(1.1)',
-                        },
-                        transition: 'all 0.2s ease'
-                      }}
-                      onClick={() => handleAddStageClick(transformedStages.length)}
-                    >
-                      <Plus size={20} />
-                    </Button>
-                  )}
-                </Box>
-              ) : (
-                <Box sx={{ width: '16px', minWidth: '16px' }} />
-              )}
               {provided.placeholder}
             </Box>
           )}

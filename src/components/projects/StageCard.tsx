@@ -20,9 +20,10 @@ import {
 import { MoreVertical, Plus, Pencil, Trash2 } from 'lucide-react'
 import { Droppable, Draggable } from '@hello-pangea/dnd'
 import TaskDetailModal from './TaskDetailModal'
-import { Stage } from '../../types/project'
+import { Stage, Task, TaskStatus } from '../../types/project'
 import { createTask } from '../../api/task'
 import { updateStage, deleteStage } from '../../api/stage'
+import { client } from '../../api/client'
 
 interface StageCardProps {
   stage: Stage
@@ -32,11 +33,12 @@ interface StageCardProps {
   isDragging: boolean
   onStagesChange?: (stages: Stage[]) => void
   onTaskClick?: (taskId: number) => void
-  onStageEdit?: (stageId: number, newTitle: string) => void
-  onStageDelete?: (stageId: number) => void
+  onStageEdit: (stageId: number, newTitle: string) => Promise<void>
+  onStageDelete: (stageId: number) => Promise<void>
+  onTaskEdit: (taskId: number, title: string, content: string) => Promise<void>
 }
 
-const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditMode, onStagesChange, onStageEdit, onStageDelete }) => {
+const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditMode, onStagesChange, onStageEdit, onStageDelete, onTaskEdit }) => {
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskContent, setNewTaskContent] = useState('')
@@ -113,65 +115,168 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
 
   const handleTaskMenuClose = () => {
     setTaskMenuAnchorEl(null)
-    setSelectedTaskId(null)
   }
 
   const handleEditTaskClick = () => {
+    console.log('Edit task clicked, selectedTaskId:', selectedTaskId)
     handleTaskMenuClose()
     setIsEditTaskModalOpen(true)
   }
 
-  const handleDeleteTaskClick = () => {
+  const handleDeleteTaskClick = async () => {
     handleTaskMenuClose()
-    if (selectedTaskId && window.confirm('정말로 이 작업을 삭제하시겠습니까?')) {
-      console.log('Delete task:', selectedTaskId)
-      // TODO: 작업 삭제 API 호출
-    }
-  }
-
-  const handleEditTask = () => {
     if (!selectedTaskId) return
-    // TODO: 작업 수정 API 호출
-    console.log('Edit task:', {
-      id: selectedTaskId,
-      title: editedTaskTitle,
-      content: editedTaskContent
-    })
-    setIsEditTaskModalOpen(false)
-  }
 
-  const handleAddTask = async (title: string, position: number) => {
     try {
-      const newTask = await createTask({
-        stageId: stage.id,
-        title,
-        content: '',
-        prevTaskId: position > 0 ? stage.tasks[position - 1]?.id : undefined,
-        nextTaskId: position < stage.tasks.length ? stage.tasks[position]?.id : undefined
-      })
+      // Optimistic update: 먼저 UI에서 task 제거
+      const updatedStage = {
+        ...stage,
+        tasks: stage.tasks.filter(task => task.id !== selectedTaskId)
+      }
 
-      const updatedTasks = [...stage.tasks]
-      updatedTasks.splice(position, 0, newTask)
-
-      // Create a new array of stages with the updated tasks
-      if (onStagesChange && stages) {
-        const updatedStage = {
-          ...stage,
-          tasks: updatedTasks,
-          status: stage.status || '대기', // Ensure status is preserved
-          startDate: stage.startDate, // Preserve optional dates
-          endDate: stage.endDate
-        }
-        const updatedStages = stages.map((s) => 
+      if (onStagesChange) {
+        const updatedStages = stages.map(s => 
           s.id === stage.id ? updatedStage : s
         )
         onStagesChange(updatedStages)
       }
 
-      setIsAddTaskModalOpen(false)
-      setSelectedPosition(null)
+      // API 호출
+      await client.delete(`/tasks/${selectedTaskId}`)
     } catch (error) {
-      console.error('Failed to add task:', error)
+      console.error('Failed to delete task:', error)
+      // 실패 시 원래 상태로 복구
+      if (onStagesChange) {
+        onStagesChange(stages)
+      }
+      alert('작업 삭제에 실패했습니다. 다시 시도해주세요.')
+    }
+  }
+
+  const handleEditTask = async () => {
+    console.log('handleEditTask called, selectedTaskId:', selectedTaskId)
+    if (!selectedTaskId) {
+      console.log('No selected task ID')
+      return
+    }
+
+    try {
+      console.log('Editing task:', selectedTaskId, editedTaskTitle, editedTaskContent)
+      
+      // Optimistic update: 먼저 UI에서 task 수정
+      const updatedStage = {
+        ...stage,
+        tasks: stage.tasks.map(task => 
+          task.id === selectedTaskId 
+            ? { ...task, title: editedTaskTitle, description: editedTaskContent }
+            : task
+        )
+      }
+
+      if (onStagesChange) {
+        const updatedStages = stages.map(s => 
+          s.id === stage.id ? updatedStage : s
+        )
+        onStagesChange(updatedStages)
+      }
+
+      // API 호출
+      console.log('Calling onTaskEdit with:', selectedTaskId, editedTaskTitle, editedTaskContent)
+      await onTaskEdit(selectedTaskId, editedTaskTitle, editedTaskContent)
+      setIsEditTaskModalOpen(false)
+      setSelectedTaskId(null) // 수정 완료 후 초기화
+    } catch (error) {
+      console.error('Failed to update task:', error)
+      // 실패 시 원래 상태로 복구
+      if (onStagesChange) {
+        onStagesChange(stages)
+      }
+      alert('작업 수정에 실패했습니다. 다시 시도해주세요.')
+    }
+  }
+
+  const handleAddTask = async () => {
+    if (!newTaskTitle.trim()) return
+
+    try {
+      // Optimistic update: 먼저 UI에 task 추가
+      const newTask: Task = {
+        id: Date.now(), // 임시 ID
+        title: newTaskTitle,
+        description: newTaskContent,
+        status: 'TODO' as TaskStatus,
+        order: selectedPosition || 0,
+        stageId: stage.id,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        requests: []
+      }
+
+      const updatedStage = {
+        ...stage,
+        tasks: [
+          ...stage.tasks.slice(0, selectedPosition || 0),
+          newTask,
+          ...stage.tasks.slice(selectedPosition || 0)
+        ]
+      }
+
+      if (onStagesChange) {
+        const updatedStages = stages.map(s => 
+          s.id === stage.id ? updatedStage : s
+        )
+        onStagesChange(updatedStages)
+      }
+
+      // API 호출
+      const response = await createTask({
+        stageId: stage.id,
+        title: newTaskTitle,
+        content: newTaskContent,
+        prevTaskId: selectedPosition && selectedPosition > 0 ? stage.tasks[selectedPosition - 1]?.id : undefined,
+        nextTaskId: selectedPosition && selectedPosition < stage.tasks.length ? stage.tasks[selectedPosition]?.id : undefined
+      })
+
+      // API 응답으로 실제 task로 교체
+      const actualTask: Task = {
+        id: response.id,
+        title: response.title,
+        description: response.description,
+        status: response.status,
+        order: response.order,
+        stageId: response.stageId,
+        createdAt: response.createdAt,
+        updatedAt: response.updatedAt,
+        requests: response.requests
+      }
+
+      const finalUpdatedStage = {
+        ...stage,
+        tasks: [
+          ...stage.tasks.slice(0, selectedPosition || 0),
+          actualTask,
+          ...stage.tasks.slice(selectedPosition || 0)
+        ]
+      }
+
+      if (onStagesChange) {
+        const finalUpdatedStages = stages.map(s => 
+          s.id === stage.id ? finalUpdatedStage : s
+        )
+        onStagesChange(finalUpdatedStages)
+      }
+
+      setNewTaskTitle('')
+      setNewTaskContent('')
+      setSelectedPosition(null)
+      setIsAddTaskModalOpen(false)
+    } catch (error) {
+      console.error('Failed to create task:', error)
+      // 에러 발생 시 optimistic update 롤백
+      if (onStagesChange) {
+        onStagesChange(stages)
+      }
+      alert('작업 생성에 실패했습니다. 다시 시도해주세요.')
     }
   }
 
@@ -193,9 +298,9 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
     <Paper
       elevation={1}
       sx={{
-        width: 300,
-        height: 600,
-        minHeight: 600,
+        width: 250,
+        height: 400,
+        minHeight: 400,
         display: 'flex',
         flexDirection: 'column',
         bgcolor: 'background.paper'
@@ -251,6 +356,7 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
           >
             {isEditMode && (
               <Box
+                key="add-task-top"
                 onMouseEnter={() => setHoveredTaskIndex(0)}
                 onMouseLeave={() => setHoveredTaskIndex(null)}
                 sx={{
@@ -290,7 +396,7 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
               </Box>
             )}
                 {stage.tasks.map((task, index) => (
-              <React.Fragment key={task.id}>
+              <React.Fragment key={`task-${task.id}`}>
                   <Draggable
                     draggableId={`task-${task.id}`}
                         index={index}
@@ -341,8 +447,9 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
                     </ListItem>
                   )}
                 </Draggable>
-                {isEditMode ? (
+                {isEditMode && (
                   <Box
+                    key={`add-task-${index}`}
                     onMouseEnter={() => setHoveredTaskIndex(index + 1)}
                     onMouseLeave={() => setHoveredTaskIndex(null)}
                     sx={{
@@ -380,8 +487,6 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
                       </Button>
                     )}
                   </Box>
-                ) : (
-                  <Box sx={{ height: '8px' }} />
                 )}
               </React.Fragment>
                 ))}
@@ -518,7 +623,7 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
           }}>
             취소
           </Button>
-          <Button onClick={() => handleAddTask(newTaskTitle, selectedPosition || 0)} variant="contained">
+          <Button onClick={handleAddTask} variant="contained">
             추가
           </Button>
         </DialogActions>
@@ -540,7 +645,9 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
               status: stage.status,
               tasks: [...stage.tasks],
               title: '',
-              order: 0
+              order: 0,
+              stageOrder: undefined,
+              name: undefined
             }])
           }
         }}
