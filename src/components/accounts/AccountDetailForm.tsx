@@ -5,18 +5,15 @@ import {
   Paper,
   TextField,
   Button,
-  Switch,
-  FormControlLabel,
   Divider,
   Alert,
-  CircularProgress,
   Stack,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions
 } from '@mui/material'
-import { Save, X, Edit, Lock } from 'lucide-react'
+import { Save, X, Edit } from 'lucide-react'
 import { getCompanies } from '../../api/admin'
 
 // 계정 인터페이스 정의
@@ -39,11 +36,6 @@ interface AccountDetailFormProps {
   success?: string | null
   isAdmin?: boolean
   onSave?: (formData: Partial<Account>) => void
-  onPasswordChange?: (data: {
-    currentPassword: string
-    newPassword: string
-    confirmPassword: string
-  }) => void
   onCancel?: () => void
 }
 
@@ -54,7 +46,6 @@ export default function AccountDetailForm({
   success,
   isAdmin = false,
   onSave,
-  onPasswordChange,
   onCancel
 }: AccountDetailFormProps) {
   const [formData, setFormData] = useState<Partial<Account>>({
@@ -67,13 +58,6 @@ export default function AccountDetailForm({
     role: 'USER'
   })
   const [isEditing, setIsEditing] = useState(false)
-  const [showPasswordForm, setShowPasswordForm] = useState(false)
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  })
-  const [passwordError, setPasswordError] = useState<string | null>(null)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [companies, setCompanies] = useState<{ id: number; name: string }[]>([])
@@ -109,55 +93,18 @@ export default function AccountDetailForm({
 
   // 폼 데이터 변경 핸들러
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, checked } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'isActive' ? checked : value
-    }))
-    setHasChanges(true)
-  }
-
-  // 비밀번호 폼 데이터 변경 핸들러
-  const handlePasswordInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
     const { name, value } = e.target
-    setPasswordData(prev => ({
+    setFormData(prev => ({
       ...prev,
       [name]: value
     }))
+    setHasChanges(true)
   }
 
   // 계정 정보 저장 핸들러
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     await onSave?.(formData)
-  }
-
-  // 비밀번호 변경 핸들러
-  const handlePasswordChange = async () => {
-    // 비밀번호 유효성 검사
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setPasswordError('새 비밀번호와 확인 비밀번호가 일치하지 않습니다.')
-      return
-    }
-
-    if (passwordData.newPassword.length < 8) {
-      setPasswordError('새 비밀번호는 최소 8자 이상이어야 합니다.')
-      return
-    }
-
-    setPasswordError(null)
-
-    if (onPasswordChange) {
-      onPasswordChange(passwordData)
-      setShowPasswordForm(false)
-      setPasswordData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      })
-    }
   }
 
   // 취소 핸들러
@@ -372,82 +319,7 @@ export default function AccountDetailForm({
             </>
           )}
         </Box>
-
-        <Divider />
-
-        <Box>
-          <Button
-            variant="outlined"
-            onClick={() => setShowPasswordForm(true)}
-            startIcon={<Lock />}>
-            비밀번호 변경
-          </Button>
-        </Box>
       </Stack>
-
-      {/* 비밀번호 변경 모달 */}
-      <Dialog
-        open={showPasswordForm}
-        onClose={() => setShowPasswordForm(false)}>
-        <DialogTitle>비밀번호 변경</DialogTitle>
-        <DialogContent>
-          <Stack
-            spacing={2}
-            sx={{ mt: 2 }}>
-            <TextField
-              fullWidth
-              label="현재 비밀번호"
-              type="password"
-              value={passwordData.currentPassword}
-              onChange={e =>
-                setPasswordData(prev => ({
-                  ...prev,
-                  currentPassword: e.target.value
-                }))
-              }
-            />
-            <TextField
-              fullWidth
-              label="새 비밀번호"
-              type="password"
-              value={passwordData.newPassword}
-              onChange={e =>
-                setPasswordData(prev => ({
-                  ...prev,
-                  newPassword: e.target.value
-                }))
-              }
-            />
-            <TextField
-              fullWidth
-              label="새 비밀번호 확인"
-              type="password"
-              value={passwordData.confirmPassword}
-              onChange={e =>
-                setPasswordData(prev => ({
-                  ...prev,
-                  confirmPassword: e.target.value
-                }))
-              }
-            />
-            {passwordError && (
-              <Alert
-                severity="error"
-                sx={{ mt: 2 }}>
-                {passwordError}
-              </Alert>
-            )}
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowPasswordForm(false)}>취소</Button>
-          <Button
-            onClick={handlePasswordChange}
-            variant="contained">
-            변경
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* 수정사항 확인 모달 */}
       <Dialog
