@@ -222,7 +222,7 @@ export const deleteTask = async (
   return apiRequest<ApiResponse<void>>('DELETE', `/tasks/${taskId}`)
 }
 
-export interface CreateTaskRequest {
+interface CreateTaskData {
   stageId: number
   title: string
   content: string
@@ -230,7 +230,7 @@ export interface CreateTaskRequest {
   nextTaskId?: number
 }
 
-export const createTask = async (data: CreateTaskRequest) => {
+export const createTask = async (data: CreateTaskData) => {
   const response = await client.post('http://localhost:8080/tasks', data)
   return response.data
 }

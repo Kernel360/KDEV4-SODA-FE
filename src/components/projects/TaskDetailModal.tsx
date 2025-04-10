@@ -21,14 +21,16 @@ import type { TaskRequest } from '../../types/api'
 interface TaskDetailModalProps {
   open: boolean
   onClose: () => void
-  taskId: number
   projectId: number
+  stageId: number
+  taskId: number
+  onTaskAdded: () => void
 }
 
 const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   open,
   onClose,
-  taskId}) => {
+  stageId}) => {
   const [requests, setRequests] = useState<TaskRequest[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -39,13 +41,13 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     if (open) {
       fetchRequests()
     }
-  }, [open, taskId])
+  }, [open])
 
   const fetchRequests = async () => {
     try {
       setIsLoading(true)
       setError(null)
-      const response = await getTaskRequests(taskId)
+      const response = await getTaskRequests(stageId)
       if (response.status === 'success' && Array.isArray(response.data)) {
         setRequests(response.data)
       } else {

@@ -146,7 +146,11 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
     const fetchStages = async () => {
       try {
         const data = await projectService.getProjectStages(projectId)
-        setStages(data)
+        const stagesWithOrder = data.map((stage, index) => ({
+          ...stage,
+          order: index
+        }))
+        setStages(stagesWithOrder)
       } catch (err) {
         console.error('Error fetching stages:', err)
       }
