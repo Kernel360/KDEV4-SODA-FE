@@ -178,9 +178,9 @@ const CommentItem: React.FC<CommentItemProps> = memo(
       setIsDeleteModalOpen(true)
     }
 
-    const handleDeleteConfirm = () => {
+    const handleDeleteConfirm = async () => {
       setIsDeleteModalOpen(false)
-      onDelete(comment.id)
+      await onDelete(comment.id)
     }
 
     const handleEditClick = () => {
@@ -540,16 +540,14 @@ const CommentSection: React.FC<CommentSectionProps> = ({
 
   // 댓글 삭제
   const handleDelete = async (commentId: number) => {
-    if (window.confirm('댓글을 삭제하시겠습니까?')) {
-      try {
-        setLoading(true)
-        await commentService.deleteComment(commentId)
-        await fetchComments()
-      } catch (error) {
-        console.error('Error deleting comment:', error)
-      } finally {
-        setLoading(false)
-      }
+    try {
+      setLoading(true)
+      await commentService.deleteComment(commentId)
+      await fetchComments()
+    } catch (error) {
+      console.error('Error deleting comment:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
