@@ -1,6 +1,5 @@
 import axios from 'axios'
 import type { Project } from '../types/project'
-import type { Stage } from '../types/stage'
 import type { Task } from '../types/task'
 import { client } from '../api/client'
 import {
@@ -65,6 +64,18 @@ export const fetchProjects = async (): Promise<Project[]> => {
   }
 }
 
+interface ApiStage {
+  id: number
+  name: string
+  stageOrder: number
+  tasks: {
+    taskId: number
+    title: string
+    content: string
+    taskOrder: number
+  }[]
+}
+
 export const projectService = {
   // 프로젝트 목록 조회
   async getAllProjects(): Promise<Project[]> {
@@ -93,8 +104,8 @@ export const projectService = {
   },
 
   // 프로젝트 단계 조회
-  async getProjectStages(projectId: number): Promise<Stage[]> {
-    const response = await client.get(`/projects/${projectId}/stages`)
+  async getProjectStages(projectId: number): Promise<ApiStage[]> {
+    const response = await client.get(`http://localhost:8080/projects/${projectId}/stages`)
     return response.data.data
   },
 

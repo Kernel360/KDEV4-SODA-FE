@@ -26,6 +26,21 @@ export interface ProjectMember {
   position?: string
 }
 
+export type StageStatus = '대기' | '진행중' | '완료'
+export type TaskStatus = '대기' | '진행중' | '완료'
+
+export interface Task {
+  id: number
+  title: string
+  description: string
+  status: TaskStatus
+  order: number
+  stageId: number
+  createdAt: string
+  updatedAt: string
+  requests: any[]
+}
+
 export interface Stage {
   id: number
   title: string
@@ -33,6 +48,5 @@ export interface Stage {
   status: StageStatus
   startDate?: string
   endDate?: string
+  tasks: Task[]
 }
-
-export type StageStatus = '대기' | '진행 중' | '완료' | '지연'

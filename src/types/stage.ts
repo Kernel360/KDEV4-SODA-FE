@@ -1,19 +1,24 @@
 export interface Stage {
   id: number
   name: string
-  order: number
+  stageOrder: number
+  order?: number
   tasks: Task[]
 }
 
 export interface Task {
   id: number
+  taskId?: number
   title: string
   description: string
+  content?: string
   status: TaskStatus
   order: number
+  taskOrder?: number
+  stageId?: number
   requests?: Request[]
-  createdAt: string
-  updatedAt: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export type TaskStatus = '대기' | '진행 중' | '완료' | '중단'
