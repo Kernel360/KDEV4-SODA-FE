@@ -15,45 +15,9 @@ import { ArrowLeft } from 'lucide-react'
 import { useToast } from '../../../contexts/ToastContext'
 import { getUserDetail, updateUserStatus, updateUser } from '../../../api/admin'
 import AccountDetailForm, {
-  Account
 } from '../../../components/accounts/AccountDetailForm'
 
 // 더미 데이터
-const dummyAccounts: Account[] = [
-  {
-    id: '1',
-    name: '김개발',
-    username: 'dev.kim',
-    email: 'dev.kim@example.com',
-    phoneNumber: '010-1234-5678',
-    companyName: '테크솔루션',
-    position: '개발자',
-    role: 'USER',
-    isActive: true
-  },
-  {
-    id: '2',
-    name: '이매니저',
-    username: 'manager.lee',
-    email: 'manager.lee@example.com',
-    phoneNumber: '010-8765-4321',
-    companyName: '클라우드시스템',
-    position: '매니저',
-    role: 'USER',
-    isActive: true
-  },
-  {
-    id: '3',
-    name: '박디자인',
-    username: 'design.park',
-    email: 'design.park@example.com',
-    phoneNumber: '010-1111-2222',
-    companyName: '디자인스튜디오',
-    position: '디자이너',
-    role: 'USER',
-    isActive: false
-  }
-]
 
 interface AccountDetailProps {
   isAdmin?: boolean
@@ -118,11 +82,7 @@ export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
     }
   }
 
-  const handlePasswordChange = async (passwordData: {
-    currentPassword: string
-    newPassword: string
-    confirmPassword: string
-  }) => {
+  const handlePasswordChange = async () => {
     try {
       // TODO: Implement password change API
       showToast('비밀번호가 성공적으로 변경되었습니다.', 'success')
@@ -136,7 +96,7 @@ export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
     try {
       const response = await updateUserStatus(userId, !currentActive)
       if (response.status === 'success') {
-        setAccount(prev => ({
+        setAccount((prev: any) => ({
           ...prev,
           deleted: !currentActive
         }))

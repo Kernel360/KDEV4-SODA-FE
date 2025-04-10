@@ -14,10 +14,9 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  MenuItem
+  DialogActions
 } from '@mui/material'
-import { Save, Lock, X, Edit } from 'lucide-react'
+import { Save, X, Edit } from 'lucide-react'
 import { getCompanies } from '../../api/admin'
 
 // 계정 인터페이스 정의
@@ -337,8 +336,7 @@ export default function AccountDetailForm({
                 '& .MuiInputBase-input.Mui-disabled': {
                   WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
                   backgroundColor: 'transparent'
-                },
-                maxWidth: '200px'
+                }
               }}
               SelectProps={{
                 native: true
@@ -346,6 +344,20 @@ export default function AccountDetailForm({
               <option value="USER">일반 사용자</option>
               <option value="ADMIN">관리자</option>
             </TextField>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.isActive || false}
+                    onChange={onToggleActive}
+                    name="isActive"
+                    color="primary"
+                    disabled={!isEditing}
+                  />
+                }
+                label="계정 활성화"
+              />
+            </Box>
           </Stack>
         )}
 
