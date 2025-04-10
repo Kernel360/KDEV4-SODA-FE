@@ -14,9 +14,11 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  MenuItem
 } from '@mui/material'
-import { Save, Lock } from 'lucide-react'
+import { Save, Lock, X, Edit } from 'lucide-react'
+import { getCompanies } from '../../api/admin'
 
 // 계정 인터페이스 정의
 export interface Account {
@@ -26,6 +28,9 @@ export interface Account {
   companyName: string
   position: string
   isActive: boolean
+  email: string
+  phoneNumber: string
+  role: string
 }
 
 interface AccountDetailFormProps {
@@ -41,6 +46,7 @@ interface AccountDetailFormProps {
     confirmPassword: string
   }) => Promise<void>
   onCancel?: () => void
+  onToggleActive?: () => Promise<void>
 }
 
 export default function AccountDetailForm({
@@ -51,9 +57,19 @@ export default function AccountDetailForm({
   isAdmin = false,
   onSave,
   onPasswordChange,
-  onCancel
+  onCancel,
+  onToggleActive
 }: AccountDetailFormProps) {
-  const [formData, setFormData] = useState<Partial<Account>>(account || {})
+  const [formData, setFormData] = useState<Partial<Account>>({
+    name: '',
+    username: '',
+    email: '',
+    phoneNumber: '',
+    companyName: '',
+    position: '',
+    role: 'USER'
+  })
+  const [isEditing, setIsEditing] = useState(false)
   const [showPasswordForm, setShowPasswordForm] = useState(false)
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -62,13 +78,37 @@ export default function AccountDetailForm({
   })
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-  const [, setHasChanges] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
+  const [companies, setCompanies] = useState<{ id: number; name: string }[]>([])
+  const [loadingCompanies, setLoadingCompanies] = useState(false)
 
   // 계정 데이터가 변경될 때 폼 데이터 업데이트
   useEffect(() => {
-    setFormData(account || {})
-    setHasChanges(false)
+    if (account) {
+      setFormData(account)
+    }
   }, [account])
+
+  // 회사 목록 조회
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        setLoadingCompanies(true)
+        const response = await getCompanies()
+        if (response.status === 'success') {
+          setCompanies(response.data)
+        }
+      } catch (err) {
+        console.error('회사 목록 조회 중 오류:', err)
+      } finally {
+        setLoadingCompanies(false)
+      }
+    }
+
+    if (isAdmin) {
+      fetchCompanies()
+    }
+  }, [isAdmin])
 
   // 폼 데이터 변경 핸들러
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,9 +132,9 @@ export default function AccountDetailForm({
   }
 
   // 계정 정보 저장 핸들러
-  const handleSave = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     await onSave(formData)
-    setHasChanges(false)
   }
 
   // 비밀번호 변경 핸들러
@@ -124,18 +164,30 @@ export default function AccountDetailForm({
   }
 
   // 취소 핸들러
-  // const handleCancel = () => {
-  //   if (hasChanges) {
-  //     setShowConfirmDialog(true)
-  //   } else {
-  //     onCancel?.()
-  //   }
-  // }
+  const handleCancel = () => {
+    if (hasChanges) {
+      setShowConfirmDialog(true)
+    } else {
+      // 원래 데이터로 복원하고 비활성화 상태로 변경
+      setFormData(account || {})
+      setIsEditing(false)
+      setHasChanges(false)
+    }
+  }
 
-  // 확인 모달에서 취소 확인
+  // 취소 확인 핸들러
   const handleConfirmCancel = () => {
     setShowConfirmDialog(false)
+    // 원래 데이터로 복원하고 비활성화 상태로 변경
+    setFormData(account || {})
+    setIsEditing(false)
+    setHasChanges(false)
+    // 목록으로 이동
     onCancel?.()
+  }
+
+  const handleEdit = () => {
+    setIsEditing(true)
   }
 
   return (
@@ -166,6 +218,13 @@ export default function AccountDetailForm({
             name="name"
             value={formData.name || ''}
             onChange={handleChange}
+            disabled={!isEditing}
+            sx={{
+              '& .MuiInputBase-input.Mui-disabled': {
+                WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+                backgroundColor: 'transparent'
+              }
+            }}
           />
           <TextField
             fullWidth
@@ -173,7 +232,13 @@ export default function AccountDetailForm({
             name="username"
             value={formData.username || ''}
             onChange={handleChange}
-            disabled={!isAdmin}
+            disabled={!isEditing || !isAdmin}
+            sx={{
+              '& .MuiInputBase-input.Mui-disabled': {
+                WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+                backgroundColor: 'transparent'
+              }
+            }}
           />
         </Stack>
 
@@ -182,52 +247,133 @@ export default function AccountDetailForm({
           spacing={2}>
           <TextField
             fullWidth
+            label="이메일"
+            name="email"
+            type="email"
+            value={formData.email || ''}
+            onChange={handleChange}
+            disabled={!isEditing}
+            sx={{
+              '& .MuiInputBase-input.Mui-disabled': {
+                WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+                backgroundColor: 'transparent'
+              }
+            }}
+          />
+          <TextField
+            fullWidth
+            label="전화번호"
+            name="phoneNumber"
+            value={formData.phoneNumber || ''}
+            onChange={handleChange}
+            disabled={!isEditing}
+            sx={{
+              '& .MuiInputBase-input.Mui-disabled': {
+                WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+                backgroundColor: 'transparent'
+              }
+            }}
+          />
+        </Stack>
+
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={2}>
+          <TextField
+            fullWidth
+            select
             label="회사"
             name="companyName"
             value={formData.companyName || ''}
             onChange={handleChange}
-          />
+            disabled={!isEditing || !isAdmin || loadingCompanies}
+            sx={{
+              '& .MuiInputBase-input.Mui-disabled': {
+                WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+                backgroundColor: 'transparent'
+              }
+            }}
+            SelectProps={{
+              native: true
+            }}>
+            <option value="">회사를 선택하세요</option>
+            {companies.map(company => (
+              <option
+                key={company.id}
+                value={company.name}>
+                {company.name}
+              </option>
+            ))}
+          </TextField>
           <TextField
             fullWidth
             label="직책"
             name="position"
             value={formData.position || ''}
             onChange={handleChange}
+            disabled={!isEditing}
+            sx={{
+              '& .MuiInputBase-input.Mui-disabled': {
+                WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+                backgroundColor: 'transparent'
+              }
+            }}
           />
         </Stack>
 
         {isAdmin && (
-          <Box>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.isActive || false}
-                  onChange={handleChange}
-                  name="isActive"
-                  color="primary"
-                />
-              }
-              label="계정 활성화"
-            />
-          </Box>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}>
+            <TextField
+              fullWidth
+              select
+              label="역할"
+              name="role"
+              value={formData.role || 'USER'}
+              onChange={handleChange}
+              disabled={!isEditing}
+              sx={{
+                '& .MuiInputBase-input.Mui-disabled': {
+                  WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+                  backgroundColor: 'transparent'
+                },
+                maxWidth: '200px'
+              }}
+              SelectProps={{
+                native: true
+              }}>
+              <option value="USER">일반 사용자</option>
+              <option value="ADMIN">관리자</option>
+            </TextField>
+          </Stack>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          {onPasswordChange && (
+        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+          {!isEditing ? (
             <Button
-              variant="outlined"
-              startIcon={<Lock />}
-              onClick={() => setShowPasswordForm(!showPasswordForm)}>
-              비밀번호 변경
+              variant="contained"
+              onClick={handleEdit}
+              startIcon={<Edit />}>
+              수정
             </Button>
+          ) : (
+            <>
+              <Button
+                variant="outlined"
+                onClick={handleCancel}
+                startIcon={<X />}>
+                취소
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleSubmit}
+                startIcon={<Save />}
+                disabled={loading}>
+                저장
+              </Button>
+            </>
           )}
-          <Button
-            variant="contained"
-            startIcon={<Save />}
-            onClick={handleSave}
-            disabled={loading}>
-            {loading ? <CircularProgress size={24} /> : '저장'}
-          </Button>
         </Box>
 
         {showPasswordForm && onPasswordChange && (
