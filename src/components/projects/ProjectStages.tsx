@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Box, Typography, Button, CircularProgress, Alert } from '@mui/material'
+import { Box, Typography, Button } from '@mui/material'
 import {
   DragDropContext,
   Droppable,
@@ -11,86 +11,58 @@ import { Plus } from 'lucide-react'
 import type { Stage } from '../../types/stage'
 import AddStageModal from './AddStageModal'
 import StageCard from './StageCard'
-import { getProjectStages } from '../../api/project'
-//import type { ProjectStage as ApiStage } from '../../types/api'
+import { client } from '../../api/client'
 
 interface ProjectStagesProps {
   projectId: number
 }
 
-// const defaultStages: Stage[] = [
-//   { id: 1, title: '요구사항 정의', order: 1, tasks: [] },
-//   { id: 2, title: '화면 설계', order: 2, tasks: [] },
-//   { id: 3, title: '디자인', order: 3, tasks: [] },
-//   { id: 4, title: '퍼블리싱', order: 4, tasks: [] },
-//   { id: 5, title: '개발', order: 5, tasks: [] },
-//   { id: 6, title: '검수', order: 6, tasks: [] }
-// ]
-
 const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
   const [stages, setStages] = useState<Stage[]>([])
   const [isAddStageModalOpen, setIsAddStageModalOpen] = useState(false)
-  const [selectedStageIndex, setSelectedStageIndex] = useState<number | null>(
-    null
-  )
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetchStages = async () => {
-    try {
-      const response = await getProjectStages(projectId)
-      if (response.status === 'success' && response.data) {
-        // API 응답을 Stage 타입으로 변환
-        const convertedStages: Stage[] = response.data.map(apiStage => ({
-          id: apiStage.id,
-          name: apiStage.name,
-          stageOrder: apiStage.stageOrder,
-          tasks: apiStage.tasks.map(task => ({
-            id: task.taskId,
-            title: task.title,
-            description: task.content,
-            status: task.status || 'PENDING',
-            taskOrder: task.taskOrder,
-            requests: [], // 초기에는 빈 배열로 설정, 필요한 경우 별도 API 호출로 채워넣을 수 있음
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          }))
-        }))
-
-        // taskOrder 기준으로 정렬
-        const sortedStages = convertedStages.map(stage => ({
-          ...stage,
-          tasks: [...stage.tasks].sort((a, b) => a.taskOrder - b.taskOrder)
-        }))
-
-        setStages(sortedStages)
-      }
-    } catch (err) {
-      setError('단계 목록을 불러오는데 실패했습니다.')
-      console.error('Error fetching stages:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const [selectedStageIndex, setSelectedStageIndex] = useState<number | null>(null)
 
   useEffect(() => {
     fetchStages()
   }, [projectId])
 
-  const handleDragEnd = (result: any) => {
+  const fetchStages = async () => {
+    try {
+      const response = await client.get(`http://localhost:8080/projects/${projectId}/stages`)
+      if (response.data.status === 'success') {
+        setStages(response.data.data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch stages:', error)
+    }
+  }
+
+  const handleDragEnd = async (result: any) => {
     if (!result.destination) return
 
     const items = Array.from(stages)
     const [reorderedItem] = items.splice(result.source.index, 1)
     items.splice(result.destination.index, 0, reorderedItem)
 
-    // Update order property for each stage
     const updatedItems = items.map((item, index) => ({
       ...item,
       order: index + 1
     }))
 
     setStages(updatedItems)
+
+    try {
+      await client.put(`/projects/${projectId}/stages/order`, {
+        stages: updatedItems.map(stage => ({
+          id: stage.id,
+          order: stage.order
+        }))
+      })
+    } catch (error) {
+      console.error('Failed to update stage order:', error)
+      // Revert changes if API call fails
+      fetchStages()
+    }
   }
 
   const handleAddStage = (index: number) => {
@@ -98,97 +70,99 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
     setIsAddStageModalOpen(true)
   }
 
-  const handleAddStageSubmit = (name: string) => {
+  const handleAddStageSubmit = async (name: string) => {
     if (selectedStageIndex === null) return
 
-    const newStage: Stage = {
-      id: Math.max(...stages.map(s => s.id)) + 1,
-      name,
-      stageOrder: selectedStageIndex + 1,
-      tasks: []
+    try {
+      const response = await client.post(`/projects/${projectId}/stages`, {
+        name,
+        order: selectedStageIndex + 1
+      })
+
+      if (response.data.status === 'success') {
+        const newStage = response.data.data
+        const updatedStages = [
+          ...stages.slice(0, selectedStageIndex),
+          newStage,
+          ...stages.slice(selectedStageIndex)
+        ].map((stage, index) => ({
+          ...stage,
+          order: index + 1
+        }))
+
+        setStages(updatedStages)
+      }
+    } catch (error) {
+      console.error('Failed to add stage:', error)
     }
 
-    const updatedStages = [
-      ...stages.slice(0, selectedStageIndex),
-      newStage,
-      ...stages.slice(selectedStageIndex)
-    ].map((stage, index) => ({
-      ...stage,
-      stageOrder: index + 1
-    }))
-
-    setStages(updatedStages)
     setIsAddStageModalOpen(false)
     setSelectedStageIndex(null)
   }
 
-  const handleUpdateStage = (stageId: number, name: string) => {
-    const updatedStages = stages.map(stage =>
-      stage.id === stageId ? { ...stage, name } : stage
-    )
-    setStages(updatedStages)
+  const handleUpdateStage = async (stageId: number, name: string) => {
+    try {
+      const response = await client.put(`/projects/${projectId}/stages/${stageId}`, {
+        name
+      })
+
+      if (response.data.status === 'success') {
+        const updatedStages = stages.map(stage =>
+          stage.id === stageId ? { ...stage, name } : stage
+        )
+        setStages(updatedStages)
+      }
+    } catch (error) {
+      console.error('Failed to update stage:', error)
+    }
   }
 
-  const handleDeleteStage = (stageId: number) => {
-    const updatedStages = stages
-      .filter(stage => stage.id !== stageId)
-      .map((stage, index) => ({
-        ...stage,
-        stageOrder: index + 1
-      }))
-    setStages(updatedStages)
+  const handleDeleteStage = async (stageId: number) => {
+    try {
+      const response = await client.delete(`/projects/${projectId}/stages/${stageId}`)
+
+      if (response.data.status === 'success') {
+        const updatedStages = stages
+          .filter(stage => stage.id !== stageId)
+          .map((stage, index) => ({
+            ...stage,
+            order: index + 1
+          }))
+        setStages(updatedStages)
+      }
+    } catch (error) {
+      console.error('Failed to delete stage:', error)
+    }
   }
 
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-        <CircularProgress />
-      </Box>
-    )
-  }
+  const handleMoveTask = async (taskId: number, fromStageId: number, toStageId: number) => {
+    try {
+      const response = await client.put(`/projects/${projectId}/stages/${fromStageId}/tasks/${taskId}/move`, {
+        toStageId
+      })
 
-  if (error) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert
-          severity="error"
-          action={
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() => {
-                setError(null)
-                setIsLoading(true)
-                // 데이터 다시 불러오기
-                fetchStages()
-              }}>
-              다시 시도
-            </Button>
-          }>
-          {error}
-        </Alert>
-      </Box>
-    )
+      if (response.data.status === 'success') {
+        // 서버에서 업데이트된 stages를 받아와서 상태를 업데이트
+        fetchStages()
+      }
+    } catch (error) {
+      console.error('Failed to move task:', error)
+    }
   }
 
   return (
     <Box sx={{ mb: 4 }}>
       <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h5"
-          sx={{ mb: 1 }}>
+        <Typography variant="h5" sx={{ mb: 1 }}>
           프로젝트 단계
         </Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary">
+        <Typography variant="body2" color="text.secondary">
           각 단계를 드래그하여 순서를 변경할 수 있습니다
         </Typography>
       </Box>
+
       <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable
-          droppableId="stages"
-          direction="horizontal">
+        <Droppable droppableId="stages" direction="horizontal">
           {(provided: DroppableProvided) => (
             <Box
               ref={provided.innerRef}
@@ -233,8 +207,7 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
                           borderRadius: '50%',
                           zIndex: 1,
                           opacity: 0,
-                          transition:
-                            'opacity 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                          transition: 'opacity 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
                           '&:hover': {
                             bgcolor: 'background.paper',
                             boxShadow: 2,
@@ -246,9 +219,7 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
                     </Box>
                   )}
                   <Box className="stage-container">
-                    <Draggable
-                      draggableId={String(stage.id)}
-                      index={index}>
+                    <Draggable draggableId={String(stage.id)} index={index}>
                       {(provided: DraggableProvided) => (
                         <Box
                           ref={provided.innerRef}
@@ -256,11 +227,21 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
                           {...provided.dragHandleProps}
                           sx={{ px: 0.5 }}>
                           <StageCard
-                            key={stage.id}
-                            stage={stage}
+                            stage={{
+                              id: stage.id,
+                              name: stage.name,
+                              order: stage.order,
+                              tasks: stage.tasks.map(task => ({
+                                id: task.id,
+                                title: task.title,
+                                description: task.description,
+                                order: task.order
+                              }))
+                            }}
                             projectId={projectId}
                             onUpdateStage={handleUpdateStage}
                             onDeleteStage={handleDeleteStage}
+                            onMoveTask={handleMoveTask}
                           />
                         </Box>
                       )}
@@ -292,8 +273,7 @@ const ProjectStages: React.FC<ProjectStagesProps> = ({ projectId }) => {
                     borderRadius: '50%',
                     zIndex: 1,
                     opacity: 0,
-                    transition:
-                      'opacity 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                    transition: 'opacity 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
                     '&:hover': {
                       bgcolor: 'background.paper',
                       boxShadow: 2,
