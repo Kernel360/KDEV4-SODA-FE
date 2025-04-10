@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import {
   Box,
-  Typography,
   Paper,
   TextField,
   Button,
-  Divider,
   Alert,
   Stack,
   Dialog,
@@ -18,15 +16,14 @@ import { getCompanies } from '../../api/admin'
 
 // 계정 인터페이스 정의
 export interface Account {
-  id: string
+  id: number
   name: string
-  username: string
-  companyName: string
-  position: string
-  isActive: boolean
   email: string
-  phoneNumber: string
   role: string
+  companyId?: number
+  position?: string
+  phoneNumber?: string
+  deleted: boolean
 }
 
 interface AccountDetailFormProps {
@@ -37,6 +34,8 @@ interface AccountDetailFormProps {
   isAdmin?: boolean
   onSave?: (formData: Partial<Account>) => void
   onCancel?: () => void
+  onPasswordChange?: () => void
+  onToggleActive?: () => void
 }
 
 export default function AccountDetailForm({
@@ -50,12 +49,12 @@ export default function AccountDetailForm({
 }: AccountDetailFormProps) {
   const [formData, setFormData] = useState<Partial<Account>>({
     name: '',
-    username: '',
     email: '',
-    phoneNumber: '',
-    companyName: '',
+    role: 'USER',
+    companyId: undefined,
     position: '',
-    role: 'USER'
+    phoneNumber: '',
+    deleted: false
   })
   const [isEditing, setIsEditing] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
@@ -92,18 +91,32 @@ export default function AccountDetailForm({
   }, [isAdmin])
 
   // 폼 데이터 변경 핸들러
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    if (!name) return
+
+    // 회사 선택 시
+    if (name === 'companyId') {
+      const companyId = value === '' ? undefined : Number(value)
+      console.log('Selected Company ID:', companyId)
+      setFormData(prev => ({
+        ...prev,
+        companyId
+      }))
+    } else {
+      // 다른 필드 변경 시
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }))
+    }
     setHasChanges(true)
   }
 
   // 계정 정보 저장 핸들러
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('Submitting form data:', formData)
     await onSave?.(formData)
   }
 
@@ -170,20 +183,6 @@ export default function AccountDetailForm({
               }
             }}
           />
-          <TextField
-            fullWidth
-            label="아이디"
-            name="username"
-            value={formData.username || ''}
-            onChange={handleChange}
-            disabled={!isEditing || !isAdmin}
-            sx={{
-              '& .MuiInputBase-input.Mui-disabled': {
-                WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
-                backgroundColor: 'transparent'
-              }
-            }}
-          />
         </Stack>
 
         <Stack
@@ -227,8 +226,8 @@ export default function AccountDetailForm({
             fullWidth
             select
             label="회사"
-            name="companyName"
-            value={formData.companyName || ''}
+            name="companyId"
+            value={formData.companyId || ''}
             onChange={handleChange}
             disabled={!isEditing || !isAdmin || loadingCompanies}
             sx={{
@@ -238,13 +237,20 @@ export default function AccountDetailForm({
               }
             }}
             SelectProps={{
-              native: true
+              native: true,
+              MenuProps: {
+                PaperProps: {
+                  sx: {
+                    maxHeight: 300
+                  }
+                }
+              }
             }}>
             <option value="">회사를 선택하세요</option>
             {companies.map(company => (
               <option
                 key={company.id}
-                value={company.name}>
+                value={company.id}>
                 {company.name}
               </option>
             ))}
