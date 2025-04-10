@@ -34,6 +34,7 @@ const ArticleRow: React.FC<{
   level?: number
   index?: number
   totalCount?: number
+  articles: Article[]
   getPriorityColor: (priority: PriorityType) => {
     color: string
     backgroundColor: string
@@ -50,6 +51,7 @@ const ArticleRow: React.FC<{
   level = 0,
   index,
   totalCount,
+  articles,
   getPriorityColor,
   getPriorityText,
   getStatusColor,
@@ -57,6 +59,44 @@ const ArticleRow: React.FC<{
 }) => {
   const navigate = useNavigate()
   const createdAt = new Date(article.createdAt)
+
+  // 부모 게시물이 삭제된 경우
+  if (article.deleted) {
+    return (
+      <>
+        <TableRow
+          sx={{
+            backgroundColor: level > 0 ? '#f8f9fa' : 'inherit',
+            '& > td:first-of-type': {
+              paddingLeft: level * 3 + 2 + 'rem'
+            }
+          }}>
+          <TableCell
+            colSpan={6}
+            align="center">
+            <Typography color="text.secondary">삭제된 게시물입니다</Typography>
+          </TableCell>
+        </TableRow>
+        {article.children &&
+          article.children.length > 0 &&
+          article.children.map((child: any) => (
+            <ArticleRow
+              key={child.id}
+              article={child}
+              projectId={projectId}
+              level={level + 1}
+              index={index}
+              totalCount={totalCount}
+              articles={articles}
+              getPriorityColor={getPriorityColor}
+              getPriorityText={getPriorityText}
+              getStatusColor={getStatusColor}
+              getStatusText={getStatusText}
+            />
+          ))}
+      </>
+    )
+  }
 
   return (
     <>
@@ -122,6 +162,7 @@ const ArticleRow: React.FC<{
             level={level + 1}
             index={index}
             totalCount={totalCount}
+            articles={articles}
             getPriorityColor={getPriorityColor}
             getPriorityText={getPriorityText}
             getStatusColor={getStatusColor}
@@ -233,18 +274,8 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
     }
   }
 
-  const getAllArticles = (articles: Article[]): Article[] => {
-    return articles.reduce((acc: Article[], article) => {
-      acc.push(article)
-      if (article.children && article.children.length > 0) {
-        acc.push(...getAllArticles(article.children))
-      }
-      return acc
-    }, [])
-  }
-
   const filteredArticles = articles
-    .filter(article => !article.parentArticleId) // Only show top-level articles
+    .filter(article => !article.parentArticleId) // 최상위 게시물만 표시 (삭제 여부와 관계없이)
     .filter(article =>
       searchQuery
         ? article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -260,6 +291,16 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
   const totalParentArticlesCount = filteredArticles.length
 
   // Get all articles including replies for pagination
+  const getAllArticles = (articles: Article[]): Article[] => {
+    return articles.reduce((acc: Article[], article) => {
+      acc.push(article)
+      if (article.children && article.children.length > 0) {
+        acc.push(...getAllArticles(article.children))
+      }
+      return acc
+    }, [])
+  }
+
   const allArticles = getAllArticles(articles)
   const totalArticlesCount = allArticles.length
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
@@ -423,6 +464,7 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
                 projectId={projectId}
                 index={index}
                 totalCount={totalParentArticlesCount}
+                articles={articles}
                 getPriorityColor={getPriorityColor}
                 getPriorityText={getPriorityText}
                 getStatusColor={getStatusColor}

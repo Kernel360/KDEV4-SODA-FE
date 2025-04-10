@@ -35,6 +35,7 @@ export interface Article {
   children: Article[]
   parentArticleId?: number
   stageId?: number
+  deleted?: boolean
 }
 
 export interface ArticleFile {
