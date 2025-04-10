@@ -42,7 +42,14 @@ export const getCompanies = async () => {
 }
 
 // 사용자 정보 수정
-export const updateUser = async (userId: number, userData: any) => {
+export const updateUser = async (userId: number, userData: {
+  name: string
+  email: string
+  role: string
+  companyId: number
+  position: string
+  phoneNumber: string
+}) => {
   try {
     const response = await instance.put(`/admin/users/${userId}`, userData)
     return response.data
