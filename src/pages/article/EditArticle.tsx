@@ -36,7 +36,7 @@ const EditArticle: React.FC = () => {
           projectService.getProjectStages(Number(projectId))
         ])
         setArticle(articleResponse)
-        setStages(stagesResponse)
+        setStages(stagesResponse as unknown as Stage[])
         setFormData({
           title: articleResponse.title,
           content: articleResponse.content,

@@ -51,7 +51,7 @@ const CreateArticle: React.FC = () => {
             stageId: stage.id
           }))
         }))
-        setStages(mappedStages)
+        setStages(mappedStages as unknown as Stage[])
         if (mappedStages.length > 0) {
           setFormData(prev => ({ ...prev, stageId: mappedStages[0].id }))
         }
