@@ -1,20 +1,38 @@
-export interface ProjectParticipant {
-  id: number
-  name: string
-  role?: string
-}
-
 export interface Project {
   id: number
   title: string
   description: string
-  status: string
+  devCompanyName: string
+  clientCompanyName: string
+  projectName: string
   startDate: string
   endDate: string
-  clientCompanyName: string
+  status: ProjectStatus
   clientCompanyManagers: string[]
   clientCompanyMembers: string[]
-  devCompanyName: string
   devCompanyManagers: string[]
   devCompanyMembers: string[]
 }
+
+export type ProjectStatus = '대기' | '진행 중' | '완료' | '중단'
+
+export interface ProjectMember {
+  id: number
+  name: string
+  email: string
+  role: string
+  companyId: number
+  companyName: string
+  position?: string
+}
+
+export interface Stage {
+  id: number
+  title: string
+  order: number
+  status: StageStatus
+  startDate?: string
+  endDate?: string
+}
+
+export type StageStatus = '대기' | '진행 중' | '완료' | '지연'
