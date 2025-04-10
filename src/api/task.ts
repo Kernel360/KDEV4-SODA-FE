@@ -5,6 +5,7 @@ import type {
   ProjectStageTask,
   ApiResponse
 } from '../types/api'
+import { client } from './client'
 
 // API 응답 타입 정의
 export interface ApprovalResponse {
@@ -219,4 +220,17 @@ export const deleteTask = async (
   taskId: number
 ): Promise<ApiResponse<void>> => {
   return apiRequest<ApiResponse<void>>('DELETE', `/tasks/${taskId}`)
+}
+
+export interface CreateTaskRequest {
+  stageId: number
+  title: string
+  content: string
+  prevTaskId?: number
+  nextTaskId?: number
+}
+
+export const createTask = async (data: CreateTaskRequest) => {
+  const response = await client.post('http://localhost:8080/tasks', data)
+  return response.data
 }
