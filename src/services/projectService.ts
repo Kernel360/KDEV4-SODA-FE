@@ -71,6 +71,20 @@ export const projectService = {
     return response.data.data
   },
 
+  // 사용자의 프로젝트 목록 조회
+  async getUserProjects(): Promise<Project[]> {
+    try {
+      const response = await client.get('/projects/my')
+      if (response.data && response.data.data) {
+        return response.data.data
+      }
+      throw new Error('프로젝트 데이터 형식이 올바르지 않습니다.')
+    } catch (error) {
+      console.error('Error fetching user projects:', error)
+      throw error
+    }
+  },
+
   // 프로젝트 상세 조회
   async getProjectById(id: number): Promise<Project> {
     const response = await client.get(`/projects/${id}`)
