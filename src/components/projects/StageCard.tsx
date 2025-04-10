@@ -13,79 +13,70 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Button,
-  ListItemIcon,
-  Chip
+  Button
 } from '@mui/material'
-import { MoreVertical, Edit, Plus, Trash2 } from 'lucide-react'
-import type { Stage, Task, TaskStatus } from '../../types/stage'
+import { MoreVertical, Plus, X, Check } from 'lucide-react'
 import {
   DragDropContext,
   Droppable,
   Draggable,
   DroppableProvided,
   DraggableProvided,
-  DropResult // Import DropResult for handleDragEnd type
+  DropResult
 } from '@hello-pangea/dnd'
-// import { getTaskRequests } from '../../api/task' // Removed as call is moved or handled inside modal
-// Removed unused TaskRequest and TaskRequestsResponse types from import
-import type { ProjectStageTask } from '../../types/api'
+import TaskDetailModal from './TaskDetailModal'
+import { createTask } from '../../api/task'
 
 interface StageCardProps {
-  stage: Stage
+  stage: {
+    id: number
+    name: string
+    order: number
+    tasks: {
+      id: number
+      title: string
+      description: string
+      order: number
+    }[]
+  }
   projectId: number
   onUpdateStage?: (stageId: number, title: string) => void
   onDeleteStage?: (stageId: number) => void
-  // Correctly type the onMoveTask callback arguments if needed, based on DropResult
-  onMoveTask?: (
-    sourceIndex: number,
-    destinationIndex: number,
-    stageId: number
-  ) => void
+  onMoveTask?: (sourceIndex: number, destinationIndex: number, stageId: number) => void
+  onAddTask?: (stageId: number, title: string) => void
 }
 
-// TaskItem component remains the same
-const TaskItem: React.FC<{
-  task: Task
+interface TaskItemProps {
+  task: {
+    id: number
+    title: string
+    description: string
+    order: number
+  }
   index: number
   provided: DraggableProvided
   isDragging: boolean
   onClick: () => void
-}> = ({ task, provided, isDragging, onClick }) => {
-  const getStatusColor = (
-    status: TaskStatus
-  ): 'success' | 'error' | 'warning' | 'default' => {
-    switch (status) {
-      case 'APPROVED':
-        return 'success'
-      case 'REJECTED':
-        return 'error'
-      case 'WAITING_APPROVAL': // Assuming this maps to warning
-        return 'warning'
-      case 'PENDING': // Assuming this maps to default
-        return 'default'
-      default:
-        return 'default'
-    }
-  }
+}
 
+const TaskItem: React.FC<TaskItemProps> = ({ task, provided, isDragging, onClick }) => {
   return (
     <Box
       ref={provided.innerRef}
       {...provided.draggableProps}
       {...provided.dragHandleProps}
+      onClick={onClick}
       sx={{
-        bgcolor: '#FFFBE6', // Consider theme-based color
+        bgcolor: '#FFFBE6',
         borderRadius: 1,
         cursor: 'pointer',
         opacity: isDragging ? 0.5 : 1,
         transition: 'background-color 0.2s ease, opacity 0.2s ease',
         '&:hover': {
-          bgcolor: '#FFF8D6' // Consider theme-based hover color
+          bgcolor: '#FFF8D6'
         }
       }}>
       <ListItem
-        onClick={onClick}
         sx={{
           py: 0.5,
           px: 1,
@@ -99,22 +90,9 @@ const TaskItem: React.FC<{
             variant: 'body2',
             sx: {
               fontWeight: 500,
-              fontSize: '0.75rem',
+              fontSize: '0.875rem',
               width: '100%',
               wordBreak: 'break-word'
-            } // Prevent overflow
-          }}
-        />
-        <Chip
-          label={task.status} // Consider mapping status to Korean or user-friendly text
-          color={getStatusColor(task.status)}
-          size="small"
-          sx={{
-            mt: 0.5,
-            height: '20px',
-            '& .MuiChip-label': {
-              px: '8px',
-              fontSize: '0.65rem'
             }
           }}
         />
@@ -128,13 +106,21 @@ const StageCard: React.FC<StageCardProps> = ({
   projectId,
   onUpdateStage,
   onDeleteStage,
-  onMoveTask
+  onMoveTask,
+  onAddTask
 }) => {
-  const [, setIsAddTaskModalOpen] = useState(false)
-  const [isEditTitleModalOpen, setIsEditTitleModalOpen] = useState(false)
-  const [, setSelectedTask] = useState<ProjectStageTask | null>(null)
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [title, setTitle] = useState(stage.name)
+  const [selectedTask, setSelectedTask] = useState<{
+    id: number
+    title: string
+    description: string
+    order: number
+  } | null>(null)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [newTitle, setNewTitle] = useState(stage.name)
+  const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [newTaskDescription, setNewTaskDescription] = useState('')
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -144,166 +130,175 @@ const StageCard: React.FC<StageCardProps> = ({
     setAnchorEl(null)
   }
 
-  // Removed async and API call from here
-  const handleTaskClick = (task: Task) => {
-    // Construct the ProjectStageTask object with all required fields
-    const projectStageTask: ProjectStageTask = {
-      taskId: task.id,
-      title: task.title,
-      content: task.description || '', // Add default empty string for content
-      taskOrder: task.taskOrder ?? 0, // Use nullish coalescing for default 0
-      status: task.status,
-      projectId: projectId,
-      stageId: stage.id,
-      links: [], // Add missing 'links' property with default value
-      files: [] // Add missing 'files' property with default value
-    }
-    setSelectedTask(projectStageTask) // Set state with the correctly typed object
+  const handleTaskClick = (task: {
+    id: number
+    title: string
+    description: string
+    order: number
+  }) => {
+    setSelectedTask(task)
   }
 
-  // Handles opening the Add Task modal (actual task creation is handled by the modal's onSubmit)
-  const openAddTaskModal = () => {
-    setIsAddTaskModalOpen(true)
-    handleMenuClose() // Close stage menu if open
+  const handleEdit = () => {
+    setIsEditing(true)
   }
 
-  const handleEditTitleSubmit = () => {
-    if (onUpdateStage && newTitle && newTitle !== stage.name) {
-      onUpdateStage(stage.id, newTitle)
+  const handleSave = () => {
+    if (onUpdateStage && title?.trim() && title !== stage.name) {
+      onUpdateStage(stage.id, title)
     }
-    setIsEditTitleModalOpen(false)
+    setIsEditing(false)
     handleMenuClose()
   }
 
+  const handleCancel = () => {
+    setTitle(stage.name)
+    setIsEditing(false)
+  }
+
   const handleDeleteStageClick = () => {
-    // Optional: Add confirmation dialog here
     if (onDeleteStage) {
       onDeleteStage(stage.id)
     }
     handleMenuClose()
   }
 
-  // Type the result using DropResult
   const handleDragEnd = (result: DropResult) => {
+    if (!result.destination || !onMoveTask) return
+
     const { source, destination } = result
+    onMoveTask(source.index, destination.index, stage.id)
+  }
 
-    // Dropped outside the list or didn't move
-    if (
-      !destination ||
-      (source.droppableId === destination.droppableId &&
-        source.index === destination.index)
-    ) {
-      return
-    }
+  const handleAddTask = async () => {
+    if (!newTaskTitle.trim()) return
 
-    // Ensure it's dropped within the same stage's droppable
-    // (Cross-stage D&D would require different logic, likely handled in the parent board component)
-    if (source.droppableId === destination.droppableId && onMoveTask) {
-      onMoveTask(source.index, destination.index, stage.id)
+    try {
+      // 현재 클릭된 작업 추가 버튼의 인덱스를 찾습니다
+      const currentIndex = stage.tasks.findIndex(task => task.id === selectedTask?.id)
+      
+      // 위아래 작업의 ID를 설정합니다
+      const prevTaskId = currentIndex > 0 ? stage.tasks[currentIndex - 1].id : undefined
+      const nextTaskId = currentIndex < stage.tasks.length - 1 ? stage.tasks[currentIndex + 1].id : undefined
+
+      const taskData = {
+        stageId: stage.id,
+        title: newTaskTitle,
+        content: newTaskDescription,
+        prevTaskId,
+        nextTaskId
+      }
+
+      const response = await createTask(taskData)
+      if (response.status === 'success') {
+        // 작업 추가 성공 시 모달 닫기
+        setIsAddTaskModalOpen(false)
+        setNewTaskTitle('')
+        setNewTaskDescription('')
+        // 작업 목록 새로고침
+        if (onAddTask) {
+          onAddTask(stage.id, newTaskTitle)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to add task:', error)
     }
   }
 
   return (
     <Paper
-      elevation={1} // Add subtle shadow
+      elevation={1}
       sx={{
         p: 1.5,
         height: '100%',
-        minHeight: '200px', // Adjust as needed
+        minHeight: '200px',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: 'grey.100', // Lighter background for stage
+        bgcolor: 'grey.100',
         '& .MuiListItem-root': {
-          // Base styles for list items (overridden by TaskItem)
           px: 1,
           py: 0.75
         }
       }}>
-      {/* Stage Header */}
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'center',
           justifyContent: 'space-between',
-          mb: 1.5,
-          px: 0.5 // Add some padding to header
+          alignItems: 'center',
+          mb: 2
         }}>
-        <Typography
-          variant="subtitle1" // Slightly larger title
-          sx={{ fontWeight: 600, flexGrow: 1, mr: 1, wordBreak: 'break-word' }}>
-          {stage.name}
-        </Typography>
-        <IconButton
-          size="small"
-          onClick={handleMenuClick}
-          aria-label="Stage options"
-          sx={{
-            color: 'text.secondary',
-            p: 0.5
-          }}>
-          <MoreVertical size={16} /> {/* Slightly larger icon */}
-        </IconButton>
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleMenuClose}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          sx={{
-            '& .MuiMenuItem-root': {
-              fontSize: '0.875rem', // Consistent font size
-              py: 0.75,
-              minHeight: 'auto',
-              '& .MuiListItemIcon-root': {
-                // Style icon
-                minWidth: 'auto',
-                marginRight: 1,
-                color: 'text.secondary'
-              }
-            }
-          }}>
-          <MenuItem
-            onClick={() => {
-              setNewTitle(stage.name) // Reset title on open
-              setIsEditTitleModalOpen(true)
-              handleMenuClose()
-            }}>
-            <ListItemIcon>
-              <Edit size={14} />
-            </ListItemIcon>
-            이름 수정
-          </MenuItem>
-          <MenuItem onClick={handleDeleteStageClick}>
-            <ListItemIcon>
-              <Trash2 size={14} />
-            </ListItemIcon>
-            단계 삭제
-          </MenuItem>
-        </Menu>
+        {isEditing ? (
+          <TextField
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            size="small"
+            fullWidth
+            autoFocus
+          />
+        ) : (
+          <Typography variant="h6">{stage.name}</Typography>
+        )}
+        <Box>
+          {isEditing ? (
+            <>
+              <IconButton onClick={handleSave} size="small">
+                <Check />
+              </IconButton>
+              <IconButton onClick={handleCancel} size="small">
+                <X />
+              </IconButton>
+            </>
+          ) : (
+            <IconButton onClick={handleMenuClick} size="small">
+              <MoreVertical />
+            </IconButton>
+          )}
+        </Box>
       </Box>
 
-      {/* Task List Area */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}>
+        <MenuItem onClick={handleEdit}>수정</MenuItem>
+        <MenuItem onClick={handleDeleteStageClick}>삭제</MenuItem>
+      </Menu>
+
+      <Dialog
+        open={isEditing}
+        onClose={handleCancel}
+        maxWidth="sm"
+        fullWidth>
+        <DialogTitle>단계 수정</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="단계 제목"
+            type="text"
+            fullWidth
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancel}>취소</Button>
+          <Button onClick={handleSave} variant="contained">저장</Button>
+        </DialogActions>
+      </Dialog>
+
       <Box
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 0, // Gap is handled by Droppable/Draggable spacing/margins if needed
+          gap: 0,
           flexGrow: 1,
-          overflowY: 'auto' // Allow scrolling if tasks exceed height
-          // Add some padding to scroll area if needed
-          // mx: -1.5, // Counteract Paper padding if scrollbar appears inside
-          // px: 1.5,
+          overflowY: 'auto'
         }}>
-        {/* Top Add Button Placeholder (optional, consider a dedicated button) */}
-        {/* <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-          <Button onClick={openAddTaskModal} sx={{...}}> <Plus size={14} /> </Button>
-        </Box> */}
-
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable
             droppableId={`stage-${stage.id}`}
             type="TASK">
-            {/* Add type */}
             {(provided: DroppableProvided) => (
               <Box
                 ref={provided.innerRef}
@@ -311,25 +306,47 @@ const StageCard: React.FC<StageCardProps> = ({
                 sx={{
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 1, // Add gap between tasks
-                  minHeight: '50px', // Ensure droppable area exists even when empty
-                  pb: 1 // Padding at the bottom
+                  gap: 1,
+                  minHeight: '50px',
+                  pb: 1
                 }}>
                 {stage.tasks.map((task, index) => (
-                  <Draggable
-                    key={task.id} // Use task.id which should be unique
-                    draggableId={`task-${task.id}`}
-                    index={index}>
-                    {(providedDraggable: DraggableProvided, snapshot) => (
-                      <TaskItem
-                        task={task}
-                        index={index}
-                        provided={providedDraggable}
-                        isDragging={snapshot.isDragging}
-                        onClick={() => handleTaskClick(task)}
-                      />
-                    )}
-                  </Draggable>
+                  <React.Fragment key={task.id}>
+                    <Draggable
+                      draggableId={`task-${task.id}`}
+                      index={index}>
+                      {(providedDraggable: DraggableProvided, snapshot) => (
+                        <TaskItem
+                          task={task}
+                          index={index}
+                          provided={providedDraggable}
+                          isDragging={snapshot.isDragging}
+                          onClick={() => handleTaskClick(task)}
+                        />
+                      )}
+                    </Draggable>
+                    <Button
+                      onClick={() => {
+                        setNewTaskTitle('')
+                        setNewTaskDescription('')
+                        setIsAddTaskModalOpen(true)
+                      }}
+                      startIcon={<Plus size={16} />}
+                      fullWidth
+                      sx={{
+                        color: 'text.secondary',
+                        justifyContent: 'center',
+                        textTransform: 'none',
+                        py: 0.5,
+                        px: 1,
+                        minHeight: '32px',
+                        opacity: 0,
+                        '&:hover': {
+                          opacity: 1
+                        }
+                      }}>
+                    </Button>
+                  </React.Fragment>
                 ))}
                 {provided.placeholder}
               </Box>
@@ -338,70 +355,51 @@ const StageCard: React.FC<StageCardProps> = ({
         </DragDropContext>
       </Box>
 
-      {/* Add Task Button at the bottom */}
-      <Button
-        onClick={openAddTaskModal}
-        startIcon={<Plus size={16} />}
-        fullWidth
-        sx={{
-          mt: 1.5,
-          color: 'text.secondary',
-          justifyContent: 'flex-start',
-          textTransform: 'none'
-        }}>
-        작업 추가
-      </Button>
-
-      {/* Edit Stage Title Dialog */}
       <Dialog
-        open={isEditTitleModalOpen}
-        onClose={() => setIsEditTitleModalOpen(false)}
-        maxWidth="xs"
+        open={isAddTaskModalOpen}
+        onClose={() => setIsAddTaskModalOpen(false)}
+        maxWidth="sm"
         fullWidth>
-        <DialogTitle>단계 이름 수정</DialogTitle>
+        <DialogTitle>새 작업 추가</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
+            margin="dense"
+            label="작업 제목"
+            type="text"
             fullWidth
-            value={newTitle}
-            onChange={e => setNewTitle(e.target.value)}
-            placeholder="단계 이름을 입력하세요"
-            variant="outlined" // Explicitly set variant
-            sx={{ mt: 1 }}
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="작업 설명"
+            type="text"
+            fullWidth
+            multiline
+            rows={4}
+            value={newTaskDescription}
+            onChange={(e) => setNewTaskDescription(e.target.value)}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsEditTitleModalOpen(false)}>취소</Button>
+          <Button onClick={() => setIsAddTaskModalOpen(false)}>취소</Button>
           <Button
-            onClick={handleEditTitleSubmit}
+            onClick={handleAddTask}
             variant="contained"
-            disabled={!newTitle.trim() || newTitle === stage.name}>
-            수정
+            disabled={!newTaskTitle.trim()}>
+            추가
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Add Task Modal */}
-      {/* <AddTaskModal
-        open={isAddTaskModalOpen}
-        onClose={() => setIsAddTaskModalOpen(false)}
-        stageId={stage.id} // Pass stageId to the modal
-        projectId={projectId} // Pass projectId if needed by the modal/API
-        onSubmit={taskData => {
-          // The actual API call to add the task should happen inside AddTaskModal's submit logic.
-          // Here, you might trigger a refresh of the stage data via a callback prop if needed.
-          console.log(
-            'Task creation triggered for stage:',
-            stage.id,
-            'Data:',
-            taskData
-          ) // Placeholder
-          setIsAddTaskModalOpen(false)
-          // Example: onTaskAdded?.(stage.id); // Callback to parent to refetch data
-        }}
-      /> */}
-
-      {/* Task Details/Requests Modal */}
+      <TaskDetailModal
+        open={!!selectedTask}
+        onClose={() => setSelectedTask(null)}
+        taskId={selectedTask?.id || 0}
+        projectId={projectId}
+      />
     </Paper>
   )
 }
