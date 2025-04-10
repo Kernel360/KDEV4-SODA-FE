@@ -14,6 +14,7 @@ import {
   Box
 } from '@mui/material'
 import { useUserStore } from '../../stores/userStore'
+import Cookies from 'js-cookie'
 
 interface Notification {
   id: number
@@ -33,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({ sx }) => {
   const [notificationAnchor, setNotificationAnchor] =
     useState<null | HTMLElement>(null)
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null)
-  const { user } = useUserStore()
+  const { user, clearUser } = useUserStore()
 
   // Mock data - replace with actual data from your backend
   const notifications: Notification[] = [
@@ -77,8 +78,21 @@ const Header: React.FC<HeaderProps> = ({ sx }) => {
   }
 
   const handleLogout = () => {
-    // Implement logout logic
+    // Clear localStorage
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+
+    // Clear cookies
+    Cookies.remove('refreshToken')
+
+    // Clear user state
+    clearUser()
+
+    // Close profile menu
     handleProfileClose()
+
+    // Navigate to main page
+    navigate('/')
   }
 
   const handleMyPage = () => {

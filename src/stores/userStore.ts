@@ -13,7 +13,9 @@ interface User {
   email: string
   role: string
   firstLogin: boolean
-  company: Company
+  phoneNumber?: string
+  position?: string
+  company?: Company
 }
 
 interface UserState {
