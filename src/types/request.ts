@@ -46,14 +46,21 @@ export interface TaskRequest {
     urlDescription: string
   }>
   files: Array<{
-    fileUrl: string | undefined
     id: number
     name: string
     url: string
   }>
-  status: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
   createdAt: string
   updatedAt: string
+  rejection?: {
+    comment: string
+    links: Array<{
+      id: number
+      urlAddress: string
+      urlDescription: string
+    }>
+  }
 }
 
 export interface CreateRequestData {
