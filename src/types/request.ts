@@ -33,27 +33,27 @@ export interface Request {
 }
 
 export interface TaskRequest {
+  requester: any
   requestId: number
+  taskId: number
+  memberId: number
+  memberName: string
   title: string
   content: string
-  status: RequestStatus
-  links?: RequestLink[]
-  files?: Array<{
-    fileName: string
-    fileUrl: string
+  links: Array<{
+    id: number
+    urlAddress: string
+    urlDescription: string
   }>
+  files: Array<{
+    fileUrl: string | undefined
+    id: number
+    name: string
+    url: string
+  }>
+  status: string
   createdAt: string
   updatedAt: string
-  requester?: {
-    id: number
-    name: string
-  }
-  processor?: {
-    id: number
-    name: string
-  }
-  processedAt?: string
-  comment?: string
 }
 
 export interface CreateRequestData {

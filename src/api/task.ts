@@ -3,9 +3,11 @@ import { apiRequest } from './api'
 import type { ProjectStageTask, ApiResponse } from '../types/api'
 import { client } from './client'
 import { TaskStatus } from '../types/project'
+import { TaskRequest } from '../types/request'
 
 // API 응답 타입 정의
 export interface ApprovalResponse {
+  message: string
   responseId: number
   comment: string
   links?: { id: number; urlAddress: string; urlDescription: string }[]
@@ -24,10 +26,15 @@ export interface CreateRequestResponse {
   createdAt: string
 }
 
-export const getTaskRequests = async (taskId: number) => {
+export const getTaskRequests = async (taskId: number): Promise<ApiResponse<TaskRequest[]>> => {
   try {
     const response = await client.get(`/tasks/${taskId}/requests`)
-    return response.data
+    return {
+      status: 'success',
+      code: '200',
+      message: 'OK',
+      data: response.data
+    }
   } catch (error) {
     console.error('Failed to fetch task requests:', error)
     throw error
@@ -246,7 +253,7 @@ interface CreateTaskData {
 }
 
 export const createTask = async (data: CreateTaskData) => {
-  const response = await client.post('https://api.s0da.co.kr/', data)
+  const response = await client.post('/tasks', data)
   return {
     id: response.data.taskId,
     title: response.data.title,

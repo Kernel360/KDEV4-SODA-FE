@@ -54,7 +54,21 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
       const response = await getTaskRequests(taskId)
       console.log('Task requests response:', response)
       if (response.data) {
-        setRequests(response.data)
+        setRequests(response.data.map(taskRequest => ({
+          id: taskRequest.requestId, // Changed requestId to id to match Request type
+          requestId: taskRequest.requestId,
+          taskId: taskRequest.taskId,
+          memberId: taskRequest.memberId,
+          memberName: taskRequest.memberName,
+          title: taskRequest.title,
+          content: taskRequest.content,
+          links: taskRequest.links,
+          files: taskRequest.files,
+          status: taskRequest.status as "승인 대기중" | "승인됨" | "반려됨",
+          createdAt: taskRequest.createdAt,
+          updatedAt: taskRequest.updatedAt,
+          attachments: []
+        })))
       } else {
         setError('요청 목록을 불러오는데 실패했습니다.')
       }
