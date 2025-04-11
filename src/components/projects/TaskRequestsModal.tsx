@@ -7,11 +7,9 @@ import {
   Button,
   Box,
   Typography,
-  IconButton,
-  TextField,
-  DialogContentText
+  IconButton
 } from '@mui/material'
-import { Plus, X, ArrowLeft, Link as LinkIcon } from 'lucide-react'
+import { Plus, X, ArrowLeft } from 'lucide-react'
 import RequestList from './RequestList'
 import RequestForm from './RequestForm'
 import RequestDetail from './RequestDetail'
@@ -56,12 +54,12 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
   const [selectedRequest, setSelectedRequest] = useState<TaskRequest | null>(
     null
   )
-  const [isRejecting, setIsRejecting] = useState(false)
-  const [rejectForm, setRejectForm] = useState({
-    comment: '',
-    links: [] as { urlAddress: string; urlDescription: string }[]
-  })
-  const [newLink, setNewLink] = useState({ urlAddress: '', urlDescription: '' })
+  // const [isRejecting, setIsRejecting] = useState(false)
+  // const [rejectForm, setRejectForm] = useState({
+  //   comment: '',
+  //   links: [] as { urlAddress: string; urlDescription: string }[]
+  // })
+  // const [newLink, setNewLink] = useState({ urlAddress: '', urlDescription: '' })
 
   useEffect(() => {
     if (!open) {
@@ -200,22 +198,22 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
     }
   }
 
-  const handleAddLink = () => {
-    if (newLink.urlAddress.trim() && newLink.urlDescription.trim()) {
-      setRejectForm(prev => ({
-        ...prev,
-        links: [...prev.links, newLink]
-      }))
-      setNewLink({ urlAddress: '', urlDescription: '' })
-    }
-  }
+  // const handleAddLink = () => {
+  //   if (newLink.urlAddress.trim() && newLink.urlDescription.trim()) {
+  //     setRejectForm(prev => ({
+  //       ...prev,
+  //       links: [...prev.links, newLink]
+  //     }))
+  //     setNewLink({ urlAddress: '', urlDescription: '' })
+  //   }
+  // }
 
-  const handleRemoveLink = (index: number) => {
-    setRejectForm(prev => ({
-      ...prev,
-      links: prev.links.filter((_, i) => i !== index)
-    }))
-  }
+  // const handleRemoveLink = (index: number) => {
+  //   setRejectForm(prev => ({
+  //     ...prev,
+  //     links: prev.links.filter((_, i) => i !== index)
+  //   }))
+  // }
 
   const canCreateRequest = () => {
     return task?.status === '대기'

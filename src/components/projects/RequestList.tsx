@@ -38,7 +38,6 @@ interface RequestListProps {
 
 const RequestList: React.FC<RequestListProps> = ({
   requests,
-  onRequestClick,
   onEdit,
   onDelete,
   onApprove,
