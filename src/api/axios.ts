@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 export const axiosInstance = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: 'https://api.s0da.co.kr/',
   headers: {
     'Content-Type': 'application/json'
   }

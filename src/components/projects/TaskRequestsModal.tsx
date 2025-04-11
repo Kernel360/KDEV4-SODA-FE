@@ -1,11 +1,32 @@
 import React, { useState, useEffect } from 'react'
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, IconButton } from '@mui/material'
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Box,
+  Typography,
+  IconButton
+} from '@mui/material'
 import { Plus, X, ArrowLeft } from 'lucide-react'
 import RequestList from './RequestList'
 import RequestForm from './RequestForm'
 import RequestDetail from './RequestDetail'
-import { getTaskRequests, createTaskRequest, updateTaskRequest, deleteTaskRequest, approveTaskRequest, rejectTaskRequest, uploadRequestFile } from '../../api/request'
-import type { TaskRequest, CreateRequestData, UpdateRequestData, RequestAttachment } from '../../types/request'
+import {
+  getTaskRequests,
+  createTaskRequest,
+  updateTaskRequest,
+  deleteTaskRequest,
+  approveTaskRequest,
+  rejectTaskRequest,
+  uploadRequestFile
+} from '../../api/request'
+import type {
+  TaskRequest,
+  CreateRequestData,
+  UpdateRequestData
+} from '../../types/request'
 
 interface TaskRequestsModalProps {
   open: boolean
@@ -30,7 +51,9 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
   const [isLoading, setIsLoading] = useState(false)
   const [isCreatingRequest, setIsCreatingRequest] = useState(false)
   const [editingRequest, setEditingRequest] = useState<TaskRequest | null>(null)
-  const [selectedRequest, setSelectedRequest] = useState<TaskRequest | null>(null)
+  const [selectedRequest, setSelectedRequest] = useState<TaskRequest | null>(
+    null
+  )
 
   useEffect(() => {
     if (!open) {
@@ -70,7 +93,7 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
     setSelectedRequest(null)
   }
 
-  const handleCreateRequest = async (formData: { 
+  const handleCreateRequest = async (formData: {
     title: string
     content: string
     links: Array<{ urlAddress: string; urlDescription: string }>
@@ -89,7 +112,7 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
           links: formData.links
         }
         const response = await createTaskRequest(createData)
-        
+
         // Upload files if any
         if (formData.files?.length) {
           for (const file of formData.files) {
@@ -137,9 +160,9 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
       await approveTaskRequest(request.requestId, { comment: '', links: [] })
       await fetchRequests()
       if (selectedRequest?.requestId === request.requestId) {
-        const updatedRequest = (await getTaskRequests(task?.taskId || 0)).data?.find(
-          (r: TaskRequest) => r.requestId === request.requestId
-        )
+        const updatedRequest = (
+          await getTaskRequests(task?.taskId || 0)
+        ).data?.find((r: TaskRequest) => r.requestId === request.requestId)
         setSelectedRequest(updatedRequest || null)
       }
     } catch (error) {
@@ -152,9 +175,9 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
       await rejectTaskRequest(request.requestId, { comment: '', links: [] })
       await fetchRequests()
       if (selectedRequest?.requestId === request.requestId) {
-        const updatedRequest = (await getTaskRequests(task?.taskId || 0)).data?.find(
-          (r: TaskRequest) => r.requestId === request.requestId
-        )
+        const updatedRequest = (
+          await getTaskRequests(task?.taskId || 0)
+        ).data?.find((r: TaskRequest) => r.requestId === request.requestId)
         setSelectedRequest(updatedRequest || null)
       }
     } catch (error) {
@@ -173,10 +196,17 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
       maxWidth="md"
       fullWidth>
       <DialogTitle>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {selectedRequest && (
-              <IconButton onClick={handleBackToList} size="small">
+              <IconButton
+                onClick={handleBackToList}
+                size="small">
                 <ArrowLeft size={16} />
               </IconButton>
             )}
@@ -184,7 +214,9 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
               {selectedRequest ? selectedRequest.title : task?.title}
             </Typography>
           </Box>
-          <IconButton onClick={onClose} size="small">
+          <IconButton
+            onClick={onClose}
+            size="small">
             <X size={16} />
           </IconButton>
         </Box>

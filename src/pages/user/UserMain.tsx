@@ -51,12 +51,12 @@ const UserMain: React.FC = () => {
         setProjects(projectsWithProgress)
 
         // TODO: 실제 요청사항 API 연동
-        const dummyRequests: RequestWithProject[] = [
+        const dummyRequests: any[] = [
           {
             id: 1,
             title: '디자인 수정 요청',
             description: '메인 페이지의 디자인 수정이 필요합니다.',
-            status: '승인대기중',
+            status: '승인 대기중',
             createdAt: '2024-02-20T10:00:00',
             updatedAt: '2024-02-20T10:00:00',
             type: '수정',
@@ -66,7 +66,8 @@ const UserMain: React.FC = () => {
           {
             id: 2,
             title: '기능 추가 요청',
-            description: '사용자 프로필 페이지에 새로운 기능 추가가 필요합니다.',
+            description:
+              '사용자 프로필 페이지에 새로운 기능 추가가 필요합니다.',
             status: '승인됨',
             createdAt: '2024-02-19T15:00:00',
             updatedAt: '2024-02-19T16:30:00',

@@ -1,9 +1,6 @@
 import { API_ENDPOINTS } from './config'
 import { apiRequest } from './api'
-import type {
-  ProjectStageTask,
-  ApiResponse
-} from '../types/api'
+import type { ProjectStageTask, ApiResponse } from '../types/api'
 import { client } from './client'
 import { TaskStatus } from '../types/project'
 
@@ -249,7 +246,7 @@ interface CreateTaskData {
 }
 
 export const createTask = async (data: CreateTaskData) => {
-  const response = await client.post('http://localhost:8080/tasks', data)
+  const response = await client.post('https://api.s0da.co.kr/', data)
   return {
     id: response.data.taskId,
     title: response.data.title,

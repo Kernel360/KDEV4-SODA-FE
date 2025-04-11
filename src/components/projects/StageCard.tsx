@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import {
   Box,
   Paper,
@@ -15,17 +15,15 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
-  ListItemText,
-  Tooltip
+  ListItemText
 } from '@mui/material'
 import { MoreVertical, Plus, Pencil, Trash2 } from 'lucide-react'
 import { Droppable, Draggable } from '@hello-pangea/dnd'
 import TaskRequestsModal from './TaskRequestsModal'
 import { Stage, Task, TaskStatus } from '../../types/project'
-import { createTask, updateTask, deleteTask } from '../../api/task'
+import { createTask } from '../../api/task'
 import { updateStage, deleteStage } from '../../api/stage'
 import { client } from '../../api/client'
-import { useToast } from '../../contexts/ToastContext'
 
 interface StageCardProps {
   stage: Stage
@@ -40,23 +38,37 @@ interface StageCardProps {
   onTaskEdit: (taskId: number, title: string, content: string) => Promise<void>
 }
 
-const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditMode, onStagesChange, onStageEdit, onStageDelete, onTaskEdit }) => {
+const StageCard: React.FC<StageCardProps> = ({
+  stage,
+  stages,
+  projectId,
+  isEditMode,
+  onStagesChange,
+  onStageEdit,
+  onStageDelete,
+  onTaskEdit
+}) => {
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskContent, setNewTaskContent] = useState('')
   const [selectedPosition, setSelectedPosition] = useState<number | null>(null)
   const [hoveredTaskIndex, setHoveredTaskIndex] = useState<number | null>(null)
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null)
-  const [taskMenuAnchorEl, setTaskMenuAnchorEl] = useState<null | HTMLElement>(null)
+  const [taskMenuAnchorEl, setTaskMenuAnchorEl] = useState<null | HTMLElement>(
+    null
+  )
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
   const [isEditStageModalOpen, setIsEditStageModalOpen] = useState(false)
   const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false)
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
-  const [selectedTask, setSelectedTask] = useState<{ taskId: number; title: string; status: string } | null>(null)
+  const [selectedTask, setSelectedTask] = useState<{
+    taskId: number
+    title: string
+    status: string
+  } | null>(null)
   const [editedStageTitle, setEditedStageTitle] = useState(stage.title)
   const [editedTaskTitle, setEditedTaskTitle] = useState('')
   const [editedTaskContent, setEditedTaskContent] = useState('')
-  const { showToast } = useToast()
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setMenuAnchorEl(event.currentTarget)
@@ -95,7 +107,7 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
         title: editedStageTitle
       }
       if (onStagesChange) {
-        const updatedStages = stages.map(s => 
+        const updatedStages = stages.map(s =>
           s.id === stage.id ? updatedStage : s
         )
         onStagesChange(updatedStages)
@@ -106,7 +118,10 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
     }
   }
 
-  const handleTaskMenuOpen = (event: React.MouseEvent<HTMLElement>, taskId: number) => {
+  const handleTaskMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    taskId: number
+  ) => {
     event.stopPropagation()
     setTaskMenuAnchorEl(event.currentTarget)
     setSelectedTaskId(taskId)
@@ -139,7 +154,7 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
       }
 
       if (onStagesChange) {
-        const updatedStages = stages.map(s => 
+        const updatedStages = stages.map(s =>
           s.id === stage.id ? updatedStage : s
         )
         onStagesChange(updatedStages)
@@ -165,27 +180,41 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
     }
 
     try {
-      console.log('Editing task:', selectedTaskId, editedTaskTitle, editedTaskContent)
-      
+      console.log(
+        'Editing task:',
+        selectedTaskId,
+        editedTaskTitle,
+        editedTaskContent
+      )
+
       // Optimistic update: 먼저 UI에서 task 수정
       const updatedStage = {
         ...stage,
-        tasks: stage.tasks.map(task => 
-          task.id === selectedTaskId 
-            ? { ...task, title: editedTaskTitle, description: editedTaskContent }
+        tasks: stage.tasks.map(task =>
+          task.id === selectedTaskId
+            ? {
+                ...task,
+                title: editedTaskTitle,
+                description: editedTaskContent
+              }
             : task
         )
       }
 
       if (onStagesChange) {
-        const updatedStages = stages.map(s => 
+        const updatedStages = stages.map(s =>
           s.id === stage.id ? updatedStage : s
         )
         onStagesChange(updatedStages)
       }
 
       // API 호출
-      console.log('Calling onTaskEdit with:', selectedTaskId, editedTaskTitle, editedTaskContent)
+      console.log(
+        'Calling onTaskEdit with:',
+        selectedTaskId,
+        editedTaskTitle,
+        editedTaskContent
+      )
       await onTaskEdit(selectedTaskId, editedTaskTitle, editedTaskContent)
       setIsEditTaskModalOpen(false)
       setSelectedTaskId(null) // 수정 완료 후 초기화
@@ -226,7 +255,7 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
       }
 
       if (onStagesChange) {
-        const updatedStages = stages.map(s => 
+        const updatedStages = stages.map(s =>
           s.id === stage.id ? updatedStage : s
         )
         onStagesChange(updatedStages)
@@ -237,8 +266,14 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
         stageId: stage.id,
         title: newTaskTitle,
         content: newTaskContent,
-        prevTaskId: selectedPosition && selectedPosition > 0 ? stage.tasks[selectedPosition - 1]?.id : undefined,
-        nextTaskId: selectedPosition && selectedPosition < stage.tasks.length ? stage.tasks[selectedPosition]?.id : undefined
+        prevTaskId:
+          selectedPosition && selectedPosition > 0
+            ? stage.tasks[selectedPosition - 1]?.id
+            : undefined,
+        nextTaskId:
+          selectedPosition && selectedPosition < stage.tasks.length
+            ? stage.tasks[selectedPosition]?.id
+            : undefined
       })
 
       // API 응답으로 실제 task로 교체
@@ -264,7 +299,7 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
       }
 
       if (onStagesChange) {
-        const finalUpdatedStages = stages.map(s => 
+        const finalUpdatedStages = stages.map(s =>
           s.id === stage.id ? finalUpdatedStage : s
         )
         onStagesChange(finalUpdatedStages)
@@ -287,7 +322,7 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
   const handleAddTaskClick = (position: number) => {
     const prevTask = stage.tasks[position - 1]
     const nextTask = stage.tasks[position]
-    
+
     console.log('Surrounding tasks:', {
       prevTaskId: prevTask?.id,
       nextTaskId: nextTask?.id
@@ -310,65 +345,73 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
 
   return (
     <>
-    <Paper
+      <Paper
         elevation={1}
-      sx={{
+        sx={{
           width: 250,
           height: 400,
           minHeight: 400,
-        display: 'flex',
-        flexDirection: 'column',
+          display: 'flex',
+          flexDirection: 'column',
           bgcolor: 'background.paper'
-        }}
-      >
-      <Box
-        sx={{
+        }}>
+        <Box
+          sx={{
             p: 2,
             borderBottom: '1px solid',
             borderColor: 'divider',
             display: 'flex',
             flexDirection: 'column',
             gap: 1
-          }}
-        >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
             <Typography variant="h6">{stage.title}</Typography>
             {isEditMode && (
-              <IconButton size="small" onClick={handleMenuOpen}>
+              <IconButton
+                size="small"
+                onClick={handleMenuOpen}>
                 <MoreVertical size={16} />
               </IconButton>
             )}
           </Box>
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            color="text.secondary">
             {stage.tasks.length}개의 작업
           </Typography>
         </Box>
 
-        <Droppable droppableId={`stage-${stage.id}`} type="task">
-          {(provided) => (
+        <Droppable
+          droppableId={`stage-${stage.id}`}
+          type="task">
+          {provided => (
             <List
               ref={provided.innerRef}
               {...provided.droppableProps}
               sx={{
-                flex: 1, 
-                overflowY: 'auto', 
+                flex: 1,
+                overflowY: 'auto',
                 p: 1,
                 '&::-webkit-scrollbar': {
-                  width: '8px',
+                  width: '8px'
                 },
                 '&::-webkit-scrollbar-track': {
                   background: '#f1f1f1',
-                  borderRadius: '4px',
+                  borderRadius: '4px'
                 },
                 '&::-webkit-scrollbar-thumb': {
                   background: '#888',
-                  borderRadius: '4px',
+                  borderRadius: '4px'
                 },
                 '&::-webkit-scrollbar-thumb:hover': {
-                  background: '#555',
-                },
-              }}
-            >
+                  background: '#555'
+                }
+              }}>
               {isEditMode && (
                 <Box
                   key="add-task-top"
@@ -377,15 +420,14 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
                   sx={{
                     height: '16px',
                     mb: 1,
-          display: 'flex',
-          alignItems: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'center',
                     transition: 'height 0.2s ease',
                     '&:hover': {
                       height: '40px'
                     }
-                  }}
-                >
+                  }}>
                   {hoveredTaskIndex === 0 && (
                     <Button
                       sx={{
@@ -399,12 +441,11 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
                         '&:hover': {
                           backgroundColor: 'primary.main',
                           color: 'primary.contrastText',
-                          transform: 'scale(1.1)',
+                          transform: 'scale(1.1)'
                         },
                         transition: 'all 0.2s ease'
                       }}
-                      onClick={() => handleAddTaskClick(0)}
-                    >
+                      onClick={() => handleAddTaskClick(0)}>
                       <Plus size={20} />
                     </Button>
                   )}
@@ -415,9 +456,8 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
                   <Draggable
                     draggableId={`task-${task.id}`}
                     index={index}
-                    isDragDisabled={!isEditMode}
-                  >
-                    {(provided) => (
+                    isDragDisabled={!isEditMode}>
+                    {provided => (
                       <ListItem
                         ref={provided.innerRef}
                         {...provided.draggableProps}
@@ -435,26 +475,35 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
                         }}
                         onClick={() => {
                           if (!isEditMode) {
-                            setSelectedTaskId(task.id);
-                            handleTaskClick(task);
+                            setSelectedTaskId(task.id)
+                            handleTaskClick(task)
                           }
-                        }}
-                      >
-                        <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        }}>
+                        <Box
+                          sx={{
+                            width: '100%',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start'
+                          }}>
                           <Box sx={{ flex: 1 }}>
-                            <Typography variant="body2" fontWeight="medium" gutterBottom>
+                            <Typography
+                              variant="body2"
+                              fontWeight="medium"
+                              gutterBottom>
                               {task.title}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              color="text.secondary">
                               {task.description}
-        </Typography>
+                            </Typography>
                           </Box>
                           {isEditMode && (
-        <IconButton
-          size="small"
+                            <IconButton
+                              size="small"
                               sx={{ ml: 1, mt: -0.5 }}
-                              onClick={(e) => handleTaskMenuOpen(e, task.id)}
-                            >
+                              onClick={e => handleTaskMenuOpen(e, task.id)}>
                               <MoreVertical size={16} />
                             </IconButton>
                           )}
@@ -477,11 +526,10 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
                         '&:hover': {
                           height: '32px'
                         }
-                      }}
-                    >
+                      }}>
                       {hoveredTaskIndex === index + 1 && (
                         <Button
-          sx={{
+                          sx={{
                             minWidth: '28px',
                             width: '28px',
                             height: '28px',
@@ -492,12 +540,11 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
                             '&:hover': {
                               backgroundColor: 'primary.main',
                               color: 'primary.contrastText',
-                              transform: 'scale(1.1)',
+                              transform: 'scale(1.1)'
                             },
                             transition: 'all 0.2s ease'
                           }}
-                          onClick={() => handleAddTaskClick(index + 1)}
-                        >
+                          onClick={() => handleAddTaskClick(index + 1)}>
                           <Plus size={18} />
                         </Button>
                       )}
@@ -513,8 +560,7 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
         <Menu
           anchorEl={menuAnchorEl}
           open={Boolean(menuAnchorEl)}
-          onClose={handleMenuClose}
-        >
+          onClose={handleMenuClose}>
           <MenuItem onClick={handleEditClick}>
             <ListItemIcon>
               <Pencil size={16} />
@@ -532,8 +578,7 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
         <Menu
           anchorEl={taskMenuAnchorEl}
           open={Boolean(taskMenuAnchorEl)}
-          onClose={handleTaskMenuClose}
-        >
+          onClose={handleTaskMenuClose}>
           <MenuItem onClick={handleEditTaskClick}>
             <ListItemIcon>
               <Pencil size={16} />
@@ -548,10 +593,9 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
           </MenuItem>
         </Menu>
 
-        <Dialog 
-          open={isEditStageModalOpen} 
-          onClose={() => setIsEditStageModalOpen(false)}
-        >
+        <Dialog
+          open={isEditStageModalOpen}
+          onClose={() => setIsEditStageModalOpen(false)}>
           <DialogTitle>스테이지 수정</DialogTitle>
           <DialogContent>
             <TextField
@@ -560,57 +604,58 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
               label="스테이지 제목"
               fullWidth
               value={editedStageTitle}
-              onChange={(e) => setEditedStageTitle(e.target.value)}
+              onChange={e => setEditedStageTitle(e.target.value)}
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setIsEditStageModalOpen(false)}>
-              취소
-            </Button>
-            <Button onClick={handleEditStage} variant="contained">
+            <Button onClick={() => setIsEditStageModalOpen(false)}>취소</Button>
+            <Button
+              onClick={handleEditStage}
+              variant="contained">
               수정
-      </Button>
+            </Button>
           </DialogActions>
         </Dialog>
 
-      <Dialog
-          open={isEditTaskModalOpen} 
-          onClose={() => setIsEditTaskModalOpen(false)}
-        >
+        <Dialog
+          open={isEditTaskModalOpen}
+          onClose={() => setIsEditTaskModalOpen(false)}>
           <DialogTitle>작업 수정</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
+          <DialogContent>
+            <TextField
+              autoFocus
               margin="dense"
               label="작업 제목"
               fullWidth
               value={editedTaskTitle}
-              onChange={(e) => setEditedTaskTitle(e.target.value)}
+              onChange={e => setEditedTaskTitle(e.target.value)}
             />
             <TextField
               margin="dense"
               label="작업 내용"
-            fullWidth
+              fullWidth
               multiline
               rows={4}
               value={editedTaskContent}
-              onChange={(e) => setEditedTaskContent(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-            <Button onClick={() => setIsEditTaskModalOpen(false)}>
-              취소
+              onChange={e => setEditedTaskContent(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setIsEditTaskModalOpen(false)}>취소</Button>
+            <Button
+              onClick={handleEditTask}
+              variant="contained">
+              수정
             </Button>
-            <Button onClick={handleEditTask} variant="contained">
-            수정
-          </Button>
-        </DialogActions>
-      </Dialog>
+          </DialogActions>
+        </Dialog>
 
-        <Dialog open={isAddTaskModalOpen} onClose={() => {
-          setIsAddTaskModalOpen(false)
-          setSelectedPosition(null)
-        }}>
+        <Dialog
+          open={isAddTaskModalOpen}
+          onClose={() => {
+            setIsAddTaskModalOpen(false)
+            setSelectedPosition(null)
+          }}>
           <DialogTitle>작업 추가</DialogTitle>
           <DialogContent>
             <TextField
@@ -619,7 +664,7 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
               label="작업 제목"
               fullWidth
               value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
+              onChange={e => setNewTaskTitle(e.target.value)}
             />
             <TextField
               margin="dense"
@@ -628,17 +673,20 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
               multiline
               rows={4}
               value={newTaskContent}
-              onChange={(e) => setNewTaskContent(e.target.value)}
+              onChange={e => setNewTaskContent(e.target.value)}
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => {
-              setIsAddTaskModalOpen(false)
-              setSelectedPosition(null)
-            }}>
+            <Button
+              onClick={() => {
+                setIsAddTaskModalOpen(false)
+                setSelectedPosition(null)
+              }}>
               취소
             </Button>
-            <Button onClick={handleAddTask} variant="contained">
+            <Button
+              onClick={handleAddTask}
+              variant="contained">
               추가
             </Button>
           </DialogActions>
@@ -654,7 +702,7 @@ const StageCard: React.FC<StageCardProps> = ({ stage, stages, projectId, isEditM
           projectId={projectId}
           stageId={stage.id}
         />
-    </Paper>
+      </Paper>
     </>
   )
 }

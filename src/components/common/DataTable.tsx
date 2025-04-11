@@ -26,23 +26,20 @@ interface DataTableProps<T> {
   page: number
   rowsPerPage: number
   totalCount: number
-  onPageChange: (page: number) => void
-  onRowsPerPageChange: (rowsPerPage: number) => void
-  loading: boolean
-  onRowClick?: (row: T) => void
+  onPageChange: (newPage: number) => void
+  onRowsPerPageChange: (newRowsPerPage: number) => void
+  loading?: boolean
 }
 
-export default function DataTable<T>({
+const DataTable = <T extends Record<string, any>>({
   columns,
   data,
   page,
   rowsPerPage,
   totalCount,
   onPageChange,
-  onRowsPerPageChange,
-  loading,
-  onRowClick
-}: DataTableProps<T>) {
+  loading = false
+}: DataTableProps<T>) => {
   const totalPages = Math.ceil(totalCount / rowsPerPage)
 
   const handlePageChange = (newPage: number) => {
@@ -68,33 +65,6 @@ export default function DataTable<T>({
         border: '1px solid',
         borderColor: 'divider'
       }}>
-      {/* 페이지당 행 수 선택 */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-          gap: 1,
-          px: 2,
-          py: 1
-        }}>
-        <span>페이지당 행 수:</span>
-        <select
-          value={rowsPerPage}
-          onChange={e => onRowsPerPageChange(Number(e.target.value))}
-          style={{
-            padding: '4px 8px',
-            borderRadius: '4px',
-            border: '1px solid #ccc',
-            backgroundColor: 'white'
-          }}>
-          <option value={5}>5</option>
-          <option value={10}>10</option>
-          <option value={20}>20</option>
-          <option value={50}>50</option>
-        </select>
-      </Box>
-
       <TableContainer>
         <Table sx={{ minWidth: 650 }}>
           <TableHead>
@@ -121,26 +91,18 @@ export default function DataTable<T>({
                   <CircularProgress />
                 </TableCell>
               </TableRow>
-            ) : data.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  align="center">
-                  데이터가 없습니다.
-                </TableCell>
-              </TableRow>
             ) : (
               data.map((row, index) => (
                 <TableRow
                   key={index}
-                  onClick={() => onRowClick?.(row)}
+                  hover
+                  onClick={
+                    columns[0].onClick
+                      ? () => columns[0].onClick?.(row)
+                      : undefined
+                  }
                   sx={{
-                    cursor: onRowClick ? 'pointer' : 'default',
-                    '&:hover': onRowClick
-                      ? {
-                          backgroundColor: 'action.hover'
-                        }
-                      : {},
+                    cursor: columns[0].onClick ? 'pointer' : 'default',
                     '&:last-child td, &:last-child th': { border: 0 }
                   }}>
                   {columns.map(column => (
@@ -153,7 +115,7 @@ export default function DataTable<T>({
         </Table>
       </TableContainer>
 
-      {/* 페이지네이션 */}
+      {/* 커스텀 페이지네이션 */}
       <Box
         sx={{
           display: 'flex',
@@ -162,45 +124,49 @@ export default function DataTable<T>({
           mt: 2,
           pb: 2
         }}>
-        <IconButton
-          onClick={() => handlePageChange(page - 1)}
-          disabled={page === 0 || loading}
-          size="small"
-          sx={{ p: 0.5 }}>
-          <ChevronLeft size={16} />
-        </IconButton>
-
-        {getPageNumbers().map(pageNumber => (
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <IconButton
-            key={pageNumber}
-            onClick={() => handlePageChange(pageNumber)}
-            disabled={loading}
-            sx={{
-              mx: 0.5,
-              minWidth: 24,
-              height: 24,
-              borderRadius: '4px',
-              backgroundColor:
-                page === pageNumber ? 'primary.main' : 'transparent',
-              color: page === pageNumber ? 'white' : 'text.primary',
-              fontSize: '0.75rem',
-              '&:hover': {
-                backgroundColor:
-                  page === pageNumber ? 'primary.dark' : 'action.hover'
-              }
-            }}>
-            {pageNumber + 1}
+            onClick={() => handlePageChange(page - 1)}
+            disabled={page === 0 || loading}
+            size="small"
+            sx={{ p: 0.5 }}>
+            <ChevronLeft size={16} />
           </IconButton>
-        ))}
 
-        <IconButton
-          onClick={() => handlePageChange(page + 1)}
-          disabled={page >= totalPages - 1 || loading}
-          size="small"
-          sx={{ p: 0.5 }}>
-          <ChevronRight size={16} />
-        </IconButton>
+          {getPageNumbers().map(pageNumber => (
+            <IconButton
+              key={pageNumber}
+              onClick={() => handlePageChange(pageNumber)}
+              disabled={loading}
+              sx={{
+                mx: 0.5,
+                minWidth: 24,
+                height: 24,
+                borderRadius: '4px',
+                backgroundColor:
+                  page === pageNumber ? 'primary.main' : 'transparent',
+                color: page === pageNumber ? 'white' : 'text.primary',
+                fontSize: '0.75rem',
+                '&:hover': {
+                  backgroundColor:
+                    page === pageNumber ? 'primary.dark' : 'action.hover'
+                }
+              }}>
+              {pageNumber + 1}
+            </IconButton>
+          ))}
+
+          <IconButton
+            onClick={() => handlePageChange(page + 1)}
+            disabled={page >= totalPages - 1 || loading}
+            size="small"
+            sx={{ p: 0.5 }}>
+            <ChevronRight size={16} />
+          </IconButton>
+        </Box>
       </Box>
     </Paper>
   )
 }
+
+export default DataTable

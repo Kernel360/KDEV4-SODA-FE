@@ -1,6 +1,24 @@
 import React, { useState } from 'react'
-import { Box, Typography, IconButton, Tooltip, Paper, Collapse, Divider, Button } from '@mui/material'
-import { Edit, Trash2, ChevronDown, ChevronUp, Check, X, Clock, User, Link as LinkIcon, FileText } from 'lucide-react'
+import {
+  Box,
+  Typography,
+  Paper,
+  Collapse,
+  Divider,
+  Button
+} from '@mui/material'
+import {
+  Edit,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Check,
+  X,
+  Clock,
+  User,
+  Link as LinkIcon,
+  FileText
+} from 'lucide-react'
 import type { TaskRequest } from '../../types/request'
 
 interface RequestListProps {
@@ -14,7 +32,6 @@ interface RequestListProps {
 
 const RequestList: React.FC<RequestListProps> = ({
   requests,
-  onRequestClick,
   onEdit,
   onDelete,
   onApprove,
@@ -58,7 +75,7 @@ const RequestList: React.FC<RequestListProps> = ({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
-      {requests.map((request) => (
+      {requests.map(request => (
         <Paper
           key={request.requestId}
           elevation={1}
@@ -78,7 +95,8 @@ const RequestList: React.FC<RequestListProps> = ({
             }}
             onClick={() => handleRequestClick(request)}>
             <Box sx={{ flex: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <Typography variant="subtitle1">{request.title}</Typography>
                 <Typography
                   variant="caption"
@@ -93,19 +111,27 @@ const RequestList: React.FC<RequestListProps> = ({
                   {getStatusText(request.status)}
                 </Typography>
               </Box>
-              <Typography variant="body2" color="text.secondary" noWrap>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                noWrap>
                 {request.content}
               </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <User size={14} />
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary">
                     {request.requester?.name || '알 수 없음'}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <Clock size={14} />
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary">
                     {new Date(request.createdAt).toLocaleString()}
                   </Typography>
                 </Box>
@@ -128,17 +154,29 @@ const RequestList: React.FC<RequestListProps> = ({
                 sx={{ whiteSpace: 'pre-wrap', mb: 2 }}>
                 {request.content}
               </Typography>
-              
+
               <Box sx={{ display: 'flex', gap: 3 }}>
                 {request.links && request.links.length > 0 && (
                   <Box sx={{ flex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        mb: 1
+                      }}>
                       <LinkIcon size={16} />
                       <Typography variant="subtitle2">첨부 링크</Typography>
                     </Box>
                     {request.links.map((link, index) => (
-                      <Box key={index} sx={{ mb: 1, pl: 3 }}>
-                        <Typography variant="body2" sx={{ mb: 0.5 }}>{link.urlDescription}</Typography>
+                      <Box
+                        key={index}
+                        sx={{ mb: 1, pl: 3 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ mb: 0.5 }}>
+                          {link.urlDescription}
+                        </Typography>
                         <Typography
                           variant="caption"
                           color="primary"
@@ -163,12 +201,20 @@ const RequestList: React.FC<RequestListProps> = ({
                 )}
                 {request.files && request.files.length > 0 && (
                   <Box sx={{ flex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        mb: 1
+                      }}>
                       <FileText size={16} />
                       <Typography variant="subtitle2">첨부 파일</Typography>
                     </Box>
                     {request.files.map((file, index) => (
-                      <Box key={index} sx={{ mb: 1, pl: 3 }}>
+                      <Box
+                        key={index}
+                        sx={{ mb: 1, pl: 3 }}>
                         <Typography
                           variant="body2"
                           color="primary"
@@ -192,14 +238,20 @@ const RequestList: React.FC<RequestListProps> = ({
                   </Box>
                 )}
               </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: 1,
+                  mt: 2
+                }}>
                 {request.status === 'PENDING' && (
                   <>
                     <Button
                       variant="outlined"
                       color="error"
                       startIcon={<X size={16} />}
-                      onClick={(e) => {
+                      onClick={e => {
                         e.stopPropagation()
                         onReject(request)
                       }}>
@@ -209,7 +261,7 @@ const RequestList: React.FC<RequestListProps> = ({
                       variant="contained"
                       color="success"
                       startIcon={<Check size={16} />}
-                      onClick={(e) => {
+                      onClick={e => {
                         e.stopPropagation()
                         onApprove(request)
                       }}>
@@ -220,7 +272,7 @@ const RequestList: React.FC<RequestListProps> = ({
                 <Button
                   variant="outlined"
                   startIcon={<Edit size={16} />}
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation()
                     onEdit(request)
                   }}>
@@ -230,7 +282,7 @@ const RequestList: React.FC<RequestListProps> = ({
                   variant="outlined"
                   color="error"
                   startIcon={<Trash2 size={16} />}
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation()
                     onDelete(request)
                   }}>
@@ -245,4 +297,4 @@ const RequestList: React.FC<RequestListProps> = ({
   )
 }
 
-export default RequestList 
+export default RequestList

@@ -9,8 +9,7 @@ import {
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
-  Stack,
-  CircularProgress
+  Stack
 } from '@mui/material'
 import { Link as LinkIcon, X, Upload } from 'lucide-react'
 
@@ -38,9 +37,9 @@ interface RequestFormProps {
 const MAX_LINKS = 10
 const MAX_FILES = 10
 
-const RequestForm: React.FC<RequestFormProps> = ({ 
-  onSubmit, 
-  onCancel, 
+const RequestForm: React.FC<RequestFormProps> = ({
+  onSubmit,
+  onCancel,
   initialData
 }) => {
   const [request, setRequest] = useState({
@@ -119,17 +118,22 @@ const RequestForm: React.FC<RequestFormProps> = ({
         sx={{ mb: 2 }}
       />
       <Box sx={{ mb: 2 }}>
-        <Typography variant="subtitle2" sx={{ mb: 1 }}>
-          첨부파일 ({request.files.length}/10) 및 링크 ({request.links.length}/10)
+        <Typography
+          variant="subtitle2"
+          sx={{ mb: 1 }}>
+          첨부파일 ({request.files.length}/10) 및 링크 ({request.links.length}
+          /10)
         </Typography>
-        <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ mb: 1 }}>
           <Button
             variant="outlined"
             startIcon={<LinkIcon size={16} />}
             size="small"
             onClick={() => setIsAddingLink(true)}
-            disabled={request.links.length >= MAX_LINKS}
-          >
+            disabled={request.links.length >= MAX_LINKS}>
             링크 추가
           </Button>
           <Button
@@ -137,8 +141,7 @@ const RequestForm: React.FC<RequestFormProps> = ({
             component="label"
             startIcon={<Upload size={16} />}
             size="small"
-            disabled={request.files.length >= MAX_FILES}
-          >
+            disabled={request.files.length >= MAX_FILES}>
             파일 업로드
             <input
               type="file"
@@ -156,32 +159,36 @@ const RequestForm: React.FC<RequestFormProps> = ({
               label="링크 제목"
               size="small"
               value={newLink.urlDescription}
-              onChange={e => setNewLink({ ...newLink, urlDescription: e.target.value })}
+              onChange={e =>
+                setNewLink({ ...newLink, urlDescription: e.target.value })
+              }
             />
             <TextField
               label="URL"
               size="small"
               value={newLink.urlAddress}
-              onChange={e => setNewLink({ ...newLink, urlAddress: e.target.value })}
+              onChange={e =>
+                setNewLink({ ...newLink, urlAddress: e.target.value })
+              }
             />
             <Button
               variant="contained"
               onClick={handleAddLink}
-              disabled={!newLink.urlDescription || !newLink.urlAddress}
-            >
+              disabled={!newLink.urlDescription || !newLink.urlAddress}>
               추가
             </Button>
             <Button
               variant="outlined"
-              onClick={() => setIsAddingLink(false)}
-            >
+              onClick={() => setIsAddingLink(false)}>
               취소
             </Button>
           </Box>
         )}
         <List>
           {request.files.map((file, index) => (
-            <ListItem key={`file-${index}`} sx={{ py: 0.5 }}>
+            <ListItem
+              key={`file-${index}`}
+              sx={{ py: 0.5 }}>
               <ListItemText
                 primary={file.name}
                 secondary={`${(file.size / 1024 / 1024).toFixed(2)} MB`}
@@ -190,15 +197,16 @@ const RequestForm: React.FC<RequestFormProps> = ({
                 <IconButton
                   edge="end"
                   size="small"
-                  onClick={() => handleRemoveFile(index)}
-                >
+                  onClick={() => handleRemoveFile(index)}>
                   <X size={16} />
                 </IconButton>
               </ListItemSecondaryAction>
             </ListItem>
           ))}
           {request.links.map((link, index) => (
-            <ListItem key={`link-${index}`} sx={{ py: 0.5 }}>
+            <ListItem
+              key={`link-${index}`}
+              sx={{ py: 0.5 }}>
               <ListItemText
                 primary={link.urlDescription}
                 secondary={link.urlAddress}
@@ -207,8 +215,7 @@ const RequestForm: React.FC<RequestFormProps> = ({
                 <IconButton
                   edge="end"
                   size="small"
-                  onClick={() => handleRemoveLink(index)}
-                >
+                  onClick={() => handleRemoveLink(index)}>
                   <X size={16} />
                 </IconButton>
               </ListItemSecondaryAction>
@@ -217,9 +224,7 @@ const RequestForm: React.FC<RequestFormProps> = ({
         </List>
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 3 }}>
-        <Button onClick={onCancel}>
-          취소
-        </Button>
+        <Button onClick={onCancel}>취소</Button>
         <Button
           variant="contained"
           onClick={handleSubmit}
