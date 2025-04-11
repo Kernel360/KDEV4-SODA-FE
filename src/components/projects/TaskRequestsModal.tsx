@@ -54,6 +54,12 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
   const [selectedRequest, setSelectedRequest] = useState<TaskRequest | null>(
     null
   )
+  // const [isRejecting, setIsRejecting] = useState(false)
+  // const [rejectForm, setRejectForm] = useState({
+  //   comment: '',
+  //   links: [] as { urlAddress: string; urlDescription: string }[]
+  // })
+  // const [newLink, setNewLink] = useState({ urlAddress: '', urlDescription: '' })
 
   useEffect(() => {
     if (!open) {
@@ -170,9 +176,16 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
     }
   }
 
-  const handleRejectRequest = async (request: TaskRequest) => {
+  const handleRejectRequest = async (
+    request: TaskRequest,
+    comment: string,
+    links: Array<{ urlAddress: string; urlDescription: string }>
+  ) => {
     try {
-      await rejectTaskRequest(request.requestId, { comment: '', links: [] })
+      await rejectTaskRequest(request.requestId, {
+        comment,
+        links
+      })
       await fetchRequests()
       if (selectedRequest?.requestId === request.requestId) {
         const updatedRequest = (
@@ -184,6 +197,23 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
       console.error('Error rejecting request:', error)
     }
   }
+
+  // const handleAddLink = () => {
+  //   if (newLink.urlAddress.trim() && newLink.urlDescription.trim()) {
+  //     setRejectForm(prev => ({
+  //       ...prev,
+  //       links: [...prev.links, newLink]
+  //     }))
+  //     setNewLink({ urlAddress: '', urlDescription: '' })
+  //   }
+  // }
+
+  // const handleRemoveLink = (index: number) => {
+  //   setRejectForm(prev => ({
+  //     ...prev,
+  //     links: prev.links.filter((_, i) => i !== index)
+  //   }))
+  // }
 
   const canCreateRequest = () => {
     return task?.status === '대기'

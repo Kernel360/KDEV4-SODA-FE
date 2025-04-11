@@ -8,7 +8,7 @@ import {
   ListItemText
 } from '@mui/material'
 import { getTaskRequests } from '../../api/task'
-import type { TaskRequest } from '../../types/api'
+import type { TaskRequest } from '../../types/request'
 
 interface TaskProps {
   id: number
