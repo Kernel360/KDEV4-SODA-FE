@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { Box } from '@mui/material'
-import { Project } from '../../../types/project'
+import { Project, Stage } from '../../../types/project'
 import ProjectHeader from '../../../components/projects/ProjectHeader'
 import ProjectStages from '../../../components/projects/ProjectStages'
 import ProjectArticle from '../../../components/projects/ProjectArticle'
@@ -13,21 +13,49 @@ interface ProjectWithProgress extends Project {
   progress: number
 }
 
+interface ApiStage {
+  id: number
+  name: string
+  stageOrder: number
+  tasks: {
+    taskId: number
+    title: string
+    content: string
+    taskOrder: number
+  }[]
+}
+
 const UserProject: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const [project, setProject] = useState<ProjectWithProgress | null>(null)
+  const [stages, setStages] = useState<ApiStage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // stage 목록 새로고침 함수
+  const refreshStages = async () => {
+    if (!id) return
+    try {
+      const stagesData = await projectService.getProjectStages(parseInt(id))
+      setStages(stagesData)
+    } catch (err) {
+      console.error('Failed to refresh stages:', err)
+    }
+  }
 
   useEffect(() => {
     const fetchProject = async () => {
       try {
         if (!id) return
-        const data = await projectService.getProjectById(parseInt(id))
+        const [projectData, stagesData] = await Promise.all([
+          projectService.getProjectById(parseInt(id)),
+          projectService.getProjectStages(parseInt(id))
+        ])
         setProject({
-          ...data,
+          ...projectData,
           progress: 0 // TODO: 실제 진행률 계산 로직 추가
         })
+        setStages(stagesData)
       } catch (err) {
         setError('프로젝트 정보를 불러오는데 실패했습니다.')
       } finally {
@@ -58,8 +86,28 @@ const UserProject: React.FC = () => {
   return (
     <Box sx={{ p: 3 }}>
       <ProjectHeader project={project} />
-      <ProjectStages projectId={project.id} />
-      <ProjectArticle projectId={project.id} />
+      <ProjectStages 
+        projectId={project.id} 
+        stages={stages as unknown as Stage[]} 
+        onStagesChange={async (updatedStages) => {
+          // API 응답 데이터 형식으로 변환
+          const apiStages = updatedStages.map(stage => ({
+            id: stage.id,
+            name: stage.title,
+            stageOrder: stage.order,
+            tasks: stage.tasks.map(task => ({
+              taskId: task.id,
+              title: task.title,
+              content: task.description,
+              taskOrder: task.order
+            }))
+          }))
+          setStages(apiStages)
+          // 게시판 쪽 stage 목록 새로고침
+          await refreshStages()
+        }}
+      />
+      <ProjectArticle projectId={project.id} stages={stages as unknown as Stage[]} />
     </Box>
   )
 }

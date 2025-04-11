@@ -1,26 +1,32 @@
-export type TaskStatus =
-  | 'PENDING'
-  | 'WAITING_APPROVAL'
-  | 'APPROVED'
-  | 'REJECTED'
+export interface Stage {
+  id: number
+  name: string
+  stageOrder: number
+  order?: number
+  tasks: Task[]
+}
 
 export interface Task {
   id: number
+  taskId?: number
   title: string
   description: string
+  content?: string
   status: TaskStatus
-  taskOrder: number
-  requests: any[]
-  createdAt: string
-  updatedAt: string
+  order: number
+  taskOrder?: number
+  stageId?: number
+  requests?: Request[]
+  createdAt?: string
+  updatedAt?: string
 }
 
-export type RequestStatus = '승인 대기중' | '승인됨' | '반려됨'
+export type TaskStatus = '대기' | '진행 중' | '완료' | '중단'
 
 export interface Request {
   id: number
   title: string
-  content: string
+  description: string
   status: RequestStatus
   attachments: RequestAttachment[]
   action?: RequestAction
@@ -28,25 +34,13 @@ export interface Request {
   updatedAt: string
 }
 
+export type RequestStatus = '대기' | '진행 중' | '완료' | '중단'
+export type RequestAction = '승인' | '반려'
+
 export interface RequestAttachment {
   id: number
-  type: 'file' | 'link'
-  title: string
-  url?: string
-  fileName?: string
-}
-
-export interface RequestAction {
-  type: '승인' | '반려'
-  actorName: string
-  reason?: string
-  attachments?: RequestAttachment[]
-  createdAt: string
-}
-
-export interface Stage {
-  id: number
   name: string
-  stageOrder: number
-  tasks: Task[]
+  url: string
+  type: string
+  size: number
 }

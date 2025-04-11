@@ -15,7 +15,7 @@ import {
   Chip
 } from '@mui/material'
 import { Article, ArticleStatus, PriorityType } from '../../types/article'
-import { Stage } from '../../types/stage'
+import { Stage } from '../../types/project'
 import { projectService } from '../../services/projectService'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ErrorMessage from '../../components/common/ErrorMessage'
@@ -24,6 +24,7 @@ import { useNavigate } from 'react-router-dom'
 
 interface ProjectArticleProps {
   projectId: number
+  stages: Stage[]
 }
 
 const ITEMS_PER_PAGE = 5
@@ -173,10 +174,9 @@ const ArticleRow: React.FC<{
   )
 }
 
-const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
+const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId, stages: propStages }) => {
   const navigate = useNavigate()
   const [articles, setArticles] = useState<Article[]>([])
-  const [stages, setStages] = useState<Stage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedStage, setSelectedStage] = useState<number | null>(null)
@@ -184,26 +184,10 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    const fetchStages = async () => {
-      try {
-        const data = await projectService.getProjectStages(projectId)
-        setStages(data)
-      } catch (err) {
-        console.error('Error fetching stages:', err)
-      }
-    }
-
-    fetchStages()
-  }, [projectId])
-
-  useEffect(() => {
     const fetchArticles = async () => {
       try {
         setLoading(true)
-        const data = await projectService.getProjectArticles(
-          projectId,
-          selectedStage
-        )
+        const data = await projectService.getProjectArticles(projectId, selectedStage)
         console.log('Fetched articles:', data)
         setArticles(data)
       } catch (err) {
@@ -405,18 +389,16 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
           }}>
           전체
         </Button>
-        {stages.map(stage => (
+        {propStages.map(stage => (
           <Button
             key={stage.id}
             variant={selectedStage === stage.id ? 'contained' : 'outlined'}
             onClick={() => setSelectedStage(stage.id)}
             sx={{
-              bgcolor:
-                selectedStage === stage.id ? 'primary.main' : 'transparent',
+              bgcolor: selectedStage === stage.id ? 'primary.main' : 'transparent',
               color: selectedStage === stage.id ? 'white' : 'primary.main',
               '&:hover': {
-                bgcolor:
-                  selectedStage === stage.id ? 'primary.dark' : 'transparent'
+                bgcolor: selectedStage === stage.id ? 'primary.dark' : 'transparent'
               }
             }}>
             {stage.name}

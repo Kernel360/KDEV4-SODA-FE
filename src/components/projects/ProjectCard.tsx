@@ -42,7 +42,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
               whiteSpace: 'nowrap',
               maxWidth: '80%'
             }}>
-            {project.title}
+            {project.projectName}
           </Typography>
           <ChevronRight size={20} />
         </Box>

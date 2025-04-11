@@ -12,37 +12,11 @@ import {
   DialogActions
 } from '@mui/material'
 import { ArrowLeft } from 'lucide-react'
-import AccountDetailForm, {
-  Account
-} from '../../../components/accounts/AccountDetailForm'
+import { useToast } from '../../../contexts/ToastContext'
+import { getUserDetail, updateUserStatus, updateUser } from '../../../api/admin'
+import AccountDetailForm from '../../../components/accounts/AccountDetailForm'
+import type { Account } from '../../../components/accounts/AccountDetailForm'
 
-// 더미 데이터
-const dummyAccounts: Account[] = [
-  {
-    id: '1',
-    name: '김개발',
-    username: 'dev.kim',
-    companyName: '테크솔루션',
-    position: '개발자',
-    isActive: true
-  },
-  {
-    id: '2',
-    name: '이매니저',
-    username: 'manager.lee',
-    companyName: '클라우드시스템',
-    position: '매니저',
-    isActive: true
-  },
-  {
-    id: '3',
-    name: '박디자인',
-    username: 'design.park',
-    companyName: '디자인스튜디오',
-    position: '디자이너',
-    isActive: false
-  }
-]
 
 interface AccountDetailProps {
   isAdmin?: boolean
@@ -51,88 +25,128 @@ interface AccountDetailProps {
 export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [account, setAccount] = useState<Account | null>(null)
+  const { showToast } = useToast()
+  const [account, setAccount] = useState<Partial<Account> | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [hasChanges] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [formData, setFormData] = useState<{
+    name: string
+    email: string
+    role: string
+    companyId: number
+    position: string
+    phoneNumber: string
+  }>({
+    name: '',
+    email: '',
+    role: '',
+    companyId: 0,
+    position: '',
+    phoneNumber: ''
+  })
 
-  // 계정 데이터 가져오기
   useEffect(() => {
-    const fetchAccount = async () => {
+    const fetchUserDetail = async () => {
       try {
         setLoading(true)
-        // 실제로는 API 호출을 통해 데이터를 가져와야 함
-        // 여기서는 더미 데이터를 사용
-        const foundAccount = dummyAccounts.find(acc => acc.id === id)
-
-        if (foundAccount) {
-          setAccount(foundAccount)
+        const response = await getUserDetail(Number(id))
+        if (response.status === 'success' && response.data) {
+          setAccount(response.data)
+          setFormData({
+            name: response.data.name || '',
+            email: response.data.email || '',
+            role: response.data.role || '',
+            companyId: response.data.companyId || 0,
+            position: response.data.position || '',
+            phoneNumber: response.data.phoneNumber || ''
+          })
         } else {
-          setError('계정을 찾을 수 없습니다.')
+          setError(response.message || '사용자 정보를 불러오는데 실패했습니다.')
+          showToast('사용자 정보를 불러오는데 실패했습니다.', 'error')
         }
       } catch (err) {
-        setError('계정 정보를 불러오는 중 오류가 발생했습니다.')
-        console.error(err)
+        console.error('사용자 정보 조회 중 오류:', err)
+        setError('사용자 정보를 불러오는데 실패했습니다.')
+        showToast('사용자 정보를 불러오는데 실패했습니다.', 'error')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchAccount()
-  }, [id])
+    if (id) {
+      fetchUserDetail()
+    }
+  }, [id, showToast])
 
-  // 계정 정보 저장 핸들러
-  const handleSave = async (formData: Partial<Account>) => {
+  const handleSave = async () => {
     try {
-      setLoading(true)
-      // 실제로는 API 호출을 통해 데이터를 저장해야 함
-      console.log('저장할 데이터:', formData)
-
-      // 성공 메시지 표시
-      setSuccess('계정 정보가 성공적으로 저장되었습니다.')
-
-      // 3초 후 성공 메시지 숨기기
-      setTimeout(() => {
-        setSuccess(null)
-      }, 3000)
+      const response = await updateUser(Number(id), {
+        name: formData.name,
+        email: formData.email,
+        role: formData.role,
+        companyId: formData.companyId,
+        position: formData.position,
+        phoneNumber: formData.phoneNumber
+      })
+      if (response.status === 'success') {
+        setHasChanges(false)
+        setSuccess('사용자 정보가 성공적으로 수정되었습니다.')
+        showToast('사용자 정보가 성공적으로 수정되었습니다.', 'success')
+        setAccount(response.data)
+        setFormData({
+          name: response.data.name || '',
+          email: response.data.email || '',
+          role: response.data.role || '',
+          companyId: response.data.companyId || 0,
+          position: response.data.position || '',
+          phoneNumber: response.data.phoneNumber || ''
+        })
+      } else {
+        setError(response.message || '사용자 정보 수정에 실패했습니다.')
+        showToast('사용자 정보 수정에 실패했습니다.', 'error')
+      }
     } catch (err) {
-      setError('계정 정보를 저장하는 중 오류가 발생했습니다.')
-      console.error(err)
-    } finally {
-      setLoading(false)
+      console.error('사용자 정보 수정 중 오류:', err)
+      setError('사용자 정보 수정에 실패했습니다.')
+      showToast('사용자 정보 수정에 실패했습니다.', 'error')
     }
   }
 
-  // 비밀번호 변경 핸들러
-  const handlePasswordChange = async (passwordData: {
-    currentPassword: string
-    newPassword: string
-    confirmPassword: string
-  }) => {
+  const handlePasswordChange = async () => {
     try {
-      setLoading(true)
-      // 실제로는 API 호출을 통해 비밀번호를 변경해야 함
-      console.log('비밀번호 변경:', passwordData)
-
-      // 성공 메시지 표시
-      setSuccess('비밀번호가 성공적으로 변경되었습니다.')
-
-      // 3초 후 성공 메시지 숨기기
-      setTimeout(() => {
-        setSuccess(null)
-      }, 3000)
+      // TODO: Implement password change API
+      showToast('비밀번호가 성공적으로 변경되었습니다.', 'success')
     } catch (err) {
-      setError('비밀번호를 변경하는 중 오류가 발생했습니다.')
-      console.error(err)
-    } finally {
-      setLoading(false)
+      console.error('비밀번호 변경 중 오류:', err)
+      showToast('비밀번호 변경에 실패했습니다.', 'error')
     }
   }
 
-  // 돌아가기 핸들러
-  const handleBack = () => {
+  const handleToggleActive = async (userId: number, currentActive: boolean) => {
+    try {
+      const response = await updateUserStatus(userId, !currentActive)
+      if (response.status === 'success') {
+        setAccount((prev: any) => ({
+          ...prev,
+          deleted: !currentActive
+        }))
+        showToast('사용자 상태가 성공적으로 변경되었습니다.', 'success')
+      } else {
+        showToast(
+          response.message || '사용자 상태 변경에 실패했습니다.',
+          'error'
+        )
+      }
+    } catch (err) {
+      console.error('사용자 상태 변경 중 오류:', err)
+      showToast('사용자 상태 변경에 실패했습니다.', 'error')
+    }
+  }
+
+  const handleCancel = () => {
     if (hasChanges) {
       setShowConfirmDialog(true)
     } else {
@@ -140,67 +154,68 @@ export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
     }
   }
 
-  // 확인 모달에서 돌아가기 확인
-  const handleConfirmBack = () => {
+  const handleConfirmCancel = () => {
     setShowConfirmDialog(false)
     navigate(isAdmin ? '/admin/accounts' : '/user/accounts')
   }
 
-  if (loading && !account) {
+  if (loading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh'
-        }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
         <CircularProgress />
       </Box>
     )
   }
 
-  if (error && !account) {
+  if (error) {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error">{error}</Alert>
-        <Button
-          startIcon={<ArrowLeft />}
-          onClick={() =>
-            navigate(isAdmin ? '/admin/accounts' : '/user/accounts')
-          }
-          sx={{ mt: 2 }}>
-          계정 목록으로 돌아가기
-        </Button>
       </Box>
     )
   }
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          mb: 3,
+          gap: 1
+        }}>
         <Button
-          startIcon={<ArrowLeft />}
-          onClick={handleBack}
-          sx={{ mr: 2 }}>
-          돌아가기
+          startIcon={<ArrowLeft size={20} />}
+          onClick={handleCancel}
+          sx={{
+            color: 'text.primary',
+            '&:hover': {
+              backgroundColor: 'action.hover'
+            }
+          }}>
+          목록으로
         </Button>
         <Typography
           variant="h5"
-          component="h1">
+          component="h1"
+          sx={{ fontWeight: 600 }}>
           계정 상세 정보
         </Typography>
       </Box>
 
-      <AccountDetailForm
-        account={account}
-        loading={loading}
-        error={error}
-        success={success}
-        isAdmin={isAdmin}
-        onSave={handleSave}
-        onPasswordChange={handlePasswordChange}
-      />
+      {account && (
+        <AccountDetailForm
+          account={account}
+          loading={false}
+          error={error}
+          success={success}
+          isAdmin={isAdmin}
+          onSave={handleSave}
+          onPasswordChange={handlePasswordChange}
+          onCancel={handleCancel}
+          onToggleActive={() => account.id && handleToggleActive(account.id, !account.deleted)}
+        />
+      )}
 
       {/* 수정사항 확인 모달 */}
       <Dialog
@@ -213,7 +228,7 @@ export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
         <DialogActions>
           <Button onClick={() => setShowConfirmDialog(false)}>취소</Button>
           <Button
-            onClick={handleConfirmBack}
+            onClick={handleConfirmCancel}
             color="primary">
             확인
           </Button>

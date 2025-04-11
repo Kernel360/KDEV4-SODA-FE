@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import ArticleForm from '../../components/articles/ArticleForm'
 import { PriorityType } from '../../types/article'
-import { Stage } from '../../types/stage'
+import { Stage, TaskStatus } from '../../types/stage'
 import { projectService } from '../../services/projectService'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ErrorMessage from '../../components/common/ErrorMessage'
@@ -36,7 +36,8 @@ const ReplyArticle: React.FC = () => {
     priority: PriorityType.MEDIUM,
     deadLine: null,
     stageId: 0,
-    links: []
+    links: [],
+    files: []
   })
 
   useEffect(() => {
@@ -52,12 +53,31 @@ const ReplyArticle: React.FC = () => {
             parseInt(articleId)
           )
         ])
-        setStages(stagesData)
+        const transformedStages = stagesData.map(stage => ({
+          id: stage.id,
+          name: stage.name,
+          stageOrder: stage.stageOrder,
+          order: stage.stageOrder,
+          tasks: stage.tasks.map(task => ({
+            id: task.taskId,
+            taskId: task.taskId,
+            title: task.title,
+            description: task.content,
+            content: task.content,
+            status: '대기' as TaskStatus,
+            order: task.taskOrder,
+            taskOrder: task.taskOrder,
+            requests: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }))
+        }))
+        setStages(transformedStages)
         if (articleData) {
           setFormData(prev => ({
             ...prev,
             title: `RE: ${articleData.title}`,
-            stageId: stagesData[0]?.id || prev.stageId
+            stageId: transformedStages[0]?.id || prev.stageId
           }))
         }
       } catch (err) {
@@ -105,7 +125,8 @@ const ReplyArticle: React.FC = () => {
           formData.links?.map(link => ({
             urlAddress: link.url,
             urlDescription: link.title
-          })) || []
+          })) || [],
+        files: formData.files
       }
 
       // 답글 생성

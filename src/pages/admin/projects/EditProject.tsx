@@ -69,18 +69,19 @@ const EditProject: React.FC = () => {
 
       // ProjectFormData를 Project 타입으로 변환
       const projectData: Project = {
-        id: Number(id),
+        id: project?.id || 0,
         title: formData.name,
         description: formData.description,
-        status: project?.status || '진행중',
+        projectName: formData.name,
+        status: project?.status || '진행 중',
         startDate: formData.startDate?.format('YYYY-MM-DD') || '',
         endDate: formData.endDate?.format('YYYY-MM-DD') || '',
-        clientCompanyName: formData.clientCompanyId,
-        devCompanyName: formData.developmentCompanyId,
-        clientCompanyManagers: formData.clientManagers,
-        clientCompanyMembers: formData.clientParticipants,
-        devCompanyManagers: formData.developmentManagers,
-        devCompanyMembers: formData.developmentParticipants
+        clientCompanyName: formData.clientCompanyName,
+        devCompanyName: formData.devCompanyName,
+        clientCompanyManagers: formData.clientCompanyManagers,
+        clientCompanyMembers: formData.clientCompanyMembers,
+        devCompanyManagers: formData.devCompanyManagers,
+        devCompanyMembers: formData.devCompanyMembers
       }
 
       // API를 호출하여 프로젝트를 업데이트
