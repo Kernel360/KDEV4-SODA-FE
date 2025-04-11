@@ -30,7 +30,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ sx }) => {
   const navigate = useNavigate()
-  const location = useLocation()
+  //const location = useLocation()
   const [notificationAnchor, setNotificationAnchor] =
     useState<null | HTMLElement>(null)
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null)
@@ -57,8 +57,13 @@ const Header: React.FC<HeaderProps> = ({ sx }) => {
   const unreadNotifications = notifications.filter(n => !n.isRead).length
 
   const handleLogoClick = () => {
-    const isAdminRoute = location.pathname.startsWith('/admin')
-    navigate(isAdminRoute ? '/admin' : '/user')
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      const user = JSON.parse(userData)
+      navigate(user.role === 'ADMIN' ? '/admin' : '/user')
+    } else {
+      navigate('/user')
+    }
   }
 
   const handleNotificationClick = (event: React.MouseEvent<HTMLElement>) => {
