@@ -55,6 +55,16 @@ const UserSidebar: React.FC = () => {
     return location.pathname === path
   }
 
+  const handleDashboardClick = () => {
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      const user = JSON.parse(userData)
+      navigate(user.role === 'ADMIN' ? '/admin' : '/user')
+    } else {
+      navigate('/user')
+    }
+  }
+
   const ProjectItem = ({ id, title }: { id: number; title: string }) => (
     <ListItem disablePadding>
       <ListItemButton
@@ -88,6 +98,15 @@ const UserSidebar: React.FC = () => {
     </ListItem>
   )
 
+  const getDashboardText = () => {
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      const user = JSON.parse(userData)
+      return user.role === 'ADMIN' ? '관리자 페이지로 돌아가기' : '대시보드'
+    }
+    return '대시보드'
+  }
+
   return (
     <Box
       sx={{
@@ -109,7 +128,7 @@ const UserSidebar: React.FC = () => {
         <ListItem disablePadding>
           <ListItemButton
             selected={location.pathname === '/user'}
-            onClick={() => navigate('/user')}
+            onClick={handleDashboardClick}
             sx={{
               borderRadius: 1,
               mx: 1,
@@ -128,7 +147,7 @@ const UserSidebar: React.FC = () => {
               <LayoutDashboard size={24} />
             </ListItemIcon>
             <ListItemText
-              primary="대시보드"
+              primary={getDashboardText()}
               primaryTypographyProps={{
                 fontSize: '0.875rem'
               }}
