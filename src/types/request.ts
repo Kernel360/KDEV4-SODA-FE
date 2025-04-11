@@ -40,20 +40,24 @@ export interface TaskRequest {
   memberName: string
   title: string
   content: string
-  links: Array<{
-    id: number
+  links?: Array<{
     urlAddress: string
     urlDescription: string
   }>
-  files: Array<{
-    fileUrl: string | undefined
-    id: number
+  files?: Array<{
     name: string
     url: string
   }>
-  status: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
   createdAt: string
   updatedAt: string
+  rejection?: {
+    comment: string
+    links: Array<{
+      urlAddress: string
+      urlDescription: string
+    }>
+  }
 }
 
 export interface CreateRequestData {

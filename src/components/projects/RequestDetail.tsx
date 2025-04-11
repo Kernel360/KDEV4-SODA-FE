@@ -114,6 +114,66 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
         </Typography>
       </Box>
 
+      {request.status === 'REJECTED' && (
+        <Box
+          sx={{
+            mt: 3,
+            p: 2,
+            border: '1px solid',
+            borderColor: 'error.main',
+            borderRadius: 1,
+            backgroundColor: 'error.light'
+          }}>
+          <Typography
+            variant="subtitle1"
+            sx={{ mb: 2, color: 'error.main' }}>
+            반려 사유
+          </Typography>
+          {request.rejection ? (
+            <>
+              <Typography
+                variant="body1"
+                sx={{ whiteSpace: 'pre-wrap', mb: 2 }}>
+                {request.rejection.comment}
+              </Typography>
+              {request.rejection.links &&
+                request.rejection.links.length > 0 && (
+                  <>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ mb: 1 }}>
+                      참고 링크
+                    </Typography>
+                    <Box
+                      sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {request.rejection.links.map((link, index) => (
+                        <Box
+                          key={index}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1
+                          }}>
+                          <LinkIcon size={16} />
+                          <Typography variant="body2">
+                            {link.urlDescription} ({link.urlAddress})
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </>
+                )}
+            </>
+          ) : (
+            <Typography
+              variant="body1"
+              sx={{ whiteSpace: 'pre-wrap', mb: 2 }}>
+              반려 사유가 없습니다.
+            </Typography>
+          )}
+        </Box>
+      )}
+
       {isRejecting && (
         <Box
           sx={{
