@@ -18,10 +18,13 @@ import {
 } from '@mui/material'
 import { ArrowLeft } from 'lucide-react'
 import { getTaskRequests } from '../../api/task'
-import type { TaskRequest } from '../../types/api'
+import type { TaskRequest } from '../../types/request'
 
 const TaskDetailPage: React.FC = () => {
-  const { projectId, taskId } = useParams<{ projectId: string; taskId: string }>()
+  const { projectId, taskId } = useParams<{
+    projectId: string
+    taskId: string
+  }>()
   const navigate = useNavigate()
   const [requests, setRequests] = useState<TaskRequest[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -66,7 +69,9 @@ const TaskDetailPage: React.FC = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={handleBack} sx={{ mr: 2 }}>
+        <IconButton
+          onClick={handleBack}
+          sx={{ mr: 2 }}>
           <ArrowLeft />
         </IconButton>
         <Typography variant="h5">작업 상세</Typography>
@@ -103,11 +108,11 @@ const TaskDetailPage: React.FC = () => {
                       label={request.status}
                       size="small"
                       color={
-                        request.status === '승인'
+                        request.status === 'APPROVED'
                           ? 'success'
-                          : request.status === '반려'
-                          ? 'error'
-                          : 'default'
+                          : request.status === 'REJECTED'
+                            ? 'error'
+                            : 'default'
                       }
                     />
                   </Box>
@@ -180,4 +185,4 @@ const TaskDetailPage: React.FC = () => {
   )
 }
 
-export default TaskDetailPage 
+export default TaskDetailPage

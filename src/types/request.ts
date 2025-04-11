@@ -40,11 +40,13 @@ export interface TaskRequest {
   memberName: string
   title: string
   content: string
-  links?: Array<{
+  links: Array<{
+    id: number
     urlAddress: string
     urlDescription: string
   }>
-  files?: Array<{
+  files: Array<{
+    id: number
     name: string
     url: string
   }>
@@ -54,6 +56,7 @@ export interface TaskRequest {
   rejection?: {
     comment: string
     links: Array<{
+      id: number
       urlAddress: string
       urlDescription: string
     }>
