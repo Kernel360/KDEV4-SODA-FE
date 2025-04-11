@@ -79,9 +79,9 @@ export default function AccountList() {
     setPage(0) // 검색어가 변경되면 첫 페이지로 이동
   }
 
-  const handleRowClick = (row: MemberListDto) => {
-    navigate(`/admin/accounts/${row.id}`)
-  }
+  // const handleRowClick = (row: MemberListDto) => {
+  //   navigate(`/admin/accounts/${row.id}`)
+  // }
 
   const columns = [
     {
@@ -113,7 +113,7 @@ export default function AccountList() {
           checked={!row.deleted}
           onChange={() => handleToggleActive(row.id, !row.deleted)}
           color="primary"
-          onClick={(e) => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
         />
       )
     }
@@ -177,7 +177,7 @@ export default function AccountList() {
         onPageChange={handlePageChange}
         onRowsPerPageChange={handleRowsPerPageChange}
         loading={loading}
-        onRowClick={handleRowClick}
+        //onRowClick={handleRowClick}
       />
     </Box>
   )
