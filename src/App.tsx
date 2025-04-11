@@ -33,6 +33,8 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import theme from './theme'
 import { ToastProvider } from './contexts/ToastContext'
 import CssBaseline from '@mui/material/CssBaseline'
+import UserProfile from './pages/user/UserProfile'
+import TaskDetailPage from './pages/tasks/TaskDetailPage'
 
 const App: React.FC = () => {
   return (
@@ -169,7 +171,13 @@ const App: React.FC = () => {
                 path="accounts/:id"
                 element={<UserAccountDetail isAdmin={false} />}
               />
+              <Route
+                path=":id"
+                element={<UserProfile />}
+              />
             </Route>
+
+            <Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetailPage />} />
           </Routes>
         </ToastProvider>
       </LocalizationProvider>

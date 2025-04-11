@@ -48,6 +48,7 @@ interface ArticleFormProps {
   formData: ArticleFormData
   stages: Stage[]
   isLoading?: boolean
+  isReply?: boolean
   validationErrors?: {
     title?: string
     content?: string
@@ -63,11 +64,13 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   formData,
   stages,
   isLoading,
+  isReply = false,
   validationErrors = {},
   onChange,
   onSubmit,
   onCancel
 }) => {
+  const [localFormData, setLocalFormData] = useState<ArticleFormData>(formData)
   const [linkTitle, setLinkTitle] = useState('')
   const [linkUrl, setLinkUrl] = useState('')
 
@@ -81,25 +84,39 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       | File[]
       | { title: string; url: string }[]
   ) => {
-    onChange({ ...formData, [field]: value })
+    const newFormData = { ...localFormData, [field]: value }
+    setLocalFormData(newFormData)
+    onChange(newFormData)
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (files) {
-      handleChange('files', [...(formData.files || []), ...Array.from(files)])
+    if (e.target.files) {
+      const files = Array.from(e.target.files)
+      handleChange('files', [...(localFormData.files || []), ...files])
     }
   }
 
   const handleAddLink = () => {
     if (linkTitle && linkUrl) {
       handleChange('links', [
-        ...(formData.links || []),
+        ...(localFormData.links || []),
         { title: linkTitle, url: linkUrl }
       ])
       setLinkTitle('')
       setLinkUrl('')
     }
+  }
+
+  const handleRemoveLink = (index: number) => {
+    const links = [...(localFormData.links || [])]
+    links.splice(index, 1)
+    handleChange('links', links)
+  }
+
+  const getTitle = () => {
+    if (mode === 'edit') return '게시글 수정'
+    if (isReply) return '답글 작성'
+    return '새 게시글 작성'
   }
 
   return (
@@ -108,7 +125,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         <IconButton onClick={onCancel}>
           <ArrowLeft />
         </IconButton>
-        <Typography variant="h6">새 게시글 작성</Typography>
+        <Typography variant="h6">{getTitle()}</Typography>
       </Box>
 
       <form onSubmit={onSubmit}>
@@ -130,7 +147,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   단계
                 </Typography>
                 <Select
-                  value={formData.stageId}
+                  value={localFormData.stageId}
                   onChange={e =>
                     handleChange('stageId', e.target.value as number)
                   }
@@ -159,7 +176,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 <TextField
                   fullWidth
                   size="small"
-                  value={formData.title}
+                  value={localFormData.title}
                   onChange={e => handleChange('title', e.target.value)}
                   error={!!validationErrors.title}
                   helperText={validationErrors.title}
@@ -179,12 +196,56 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   fullWidth
                   multiline
                   rows={6}
-                  value={formData.content}
+                  value={localFormData.content}
                   onChange={e => handleChange('content', e.target.value)}
                   error={!!validationErrors.content}
                   helperText={validationErrors.content}
                   required
                   placeholder="내용을 입력하세요"
+                />
+              </Box>
+            </Stack>
+          </Box>
+
+          {/* 선택사항 */}
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              variant="subtitle1"
+              color="primary"
+              sx={{ mb: 2 }}>
+              선택사항
+            </Typography>
+            <Stack spacing={3}>
+              <FormControl>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}>
+                  우선순위
+                </Typography>
+                <Select
+                  value={localFormData.priority}
+                  onChange={e =>
+                    handleChange('priority', e.target.value as PriorityType)
+                  }
+                  size="small">
+                  <MenuItem value={PriorityType.HIGH}>높음</MenuItem>
+                  <MenuItem value={PriorityType.MEDIUM}>중간</MenuItem>
+                  <MenuItem value={PriorityType.LOW}>낮음</MenuItem>
+                </Select>
+              </FormControl>
+
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}>
+                  마감일
+                </Typography>
+                <DateTimePicker
+                  value={localFormData.deadLine}
+                  onChange={date => handleChange('deadLine', date)}
+                  slotProps={{ textField: { size: 'small', fullWidth: true } }}
                 />
               </Box>
 
@@ -226,13 +287,13 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       disabled={
                         !linkTitle ||
                         !linkUrl ||
-                        (formData.links?.length ?? 0) >= 10
+                        (localFormData.links?.length ?? 0) >= 10
                       }
                       size="small">
                       추가
                     </Button>
                   </Stack>
-                  {formData.links && formData.links.length > 0 && (
+                  {localFormData.links && localFormData.links.length > 0 && (
                     <Box sx={{ mt: 1 }}>
                       <Typography
                         variant="caption"
@@ -241,7 +302,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                         추가된 링크
                       </Typography>
                       <Stack spacing={1}>
-                        {formData.links.map((link, index) => (
+                        {localFormData.links.map((link, index) => (
                           <Box
                             key={index}
                             sx={{
@@ -265,11 +326,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                             </Box>
                             <IconButton
                               size="small"
-                              onClick={() => {
-                                const newLinks = [...(formData.links || [])]
-                                newLinks.splice(index, 1)
-                                handleChange('links', newLinks)
-                              }}>
+                              onClick={() => handleRemoveLink(index)}>
                               <Trash2 size={16} />
                             </IconButton>
                           </Box>
@@ -304,7 +361,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                     </Typography>
                   </UploadBox>
                 </label>
-                {formData.files && formData.files.length > 0 && (
+                {localFormData.files && localFormData.files.length > 0 && (
                   <Box sx={{ mt: 2 }}>
                     <Typography
                       variant="caption"
@@ -313,7 +370,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       첨부된 파일
                     </Typography>
                     <Stack spacing={1}>
-                      {formData.files.map((file, index) => (
+                      {localFormData.files.map((file, index) => (
                         <Box
                           key={index}
                           sx={{
@@ -333,9 +390,9 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                           <IconButton
                             size="small"
                             onClick={() => {
-                              const newFiles = [...(formData.files || [])]
-                              newFiles.splice(index, 1)
-                              handleChange('files', newFiles)
+                              const files = [...localFormData.files!]
+                              files.splice(index, 1)
+                              handleChange('files', files)
                             }}>
                             <Trash2 size={16} />
                           </IconButton>
@@ -344,50 +401,6 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                     </Stack>
                   </Box>
                 )}
-              </Box>
-            </Stack>
-          </Box>
-
-          {/* 선택사항 */}
-          <Box sx={{ flex: 1 }}>
-            <Typography
-              variant="subtitle1"
-              color="primary"
-              sx={{ mb: 2 }}>
-              선택사항
-            </Typography>
-            <Stack spacing={3}>
-              <FormControl>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mb: 1 }}>
-                  우선순위
-                </Typography>
-                <Select
-                  value={formData.priority}
-                  onChange={e =>
-                    handleChange('priority', e.target.value as PriorityType)
-                  }
-                  size="small">
-                  <MenuItem value={PriorityType.HIGH}>높음</MenuItem>
-                  <MenuItem value={PriorityType.MEDIUM}>중간</MenuItem>
-                  <MenuItem value={PriorityType.LOW}>낮음</MenuItem>
-                </Select>
-              </FormControl>
-
-              <Box>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mb: 1 }}>
-                  마감일
-                </Typography>
-                <DateTimePicker
-                  value={formData.deadLine}
-                  onChange={newValue => handleChange('deadLine', newValue)}
-                  slotProps={{ textField: { size: 'small', fullWidth: true } }}
-                />
               </Box>
             </Stack>
           </Box>

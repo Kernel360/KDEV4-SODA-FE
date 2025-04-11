@@ -2,6 +2,7 @@ import React from 'react'
 import { Box, Typography } from '@mui/material'
 import type { Project } from '../../types/project'
 import ProjectCard from '../projects/ProjectCard'
+import { useNavigate } from 'react-router-dom'
 
 interface ProjectWithProgress extends Project {
   progress: number
@@ -14,6 +15,8 @@ interface ProjectListProps {
 }
 
 const ProjectList: React.FC<ProjectListProps> = ({ title, projects }) => {
+  const navigate = useNavigate()
+
   return (
     <Box>
       <Typography
@@ -31,7 +34,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ title, projects }) => {
           <Box key={project.id}>
             <ProjectCard
               project={project}
-              //onClick={onProjectClick}
+              onClick={() => navigate(`/user/projects/${project.id}`)}
             />
           </Box>
         ))}

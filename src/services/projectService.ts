@@ -1,12 +1,12 @@
 import axios from 'axios'
 import type { Project } from '../types/project'
-import type { Stage } from '../types/stage'
 import type { Task } from '../types/task'
 import { client } from '../api/client'
 import {
   Article,
   ArticleCreateRequest,
-  ArticleCreateResponse
+  ArticleCreateResponse,
+  PriorityType
 } from '../types/article'
 
 export interface CreateProjectRequest {
@@ -64,11 +64,37 @@ export const fetchProjects = async (): Promise<Project[]> => {
   }
 }
 
+interface ApiStage {
+  id: number
+  name: string
+  stageOrder: number
+  tasks: {
+    taskId: number
+    title: string
+    content: string
+    taskOrder: number
+  }[]
+}
+
 export const projectService = {
   // 프로젝트 목록 조회
   async getAllProjects(): Promise<Project[]> {
     const response = await client.get('/projects')
     return response.data.data
+  },
+
+  // 사용자의 프로젝트 목록 조회
+  async getUserProjects(): Promise<Project[]> {
+    try {
+      const response = await client.get('/projects/my')
+      if (response.data && response.data.data) {
+        return response.data.data
+      }
+      throw new Error('프로젝트 데이터 형식이 올바르지 않습니다.')
+    } catch (error) {
+      console.error('Error fetching user projects:', error)
+      throw error
+    }
   },
 
   // 프로젝트 상세 조회
@@ -78,8 +104,10 @@ export const projectService = {
   },
 
   // 프로젝트 단계 조회
-  async getProjectStages(projectId: number): Promise<Stage[]> {
-    const response = await client.get(`/projects/${projectId}/stages`)
+  async getProjectStages(projectId: number): Promise<ApiStage[]> {
+    const response = await client.get(
+      `https://api.s0da.co.kr/projects/${projectId}/stages`
+    )
     return response.data.data
   },
 
@@ -204,5 +232,27 @@ export const projectService = {
   // 게시글 삭제
   async deleteArticle(projectId: number, articleId: number): Promise<void> {
     await client.delete(`/projects/${projectId}/articles/${articleId}`)
+  },
+
+  async updateArticle(
+    articleId: number,
+    data: {
+      projectId: number
+      title: string
+      content: string
+      priority: PriorityType
+      deadLine: string
+      memberId: number
+      stageId: number
+      linkList: { urlAddress: string; urlDescription: string }[]
+    }
+  ): Promise<Article> {
+    try {
+      const response = await client.put(`/articles/${articleId}`, data)
+      return response.data.data
+    } catch (error) {
+      console.error('Error updating article:', error)
+      throw error
+    }
   }
 }

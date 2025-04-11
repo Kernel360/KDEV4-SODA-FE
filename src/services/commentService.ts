@@ -2,7 +2,7 @@ import axios from 'axios'
 import type { Comment, CreateCommentRequest } from '../types/comment'
 
 const axiosInstance = axios.create({
-  baseURL: 'https://api.s0da.co.kr',
+  baseURL: 'https://api.s0da.co.kr/',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -11,7 +11,7 @@ const axiosInstance = axios.create({
 // Request interceptor to add auth token
 axiosInstance.interceptors.request.use(
   config => {
-    const token = localStorage.getItem('accessToken')
+    const token = localStorage.getItem('token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }

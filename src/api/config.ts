@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-export const API_BASE_URL = 'https://api.s0da.co.kr'
+export const API_BASE_URL = 'https://api.s0da.co.kr/'
 
 export const instance = axios.create({
   baseURL: API_BASE_URL,

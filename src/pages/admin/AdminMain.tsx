@@ -12,28 +12,10 @@ import {
   TableRow
 } from '@mui/material'
 import SimpleCalendar from '../../components/calendar/SimpleCalendar'
-
-// Mock data
-const mockProjects = [
-  {
-    id: 1,
-    title: '웹사이트 리뉴얼 프로젝트',
-    progress: 75,
-    dueDate: '2024.03.15'
-  },
-  {
-    id: 2,
-    title: '모바일 앱 개발',
-    progress: 45,
-    dueDate: '2024.03.30'
-  },
-  {
-    id: 3,
-    title: 'ERP 시스템 구축',
-    progress: 60,
-    dueDate: '2024.04.15'
-  }
-]
+import useProjectStore from '../../stores/projectStore'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
+import ErrorMessage from '../../components/common/ErrorMessage'
+import { formatDate } from '../../utils/dateUtils'
 
 const mockEvents = [
   { time: '10:00 AM', title: '프로젝트 미팅', type: 'meeting' as const },
@@ -43,9 +25,27 @@ const mockEvents = [
 
 const AdminMain: React.FC = () => {
   const navigate = useNavigate()
+  const { projects, isLoading, error, fetchAllProjects } = useProjectStore()
+
+  React.useEffect(() => {
+    fetchAllProjects()
+  }, [fetchAllProjects])
 
   const handleProjectClick = (projectId: number) => {
     navigate(`/admin/projects/${projectId}`)
+  }
+
+  if (isLoading) {
+    return <LoadingSpinner />
+  }
+
+  if (error) {
+    return (
+      <ErrorMessage
+        message={error}
+        onRetry={fetchAllProjects}
+      />
+    )
   }
 
   return (
@@ -68,12 +68,12 @@ const AdminMain: React.FC = () => {
             <TableHead>
               <TableRow>
                 <TableCell>프로젝트명</TableCell>
-                <TableCell>진행률</TableCell>
+                <TableCell>시작일</TableCell>
                 <TableCell>마감일</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {mockProjects.map(project => (
+              {projects.map(project => (
                 <TableRow key={project.id}>
                   <TableCell>
                     <Typography
@@ -88,34 +88,8 @@ const AdminMain: React.FC = () => {
                       {project.title}
                     </Typography>
                   </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Box
-                        sx={{
-                          width: 100,
-                          height: 6,
-                          backgroundColor: '#E5E7EB',
-                          borderRadius: 3,
-                          mr: 1,
-                          overflow: 'hidden'
-                        }}>
-                        <Box
-                          sx={{
-                            width: `${project.progress}%`,
-                            height: '100%',
-                            backgroundColor: 'primary.main',
-                            borderRadius: 3
-                          }}
-                        />
-                      </Box>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: 'text.secondary' }}>
-                        {project.progress}%
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>{project.dueDate}</TableCell>
+                  <TableCell>{formatDate(project.startDate)}</TableCell>
+                  <TableCell>{formatDate(project.endDate)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

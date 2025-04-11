@@ -107,6 +107,7 @@ const ProjectList: React.FC = () => {
       <DataTable
         columns={columns}
         data={currentPageData}
+        loading={isLoading}
         page={page}
         rowsPerPage={rowsPerPage}
         totalCount={projects.length}

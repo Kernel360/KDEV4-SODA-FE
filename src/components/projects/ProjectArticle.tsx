@@ -15,7 +15,7 @@ import {
   Chip
 } from '@mui/material'
 import { Article, ArticleStatus, PriorityType } from '../../types/article'
-import { Stage } from '../../types/stage'
+import { Stage } from '../../types/project'
 import { projectService } from '../../services/projectService'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ErrorMessage from '../../components/common/ErrorMessage'
@@ -24,6 +24,7 @@ import { useNavigate } from 'react-router-dom'
 
 interface ProjectArticleProps {
   projectId: number
+  stages: Stage[]
 }
 
 const ITEMS_PER_PAGE = 5
@@ -34,6 +35,7 @@ const ArticleRow: React.FC<{
   level?: number
   index?: number
   totalCount?: number
+  articles: Article[]
   getPriorityColor: (priority: PriorityType) => {
     color: string
     backgroundColor: string
@@ -50,6 +52,7 @@ const ArticleRow: React.FC<{
   level = 0,
   index,
   totalCount,
+  articles,
   getPriorityColor,
   getPriorityText,
   getStatusColor,
@@ -57,6 +60,44 @@ const ArticleRow: React.FC<{
 }) => {
   const navigate = useNavigate()
   const createdAt = new Date(article.createdAt)
+
+  // 부모 게시물이 삭제된 경우
+  if (article.deleted) {
+    return (
+      <>
+        <TableRow
+          sx={{
+            backgroundColor: level > 0 ? '#f8f9fa' : 'inherit',
+            '& > td:first-of-type': {
+              paddingLeft: level * 3 + 2 + 'rem'
+            }
+          }}>
+          <TableCell
+            colSpan={6}
+            align="center">
+            <Typography color="text.secondary">삭제된 게시물입니다</Typography>
+          </TableCell>
+        </TableRow>
+        {article.children &&
+          article.children.length > 0 &&
+          article.children.map((child: any) => (
+            <ArticleRow
+              key={child.id}
+              article={child}
+              projectId={projectId}
+              level={level + 1}
+              index={index}
+              totalCount={totalCount}
+              articles={articles}
+              getPriorityColor={getPriorityColor}
+              getPriorityText={getPriorityText}
+              getStatusColor={getStatusColor}
+              getStatusText={getStatusText}
+            />
+          ))}
+      </>
+    )
+  }
 
   return (
     <>
@@ -122,6 +163,7 @@ const ArticleRow: React.FC<{
             level={level + 1}
             index={index}
             totalCount={totalCount}
+            articles={articles}
             getPriorityColor={getPriorityColor}
             getPriorityText={getPriorityText}
             getStatusColor={getStatusColor}
@@ -132,10 +174,9 @@ const ArticleRow: React.FC<{
   )
 }
 
-const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
+const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId, stages: propStages }) => {
   const navigate = useNavigate()
   const [articles, setArticles] = useState<Article[]>([])
-  const [stages, setStages] = useState<Stage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedStage, setSelectedStage] = useState<number | null>(null)
@@ -143,26 +184,10 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    const fetchStages = async () => {
-      try {
-        const data = await projectService.getProjectStages(projectId)
-        setStages(data)
-      } catch (err) {
-        console.error('Error fetching stages:', err)
-      }
-    }
-
-    fetchStages()
-  }, [projectId])
-
-  useEffect(() => {
     const fetchArticles = async () => {
       try {
         setLoading(true)
-        const data = await projectService.getProjectArticles(
-          projectId,
-          selectedStage
-        )
+        const data = await projectService.getProjectArticles(projectId, selectedStage)
         console.log('Fetched articles:', data)
         setArticles(data)
       } catch (err) {
@@ -233,18 +258,8 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
     }
   }
 
-  const getAllArticles = (articles: Article[]): Article[] => {
-    return articles.reduce((acc: Article[], article) => {
-      acc.push(article)
-      if (article.children && article.children.length > 0) {
-        acc.push(...getAllArticles(article.children))
-      }
-      return acc
-    }, [])
-  }
-
   const filteredArticles = articles
-    .filter(article => !article.parentArticleId) // Only show top-level articles
+    .filter(article => !article.parentArticleId) // 최상위 게시물만 표시 (삭제 여부와 관계없이)
     .filter(article =>
       searchQuery
         ? article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -260,6 +275,16 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
   const totalParentArticlesCount = filteredArticles.length
 
   // Get all articles including replies for pagination
+  const getAllArticles = (articles: Article[]): Article[] => {
+    return articles.reduce((acc: Article[], article) => {
+      acc.push(article)
+      if (article.children && article.children.length > 0) {
+        acc.push(...getAllArticles(article.children))
+      }
+      return acc
+    }, [])
+  }
+
   const allArticles = getAllArticles(articles)
   const totalArticlesCount = allArticles.length
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
@@ -364,18 +389,16 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
           }}>
           전체
         </Button>
-        {stages.map(stage => (
+        {propStages.map(stage => (
           <Button
             key={stage.id}
             variant={selectedStage === stage.id ? 'contained' : 'outlined'}
             onClick={() => setSelectedStage(stage.id)}
             sx={{
-              bgcolor:
-                selectedStage === stage.id ? 'primary.main' : 'transparent',
+              bgcolor: selectedStage === stage.id ? 'primary.main' : 'transparent',
               color: selectedStage === stage.id ? 'white' : 'primary.main',
               '&:hover': {
-                bgcolor:
-                  selectedStage === stage.id ? 'primary.dark' : 'transparent'
+                bgcolor: selectedStage === stage.id ? 'primary.dark' : 'transparent'
               }
             }}>
             {stage.name}
@@ -423,6 +446,7 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId }) => {
                 projectId={projectId}
                 index={index}
                 totalCount={totalParentArticlesCount}
+                articles={articles}
                 getPriorityColor={getPriorityColor}
                 getPriorityText={getPriorityText}
                 getStatusColor={getStatusColor}

@@ -79,24 +79,15 @@ export default function AccountList() {
     setPage(0) // 검색어가 변경되면 첫 페이지로 이동
   }
 
+  // const handleRowClick = (row: MemberListDto) => {
+  //   navigate(`/admin/accounts/${row.id}`)
+  // }
+
   const columns = [
     {
       id: 'name',
       label: '이름',
-      render: (row: MemberListDto) => (
-        <Box
-          onClick={() => navigate(`/admin/accounts/${row.id}`)}
-          sx={{
-            cursor: 'pointer',
-            color: 'text.primary',
-            '&:hover': {
-              color: 'primary.main',
-              textDecoration: 'underline'
-            }
-          }}>
-          {row.name}
-        </Box>
-      )
+      render: (row: MemberListDto) => row.name
     },
     {
       id: 'authId',
@@ -122,6 +113,7 @@ export default function AccountList() {
           checked={!row.deleted}
           onChange={() => handleToggleActive(row.id, !row.deleted)}
           color="primary"
+          onClick={e => e.stopPropagation()}
         />
       )
     }
@@ -169,7 +161,6 @@ export default function AccountList() {
             )
           }}
           sx={{
-            maxWidth: 400,
             '& .MuiOutlinedInput-root': {
               borderRadius: 2
             }
@@ -186,6 +177,7 @@ export default function AccountList() {
         onPageChange={handlePageChange}
         onRowsPerPageChange={handleRowsPerPageChange}
         loading={loading}
+        //onRowClick={handleRowClick}
       />
     </Box>
   )
