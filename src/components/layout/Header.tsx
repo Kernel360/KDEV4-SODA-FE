@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Bell, User, LogOut, ChevronDown } from 'lucide-react'
 import {
   Badge,
@@ -30,7 +30,6 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ sx }) => {
   const navigate = useNavigate()
-  //const location = useLocation()
   const [notificationAnchor, setNotificationAnchor] =
     useState<null | HTMLElement>(null)
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null)
