@@ -24,19 +24,29 @@ export const deleteTaskRequest = async (requestId: number) => {
   return response.data
 }
 
-export const approveTaskRequest = async (
-  requestId: number,
-  data: { comment: string; links: any[] }
-) => {
-  const response = await client.post(`/requests/${requestId}/approve`, data)
+export interface ApproveTaskRequestData {
+  comment: string
+  links?: Array<{
+    urlAddress: string
+    urlDescription: string
+  }>
+}
+
+export const approveTaskRequest = async (requestId: number, data: ApproveTaskRequestData) => {
+  const response = await client.post(`/requests/${requestId}/approval`, data)
   return response.data
 }
 
-export const rejectTaskRequest = async (
-  requestId: number,
-  data: { comment: string; links: any[] }
-) => {
-  const response = await client.post(`/requests/${requestId}/reject`, data)
+export interface RejectTaskRequestData {
+  comment: string
+  links?: Array<{
+    urlAddress: string
+    urlDescription: string
+  }>
+}
+
+export const rejectTaskRequest = async (requestId: number, data: RejectTaskRequestData) => {
+  const response = await client.post(`/requests/${requestId}/rejection`, data)
   return response.data
 }
 

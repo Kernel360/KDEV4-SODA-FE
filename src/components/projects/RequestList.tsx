@@ -219,7 +219,7 @@ const RequestList: React.FC<RequestListProps> = ({
                           variant="body2"
                           color="primary"
                           component="a"
-                          href={file.fileUrl}
+                          href={file.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           sx={{
@@ -231,7 +231,7 @@ const RequestList: React.FC<RequestListProps> = ({
                               textDecoration: 'underline'
                             }
                           }}>
-                          {file.fileName}
+                          {file.name}
                         </Typography>
                       </Box>
                     ))}
