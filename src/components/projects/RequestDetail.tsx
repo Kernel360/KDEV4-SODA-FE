@@ -56,50 +56,6 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
         </Typography>
       </Box>
 
-      {request.links && request.links.length > 0 && (
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            첨부 링크
-          </Typography>
-          {request.links.map((link, index) => (
-            <Box key={index} sx={{ mb: 1 }}>
-              <Typography variant="body2">{link.urlDescription}</Typography>
-              <Typography 
-                variant="caption" 
-                color="text.secondary"
-                component="a"
-                href={link.urlAddress}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                {link.urlAddress}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-      )}
-
-      {request.files && request.files.length > 0 && (
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            첨부 파일
-          </Typography>
-          {request.files.map((file, index) => (
-            <Box key={index} sx={{ mb: 1 }}>
-              <Typography 
-                variant="body2"
-                component="a"
-                href={file.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                {file.fileName}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-      )}
-
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 3 }}>
         <Button
           startIcon={<ArrowLeft size={16} />}

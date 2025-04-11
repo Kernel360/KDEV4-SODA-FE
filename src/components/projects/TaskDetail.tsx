@@ -184,18 +184,23 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
                         sx={{ py: 0.5 }}>
                         <ListItemText
                           primary={
-                            <Link
-                              href={link.urlAddress}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                              }}>
-                              <LinkIcon size={14} />
-                              {link.urlDescription || link.urlAddress}
-                            </Link>
+                            <Box>
+                              <Link
+                                href={link.urlAddress}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}>
+                                <LinkIcon size={14} />
+                                {link.urlDescription}
+                              </Link>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 2.5 }}>
+                                {link.urlAddress}
+                              </Typography>
+                            </Box>
                           }
                         />
                       </ListItem>
@@ -218,19 +223,24 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
                         sx={{ py: 0.5 }}>
                         <ListItemText
                           primary={
-                            <Link
-                              href={file.url}
-                              download
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                              }}>
-                              <FileText size={14} />
-                              {file.name || '알 수 없는 파일'}
-                            </Link>
+                            <Box>
+                              <Link
+                                href={file.url}
+                                download
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}>
+                                <FileText size={14} />
+                                {file.name || '알 수 없는 파일'}
+                              </Link>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 2.5 }}>
+                                {file.url}
+                              </Typography>
+                            </Box>
                           }
                         />
                       </ListItem>
