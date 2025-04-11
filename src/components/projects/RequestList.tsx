@@ -5,7 +5,10 @@ import {
   Paper,
   Collapse,
   Divider,
-  Button
+  Button,
+  TextField,
+  DialogContentText,
+  IconButton
 } from '@mui/material'
 import {
   Edit,
@@ -16,8 +19,7 @@ import {
   X,
   Clock,
   User,
-  Link as LinkIcon,
-  FileText
+  Link as LinkIcon
 } from 'lucide-react'
 import type { TaskRequest } from '../../types/request'
 
@@ -27,17 +29,30 @@ interface RequestListProps {
   onEdit: (request: TaskRequest) => void
   onDelete: (request: TaskRequest) => void
   onApprove: (request: TaskRequest) => void
-  onReject: (request: TaskRequest) => void
+  onReject: (
+    request: TaskRequest,
+    comment: string,
+    links: Array<{ urlAddress: string; urlDescription: string }>
+  ) => void
 }
 
 const RequestList: React.FC<RequestListProps> = ({
   requests,
+  onRequestClick,
   onEdit,
   onDelete,
   onApprove,
   onReject
 }) => {
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [rejectingRequestId, setRejectingRequestId] = useState<number | null>(
+    null
+  )
+  const [rejectForm, setRejectForm] = useState({
+    comment: '',
+    links: [] as { urlAddress: string; urlDescription: string }[]
+  })
+  const [newLink, setNewLink] = useState({ urlAddress: '', urlDescription: '' })
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -63,6 +78,36 @@ const RequestList: React.FC<RequestListProps> = ({
 
   const handleRequestClick = (request: TaskRequest) => {
     setExpandedId(expandedId === request.requestId ? null : request.requestId)
+  }
+
+  const handleAddLink = () => {
+    if (newLink.urlAddress.trim() && newLink.urlDescription.trim()) {
+      setRejectForm(prev => ({
+        ...prev,
+        links: [...prev.links, newLink]
+      }))
+      setNewLink({ urlAddress: '', urlDescription: '' })
+    }
+  }
+
+  const handleRemoveLink = (index: number) => {
+    setRejectForm(prev => ({
+      ...prev,
+      links: prev.links.filter((_, i) => i !== index)
+    }))
+  }
+
+  const handleRejectClick = (request: TaskRequest) => {
+    if (rejectingRequestId !== request.requestId) {
+      setRejectingRequestId(request.requestId)
+      return
+    }
+
+    if (rejectForm.comment.trim()) {
+      onReject(request, rejectForm.comment, rejectForm.links)
+      setRejectingRequestId(null)
+      setRejectForm({ comment: '', links: [] })
+    }
   }
 
   if (requests.length === 0) {
@@ -155,89 +200,107 @@ const RequestList: React.FC<RequestListProps> = ({
                 {request.content}
               </Typography>
 
-              <Box sx={{ display: 'flex', gap: 3 }}>
-                {request.links && request.links.length > 0 && (
-                  <Box sx={{ flex: 1 }}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        mb: 1
-                      }}>
-                      <LinkIcon size={16} />
-                      <Typography variant="subtitle2">첨부 링크</Typography>
-                    </Box>
-                    {request.links.map((link, index) => (
+              {rejectingRequestId === request.requestId && (
+                <Box
+                  sx={{
+                    mt: 3,
+                    p: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1
+                  }}>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ mb: 2 }}>
+                    반려 사유 입력
+                  </Typography>
+                  <DialogContentText sx={{ mb: 2 }}>
+                    반려 사유를 입력하고 필요한 경우 참고 링크를 추가해주세요.
+                  </DialogContentText>
+                  <TextField
+                    label="반려 사유"
+                    value={rejectForm.comment}
+                    onChange={e =>
+                      setRejectForm(prev => ({
+                        ...prev,
+                        comment: e.target.value
+                      }))
+                    }
+                    multiline
+                    rows={4}
+                    fullWidth
+                    required
+                    sx={{ mb: 3 }}
+                  />
+
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 1 }}>
+                    참고 링크
+                  </Typography>
+                  <Box sx={{ mb: 2 }}>
+                    {rejectForm.links.map((link, index) => (
                       <Box
                         key={index}
-                        sx={{ mb: 1, pl: 3 }}>
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          mb: 1
+                        }}>
+                        <LinkIcon size={16} />
                         <Typography
                           variant="body2"
-                          sx={{ mb: 0.5 }}>
-                          {link.urlDescription}
+                          sx={{ flex: 1 }}>
+                          {link.urlDescription} ({link.urlAddress})
                         </Typography>
-                        <Typography
-                          variant="caption"
-                          color="primary"
-                          component="a"
-                          href={link.urlAddress}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          sx={{
-                            textDecoration: 'none',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            '&:hover': {
-                              textDecoration: 'underline'
-                            }
-                          }}>
-                          {link.urlAddress}
-                        </Typography>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleRemoveLink(index)}>
+                          <X size={16} />
+                        </IconButton>
                       </Box>
                     ))}
                   </Box>
-                )}
-                {request.files && request.files.length > 0 && (
-                  <Box sx={{ flex: 1 }}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        mb: 1
-                      }}>
-                      <FileText size={16} />
-                      <Typography variant="subtitle2">첨부 파일</Typography>
-                    </Box>
-                    {request.files.map((file, index) => (
-                      <Box
-                        key={index}
-                        sx={{ mb: 1, pl: 3 }}>
-                        <Typography
-                          variant="body2"
-                          color="primary"
-                          component="a"
-                          href={file.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          sx={{
-                            textDecoration: 'none',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            '&:hover': {
-                              textDecoration: 'underline'
-                            }
-                          }}>
-                          {file.name}
-                        </Typography>
-                      </Box>
-                    ))}
+
+                  <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                    <TextField
+                      label="링크 주소"
+                      value={newLink.urlAddress}
+                      onChange={e =>
+                        setNewLink(prev => ({
+                          ...prev,
+                          urlAddress: e.target.value
+                        }))
+                      }
+                      size="small"
+                      sx={{ flex: 1 }}
+                    />
+                    <TextField
+                      label="링크 설명"
+                      value={newLink.urlDescription}
+                      onChange={e =>
+                        setNewLink(prev => ({
+                          ...prev,
+                          urlDescription: e.target.value
+                        }))
+                      }
+                      size="small"
+                      sx={{ flex: 1 }}
+                    />
+                    <Button
+                      variant="outlined"
+                      onClick={handleAddLink}
+                      disabled={
+                        !newLink.urlAddress.trim() ||
+                        !newLink.urlDescription.trim()
+                      }>
+                      추가
+                    </Button>
                   </Box>
-                )}
-              </Box>
+                </Box>
+              )}
+
               <Box
                 sx={{
                   display: 'flex',
@@ -253,9 +316,11 @@ const RequestList: React.FC<RequestListProps> = ({
                       startIcon={<X size={16} />}
                       onClick={e => {
                         e.stopPropagation()
-                        onReject(request)
+                        handleRejectClick(request)
                       }}>
-                      반려
+                      {rejectingRequestId === request.requestId
+                        ? '반려하기'
+                        : '반려'}
                     </Button>
                     <Button
                       variant="contained"
