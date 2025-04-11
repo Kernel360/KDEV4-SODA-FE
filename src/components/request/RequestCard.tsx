@@ -10,7 +10,7 @@ interface RequestCardProps {
 
 const getStatusColor = (status: Request['status']) => {
   switch (status) {
-    case '승인대기중':
+    case '승인 대기중':
       return 'warning'
     case '승인됨':
       return 'success'
@@ -56,11 +56,11 @@ const RequestCard: React.FC<RequestCardProps> = ({ request, onClick }) => {
           size="small"
         />
       </Box>
-      <Typography
+      {/* <Typography
         variant="body2"
         color="text.secondary">
         {request.description}
-      </Typography>
+      </Typography> */}
     </Paper>
   )
 }

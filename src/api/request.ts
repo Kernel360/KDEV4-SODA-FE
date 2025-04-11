@@ -1,5 +1,5 @@
 import { client } from './client'
-import type { TaskRequest, CreateRequestData, UpdateRequestData } from '../types/request'
+import type { CreateRequestData, UpdateRequestData } from '../types/request'
 
 export const getTaskRequests = async (taskId: number) => {
   const response = await client.get(`/tasks/${taskId}/requests`)
@@ -11,7 +11,10 @@ export const createTaskRequest = async (data: CreateRequestData) => {
   return response.data
 }
 
-export const updateTaskRequest = async (requestId: number, data: UpdateRequestData) => {
+export const updateTaskRequest = async (
+  requestId: number,
+  data: UpdateRequestData
+) => {
   const response = await client.put(`/requests/${requestId}`, data)
   return response.data
 }
@@ -21,12 +24,18 @@ export const deleteTaskRequest = async (requestId: number) => {
   return response.data
 }
 
-export const approveTaskRequest = async (requestId: number, data: { comment: string, links: any[] }) => {
+export const approveTaskRequest = async (
+  requestId: number,
+  data: { comment: string; links: any[] }
+) => {
   const response = await client.post(`/requests/${requestId}/approve`, data)
   return response.data
 }
 
-export const rejectTaskRequest = async (requestId: number, data: { comment: string, links: any[] }) => {
+export const rejectTaskRequest = async (
+  requestId: number,
+  data: { comment: string; links: any[] }
+) => {
   const response = await client.post(`/requests/${requestId}/reject`, data)
   return response.data
 }
@@ -34,12 +43,12 @@ export const rejectTaskRequest = async (requestId: number, data: { comment: stri
 export const uploadRequestFile = async (requestId: number, file: File) => {
   const formData = new FormData()
   formData.append('file', file)
-  
+
   const response = await client.post(`/requests/${requestId}/files`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
   })
-  
+
   return response.data
-} 
+}

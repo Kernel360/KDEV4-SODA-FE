@@ -1,5 +1,3 @@
-import { ReactNode } from "react"
-
 export interface RequestAttachment {
   id: number
   type: 'file' | 'link'
