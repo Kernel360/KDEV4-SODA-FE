@@ -11,7 +11,8 @@ import {
   Alert,
   Chip,
   CircularProgress,
-  OutlinedInput // Import OutlinedInput for Select label rendering
+  OutlinedInput,
+  FormHelperText
 } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers'
 import type { CompanyListItem, CompanyMember } from '../../types/api' // Assuming ApiResponse is defined
@@ -40,6 +41,18 @@ interface CreateProjectFormProps {
 // Define expected response type for getCompanyMembers
 //interface CompanyMembersResponse extends ApiResponse<CompanyMember[] | null> {}
 
+interface FormErrors {
+  submit?: string
+  name?: string
+  description?: string
+  startDate?: string
+  endDate?: string
+  clientCompanyId?: string
+  developmentCompanyId?: string
+  clientManagers?: string
+  developmentManagers?: string
+}
+
 export default function CreateProjectForm({
   loading,
   error,
@@ -67,6 +80,8 @@ export default function CreateProjectForm({
   )
   const [loadingMembers, setLoadingMembers] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null) // State for fetch errors
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [, setIsSubmitting] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -109,9 +124,92 @@ export default function CreateProjectForm({
     setFormData(prev => ({ ...prev, [name]: formattedDate }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
+    setIsSubmitting(true)
+    setErrors({})
+
+    try {
+      // 필수 필드 검증
+      const requiredFields = [
+        'name',
+        'description',
+        'startDate',
+        'endDate',
+        'clientCompanyId',
+        'developmentCompanyId',
+        'clientManagers',
+        'developmentManagers'
+      ]
+
+      const missingFields = requiredFields.filter(field => {
+        const value = formData[field as keyof typeof formData]
+        return (
+          value === undefined ||
+          value === null ||
+          (Array.isArray(value) && value.length === 0) ||
+          (typeof value === 'string' && value.trim() === '')
+        )
+      })
+
+      if (missingFields.length > 0) {
+        const fieldErrors: Record<string, string> = {}
+        missingFields.forEach(field => {
+          fieldErrors[field] = `${field} 필드는 필수입니다.`
+        })
+        setErrors(fieldErrors)
+        return
+      }
+
+      // 날짜 유효성 검증
+      const startDate = new Date(formData.startDate)
+      const endDate = new Date(formData.endDate)
+
+      if (startDate >= endDate) {
+        setErrors(prev => ({
+          ...prev,
+          endDate: '종료일은 시작일보다 이후여야 합니다.'
+        }))
+        return
+      }
+
+      // 회사 ID 유효성 검증
+      if (formData.clientCompanyId === formData.developmentCompanyId) {
+        setErrors(prev => ({
+          ...prev,
+          developmentCompanyId: '고객사와 개발사는 서로 다른 회사여야 합니다.'
+        }))
+        return
+      }
+
+      // 담당자 유효성 검증
+      if (formData.developmentManagers.length === 0) {
+        setErrors(prev => ({
+          ...prev,
+          developmentManagers: '개발사 담당자는 최소 1명 이상이어야 합니다.'
+        }))
+        return
+      }
+
+      if (formData.clientManagers.length === 0) {
+        setErrors(prev => ({
+          ...prev,
+          clientManagers: '고객사 담당자는 최소 1명 이상이어야 합니다.'
+        }))
+        return
+      }
+
+      await onSave(formData)
+    } catch (error: any) {
+      if (error instanceof Error) {
+        setErrors(prev => ({
+          ...prev,
+          submit: error.message
+        }))
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   useEffect(() => {
@@ -202,6 +300,13 @@ export default function CreateProjectForm({
           {fetchError}
         </Alert>
       )}
+      {errors.submit && (
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}>
+          {errors.submit}
+        </Alert>
+      )}
 
       <TextField
         fullWidth
@@ -210,6 +315,8 @@ export default function CreateProjectForm({
         value={formData.name}
         onChange={handleChange}
         required
+        error={!!errors.name}
+        helperText={errors.name}
         sx={{ mb: 2 }}
       />
 
@@ -221,17 +328,21 @@ export default function CreateProjectForm({
         onChange={handleChange}
         multiline
         rows={4}
+        required
+        error={!!errors.description}
+        helperText={errors.description}
         sx={{ mb: 2 }}
       />
 
       {/* Client Company Section */}
       <FormControl
         fullWidth
-        sx={{ mb: 2 }}>
+        sx={{ mb: 2 }}
+        error={!!errors.clientCompanyId}>
         <InputLabel id="client-company-label">고객사</InputLabel>
         <Select
           labelId="client-company-label"
-          label="고객사" // Match label for outlined effect
+          label="고객사"
           name="clientCompanyId"
           value={formData.clientCompanyId}
           onChange={handleSelectChange}
@@ -249,6 +360,9 @@ export default function CreateProjectForm({
             </MenuItem>
           ))}
         </Select>
+        {errors.clientCompanyId && (
+          <FormHelperText>{errors.clientCompanyId}</FormHelperText>
+        )}
       </FormControl>
 
       {formData.clientCompanyId && (
@@ -265,12 +379,12 @@ export default function CreateProjectForm({
             ) : (
               <Select
                 labelId="client-managers-label"
-                label="고객사 담당자" // Match label
+                label="고객사 담당자"
                 multiple
                 name="clientManagers"
                 value={formData.clientManagers}
                 onChange={handleMultiSelectChange}
-                input={<OutlinedInput label="고객사 담당자" />} // Required for label rendering with chips
+                input={<OutlinedInput label="고객사 담당자" />}
                 renderValue={selected => (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {selected.map(value => (
@@ -282,8 +396,7 @@ export default function CreateProjectForm({
                     ))}
                   </Box>
                 )}
-                required // Assuming at least one manager is required
-              >
+                required>
                 {clientMembers.length === 0 && (
                   <MenuItem disabled>
                     <em>멤버 없음</em>
@@ -314,12 +427,12 @@ export default function CreateProjectForm({
             ) : (
               <Select
                 labelId="client-participants-label"
-                label="고객사 일반 참여자" // Match label
+                label="고객사 일반 참여자"
                 multiple
                 name="clientParticipants"
                 value={formData.clientParticipants}
                 onChange={handleMultiSelectChange}
-                input={<OutlinedInput label="고객사 일반 참여자" />} // Required for label
+                input={<OutlinedInput label="고객사 일반 참여자" />}
                 renderValue={selected => (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {selected.map(value => (
@@ -352,11 +465,12 @@ export default function CreateProjectForm({
       {/* Development Company Section */}
       <FormControl
         fullWidth
-        sx={{ mb: 2 }}>
+        sx={{ mb: 2 }}
+        error={!!errors.developmentCompanyId}>
         <InputLabel id="dev-company-label">개발사</InputLabel>
         <Select
           labelId="dev-company-label"
-          label="개발사" // Match label
+          label="개발사"
           name="developmentCompanyId"
           value={formData.developmentCompanyId}
           onChange={handleSelectChange}
@@ -374,6 +488,9 @@ export default function CreateProjectForm({
             </MenuItem>
           ))}
         </Select>
+        {errors.developmentCompanyId && (
+          <FormHelperText>{errors.developmentCompanyId}</FormHelperText>
+        )}
       </FormControl>
 
       {formData.developmentCompanyId && (
@@ -390,12 +507,12 @@ export default function CreateProjectForm({
             ) : (
               <Select
                 labelId="dev-managers-label"
-                label="개발사 담당자" // Match label
+                label="개발사 담당자"
                 multiple
                 name="developmentManagers"
                 value={formData.developmentManagers}
                 onChange={handleMultiSelectChange}
-                input={<OutlinedInput label="개발사 담당자" />} // Required for label
+                input={<OutlinedInput label="개발사 담당자" />}
                 renderValue={selected => (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {selected.map(value => (
@@ -438,12 +555,12 @@ export default function CreateProjectForm({
             ) : (
               <Select
                 labelId="dev-participants-label"
-                label="개발사 일반 참여자" // Match label
+                label="개발사 일반 참여자"
                 multiple
                 name="developmentParticipants"
                 value={formData.developmentParticipants}
                 onChange={handleMultiSelectChange}
-                input={<OutlinedInput label="개발사 일반 참여자" />} // Required for label
+                input={<OutlinedInput label="개발사 일반 참여자" />}
                 renderValue={selected => (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {selected.map(value => (
@@ -475,19 +592,19 @@ export default function CreateProjectForm({
 
       <DatePicker
         label="시작일"
-        value={formData.startDate ? new Date(formData.startDate) : null} // Parse string back to Date for DatePicker
+        value={formData.startDate ? new Date(formData.startDate) : null}
         onChange={date => handleDateChange('startDate', date)}
-        sx={{ mb: 2, mr: 1, width: 'calc(50% - 4px)' }} // Adjust width for side-by-side
-        slotProps={{ textField: { required: true } }} // Add required visually
+        sx={{ mb: 2, mr: 1, width: 'calc(50% - 4px)' }}
+        slotProps={{ textField: { required: true } }}
       />
 
       <DatePicker
         label="종료일"
-        value={formData.endDate ? new Date(formData.endDate) : null} // Parse string back to Date for DatePicker
+        value={formData.endDate ? new Date(formData.endDate) : null}
         onChange={date => handleDateChange('endDate', date)}
-        sx={{ mb: 2, width: 'calc(50% - 4px)' }} // Adjust width for side-by-side
-        minDate={formData.startDate ? new Date(formData.startDate) : undefined} // Prevent end date before start date
-        slotProps={{ textField: { required: true } }} // Add required visually
+        sx={{ mb: 2, width: 'calc(50% - 4px)' }}
+        minDate={formData.startDate ? new Date(formData.startDate) : undefined}
+        slotProps={{ textField: { required: true } }}
       />
 
       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', mt: 2 }}>
