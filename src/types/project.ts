@@ -2,12 +2,14 @@ export interface Project {
   id: number
   title: string
   description: string
-  devCompanyName: string
-  clientCompanyName: string
   projectName: string
+  status: string
   startDate: string
   endDate: string
-  status: ProjectStatus
+  clientCompanyId: number
+  devCompanyId: number
+  clientCompanyName: string
+  devCompanyName: string
   clientCompanyManagers: string[]
   clientCompanyMembers: string[]
   devCompanyManagers: string[]
