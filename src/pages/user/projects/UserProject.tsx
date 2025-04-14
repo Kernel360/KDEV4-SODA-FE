@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { Box } from '@mui/material'
-import { Project, Stage } from '../../../types/project'
+import { Project, Stage, ProjectStatus } from '../../../types/project'
 import ProjectHeader from '../../../components/projects/ProjectHeader'
 import ProjectStages from '../../../components/projects/ProjectStages'
 import ProjectArticle from '../../../components/projects/ProjectArticle'
 import { projectService } from '../../../services/projectService'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
+import { client } from '../../../api/client'
 
 interface ProjectWithProgress extends Project {
   progress: number
@@ -31,6 +32,17 @@ const UserProject: React.FC = () => {
   const [stages, setStages] = useState<ApiStage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const handleStatusChange = async (newStatus: ProjectStatus) => {
+    if (!project) return
+    try {
+      await client.put(`/projects/${project.id}/status`, { status: newStatus })
+      setProject(prev => (prev ? { ...prev, status: newStatus } : null))
+    } catch (error) {
+      console.error('Failed to update project status:', error)
+      throw error
+    }
+  }
 
   // stage 목록 새로고침 함수
   const refreshStages = async () => {
@@ -85,11 +97,14 @@ const UserProject: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <ProjectHeader project={project} />
-      <ProjectStages 
-        projectId={project.id} 
-        stages={stages as unknown as Stage[]} 
-        onStagesChange={async (updatedStages) => {
+      <ProjectHeader
+        project={project}
+        onStatusChange={handleStatusChange}
+      />
+      <ProjectStages
+        projectId={project.id}
+        stages={stages as unknown as Stage[]}
+        onStagesChange={async updatedStages => {
           // API 응답 데이터 형식으로 변환
           const apiStages = updatedStages.map(stage => ({
             id: stage.id,
@@ -107,7 +122,10 @@ const UserProject: React.FC = () => {
           await refreshStages()
         }}
       />
-      <ProjectArticle projectId={project.id} stages={stages as unknown as Stage[]} />
+      <ProjectArticle
+        projectId={project.id}
+        stages={stages as unknown as Stage[]}
+      />
     </Box>
   )
 }
