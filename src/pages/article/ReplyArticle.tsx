@@ -26,63 +26,76 @@ const ReplyArticle: React.FC = () => {
   const { showToast } = useToast()
 
   const [stages, setStages] = useState<Stage[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
-
   const [formData, setFormData] = useState<ArticleFormData>({
     title: '',
     content: '',
     priority: PriorityType.MEDIUM,
     deadLine: null,
-    stageId: 0,
+    stageId: '',
     links: [],
     files: []
   })
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!projectId || !articleId) return
-      setLoading(true)
-      setError(null)
       try {
-        const [stagesData, articleData] = await Promise.all([
-          projectService.getProjectStages(parseInt(projectId)),
-          projectService.getArticleDetail(
-            parseInt(projectId),
-            parseInt(articleId)
-          )
-        ])
-        const transformedStages = stagesData.map(stage => ({
+        if (!projectId || !articleId) return
+
+        // 먼저 원본 게시글 정보를 가져옵니다
+        const articleResponse = await projectService.getArticleDetail(
+          Number(projectId),
+          Number(articleId)
+        )
+
+        if (!articleResponse) {
+          throw new Error('원본 게시글 정보를 가져올 수 없습니다.')
+        }
+
+        // 단계 정보를 가져옵니다
+        const stagesResponse = await projectService.getProjectStages(
+          Number(projectId)
+        )
+
+        if (!stagesResponse || !Array.isArray(stagesResponse)) {
+          throw new Error('단계 정보를 가져올 수 없습니다.')
+        }
+
+        // Transform API response to Stage type
+        const transformedStages = stagesResponse.map(stage => ({
           id: stage.id,
           name: stage.name,
           stageOrder: stage.stageOrder,
           order: stage.stageOrder,
-          tasks: stage.tasks.map(task => ({
+          tasks: (stage.tasks || []).map(task => ({
             id: task.taskId,
-            taskId: task.taskId,
             title: task.title,
             description: task.content,
-            content: task.content,
-            status: '대기' as TaskStatus,
+            status: '진행 중' as TaskStatus,
             order: task.taskOrder,
-            taskOrder: task.taskOrder,
-            requests: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            stageId: stage.id
           }))
         }))
+
         setStages(transformedStages)
-        if (articleData) {
-          setFormData(prev => ({
-            ...prev,
-            title: `RE: ${articleData.title}`,
-            stageId: transformedStages[0]?.id || prev.stageId
-          }))
-        }
-      } catch (err) {
-        console.error('Error fetching data:', err)
-        setError('데이터를 불러오는 중 오류가 발생했습니다.')
+
+        // 폼 데이터를 설정합니다
+        setFormData({
+          title: `RE: ${articleResponse.title}`,
+          content: '', // 답글은 빈 내용으로 시작
+          stageId: String(
+            articleResponse.stageId || transformedStages[0]?.id || ''
+          ),
+          priority: articleResponse.priority, // 원본 게시글의 우선순위를 상속
+          deadLine: null,
+          files: [],
+          links: []
+        })
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        setError('데이터를 불러오는데 실패했습니다.')
       } finally {
         setLoading(false)
       }
@@ -110,31 +123,28 @@ const ReplyArticle: React.FC = () => {
     e.preventDefault()
     if (!validateForm() || !projectId || !articleId) return
 
-    setLoading(true)
     try {
-      const parsedProjectId = parseInt(projectId)
+      setLoading(true)
       const request = {
-        projectId: parsedProjectId,
+        projectId: Number(projectId),
         title: formData.title,
         content: formData.content,
         priority: formData.priority,
-        stageId: formData.stageId,
-        deadLine: formData.deadLine?.toISOString(),
-        parentArticleId: parseInt(articleId),
+        stageId: Number(formData.stageId),
+        deadLine: formData.deadLine?.toISOString() || '',
+        parentArticleId: Number(articleId), // 답글 작성 시 원본 게시글 ID만 추가
         linkList:
           formData.links?.map(link => ({
             urlAddress: link.url,
             urlDescription: link.title
-          })) || [],
-        files: formData.files
+          })) || []
       }
 
       // 답글 생성
       const response = await projectService.createArticle(
-        parsedProjectId,
+        Number(projectId),
         request
       )
-      console.log('Created reply response:', response)
 
       // 파일이 있는 경우 파일 업로드
       if (formData.files && formData.files.length > 0 && response.data?.id) {
@@ -143,22 +153,23 @@ const ReplyArticle: React.FC = () => {
             response.data.id,
             formData.files
           )
-          console.log(
-            'Files uploaded successfully for reply:',
-            response.data.id
-          )
         } catch (uploadError) {
           console.error('Error uploading files:', uploadError)
           showToast('파일 업로드에 실패했습니다.', 'error')
-          // 파일 업로드 실패해도 답글은 작성 완료로 처리
         }
       }
 
       showToast('답글이 성공적으로 작성되었습니다.', 'success')
       navigate(`/user/projects/${projectId}`)
-    } catch (err) {
-      console.error('Error creating reply:', err)
-      showToast('답글 작성 중 오류가 발생했습니다.', 'error')
+    } catch (error) {
+      console.error('Error creating reply:', error)
+      if (error instanceof Error) {
+        setError(error.message)
+        showToast(error.message, 'error')
+      } else {
+        setError('답글 작성에 실패했습니다.')
+        showToast('답글 작성에 실패했습니다.', 'error')
+      }
     } finally {
       setLoading(false)
     }
