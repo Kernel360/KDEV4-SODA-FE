@@ -23,20 +23,26 @@ const CreateRequest: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [stages, setStages] = useState<Stage[]>([])
-  const [selectedStage, setSelectedStage] = useState<number | ''>('')
-  const [selectedTask, setSelectedTask] = useState<number | ''>('')
-  const [formData, setFormData] = useState({
-    title: '',
-    description: ''
-  })
+  const [selectedStage, setSelectedStage] = useState<number | null>(null)
+  const [selectedTask, setSelectedTask] = useState<number | null>(null)
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
 
   useEffect(() => {
     const fetchStages = async () => {
+      if (!projectId) {
+        setError('프로젝트 ID가 없습니다.')
+        setLoading(false)
+        return
+      }
+
       try {
-        if (!projectId) return
         const response = await client.get(`/projects/${projectId}/stages`)
-        setStages(response.data)
-      } catch (err) {
+        // API 응답이 배열인지 확인하고, 아니면 빈 배열로 설정
+        const stagesData = Array.isArray(response.data) ? response.data : []
+        setStages(stagesData)
+      } catch (error) {
+        console.error('Failed to fetch stages:', error)
         setError('단계 정보를 불러오는데 실패했습니다.')
       } finally {
         setLoading(false)
@@ -48,10 +54,13 @@ const CreateRequest: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedTask) return
+    if (!selectedTask || !title.trim() || !description.trim()) return
 
     try {
-      await client.post(`/tasks/${selectedTask}/requests`, formData)
+      await client.post(`/tasks/${selectedTask}/requests`, {
+        title: title.trim(),
+        description: description.trim()
+      })
       navigate(`/user/projects/${projectId}`)
     } catch (error) {
       console.error('Failed to create request:', error)
@@ -68,7 +77,11 @@ const CreateRequest: React.FC = () => {
       />
     )
 
-  const selectedStageData = stages.find(stage => stage.id === selectedStage)
+  // stages가 배열이 아닌 경우를 대비
+  const validStages = Array.isArray(stages) ? stages : []
+  const tasks = selectedStage
+    ? validStages.find(stage => stage.id === selectedStage)?.tasks || []
+    : []
 
   return (
     <Box sx={{ p: 3 }}>
@@ -83,13 +96,15 @@ const CreateRequest: React.FC = () => {
             <FormControl fullWidth>
               <InputLabel>단계</InputLabel>
               <Select
-                value={selectedStage}
+                value={selectedStage || ''}
                 label="단계"
                 onChange={e => {
-                  setSelectedStage(e.target.value as number)
-                  setSelectedTask('')
-                }}>
-                {stages.map(stage => (
+                  setSelectedStage(Number(e.target.value))
+                  setSelectedTask(null)
+                }}
+                fullWidth
+                required>
+                {validStages.map(stage => (
                   <MenuItem
                     key={stage.id}
                     value={stage.id}>
@@ -104,10 +119,12 @@ const CreateRequest: React.FC = () => {
               disabled={!selectedStage}>
               <InputLabel>태스크</InputLabel>
               <Select
-                value={selectedTask}
+                value={selectedTask || ''}
                 label="태스크"
-                onChange={e => setSelectedTask(e.target.value as number)}>
-                {selectedStageData?.tasks.map(task => (
+                onChange={e => setSelectedTask(Number(e.target.value))}
+                fullWidth
+                required>
+                {tasks.map(task => (
                   <MenuItem
                     key={task.id}
                     value={task.id}>
@@ -120,10 +137,9 @@ const CreateRequest: React.FC = () => {
             <TextField
               fullWidth
               label="제목"
-              value={formData.title}
-              onChange={e =>
-                setFormData({ ...formData, title: e.target.value })
-              }
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              required
             />
 
             <TextField
@@ -131,10 +147,9 @@ const CreateRequest: React.FC = () => {
               label="내용"
               multiline
               rows={4}
-              value={formData.description}
-              onChange={e =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              required
             />
 
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
@@ -154,9 +169,7 @@ const CreateRequest: React.FC = () => {
               <Button
                 type="submit"
                 variant="contained"
-                disabled={
-                  !selectedTask || !formData.title || !formData.description
-                }
+                disabled={!selectedTask || !title || !description}
                 sx={{
                   bgcolor: '#FFB800',
                   '&:hover': {
