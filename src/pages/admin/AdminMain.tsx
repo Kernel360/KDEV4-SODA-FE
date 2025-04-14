@@ -601,7 +601,7 @@ const AdminMain: React.FC = () => {
                         right: 0,
                         bottom: `${(num / 5) * 100}%`,
                         borderBottom: '1px dashed',
-                        borderColor: 'divider',
+            borderColor: 'divider',
                         zIndex: 0
                       }}
                     />
