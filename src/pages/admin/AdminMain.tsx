@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Box,
@@ -13,22 +13,35 @@ import {
   Grid,
   Card,
   CardContent,
-  Button
+  Button,
+  CardHeader
 } from '@mui/material'
 import useProjectStore from '../../stores/projectStore'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import { useTheme } from '@mui/material/styles'
 import { LayoutDashboard } from 'lucide-react'
+import { companyService } from '../../services/companyService'
 
 const AdminMain: React.FC = () => {
   const navigate = useNavigate()
   const { projects, isLoading, error, fetchAllProjects } = useProjectStore()
   const theme = useTheme()
+  const [totalCompanies, setTotalCompanies] = useState<number>(0)
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchAllProjects()
-  }, [fetchAllProjects])
+    fetchCompanies()
+  }, [])
+
+  const fetchCompanies = async () => {
+    try {
+      const companies = await companyService.getAllCompanies()
+      setTotalCompanies(companies.length)
+    } catch (error) {
+      console.error('회사 목록을 불러오는데 실패했습니다:', error)
+    }
+  }
 
   const handleProjectClick = (projectId: number) => {
     navigate(`/user/projects/${projectId}`)
@@ -306,7 +319,10 @@ const AdminMain: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-                    {projects.slice(0, 3).map(project => (
+                    {projects
+                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                      .slice(0, 3)
+                      .map(project => (
                       <TableRow key={project.id} hover>
                   <TableCell>
                     <Typography
@@ -534,7 +550,7 @@ const AdminMain: React.FC = () => {
 
         {/* 회사 현황 카드 */}
         <Grid container spacing={3}>
-          <Grid item xs={6}>
+          <Grid item xs={12} md={6}>
             <Card sx={{ 
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
               '&:hover': {
@@ -543,27 +559,10 @@ const AdminMain: React.FC = () => {
             }}>
               <CardContent>
                 <Typography sx={{ fontSize: '0.875rem', color: '#64748b', mb: 1 }}>
-                  전체 등록된 고객사 (더미데이터)
+                  전체 등록된 회사
                 </Typography>
                 <Typography sx={{ fontSize: '2.5rem', fontWeight: 700, color: theme.palette.primary.main }}>
-                  15
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6}>
-            <Card sx={{ 
-              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-              '&:hover': {
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-              }
-            }}>
-              <CardContent>
-                <Typography sx={{ fontSize: '0.875rem', color: '#64748b', mb: 1 }}>
-                  전체 등록된 개발사 (더미데이터)
-                </Typography>
-                <Typography sx={{ fontSize: '2.5rem', fontWeight: 700, color: theme.palette.primary.main }}>
-                  8
+                  {totalCompanies}
                 </Typography>
               </CardContent>
             </Card>
