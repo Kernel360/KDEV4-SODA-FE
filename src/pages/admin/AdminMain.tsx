@@ -13,8 +13,7 @@ import {
   Grid,
   Card,
   CardContent,
-  Button,
-  CardHeader
+  Button
 } from '@mui/material'
 import useProjectStore from '../../stores/projectStore'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
@@ -320,7 +319,6 @@ const AdminMain: React.FC = () => {
             </TableHead>
             <TableBody>
                     {projects
-                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                       .slice(0, 3)
                       .map(project => (
                       <TableRow key={project.id} hover>
