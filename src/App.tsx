@@ -35,6 +35,7 @@ import { ToastProvider } from './contexts/ToastContext'
 import CssBaseline from '@mui/material/CssBaseline'
 import UserProfile from './pages/user/UserProfile'
 import TaskDetailPage from './pages/tasks/TaskDetailPage'
+import CreateRequest from './pages/user/projects/CreateRequest'
 
 const App: React.FC = () => {
   return (
@@ -175,9 +176,16 @@ const App: React.FC = () => {
                 path=":id"
                 element={<UserProfile />}
               />
+              <Route
+                path="projects/:projectId/requests/create"
+                element={<CreateRequest />}
+              />
             </Route>
 
-            <Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetailPage />} />
+            <Route
+              path="/projects/:projectId/tasks/:taskId"
+              element={<TaskDetailPage />}
+            />
           </Routes>
         </ToastProvider>
       </LocalizationProvider>

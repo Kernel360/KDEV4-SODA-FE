@@ -1,46 +1,67 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { Box } from '@mui/material'
-import { Project, Stage } from '../../../types/project'
+import { Box, Tabs, Tab } from '@mui/material'
+import {
+  Project,
+  Stage,
+  ProjectStatus,
+  StageStatus
+} from '../../../types/project'
 import ProjectHeader from '../../../components/projects/ProjectHeader'
-import ProjectStages from '../../../components/projects/ProjectStages'
 import ProjectArticle from '../../../components/projects/ProjectArticle'
+import PaymentManagement from '../../../components/projects/PaymentManagement'
+import ProgressManagement from '../../../components/projects/ProgressManagement'
 import { projectService } from '../../../services/projectService'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
+import { client } from '../../../api/client'
 
 interface ProjectWithProgress extends Project {
   progress: number
 }
 
-interface ApiStage {
-  id: number
-  name: string
-  stageOrder: number
-  tasks: {
-    taskId: number
-    title: string
-    content: string
-    taskOrder: number
-  }[]
+interface TabPanelProps {
+  children?: React.ReactNode
+  index: number
+  value: number
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`project-tabpanel-${index}`}
+      aria-labelledby={`project-tab-${index}`}
+      {...other}>
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  )
 }
 
 const UserProject: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const [project, setProject] = useState<ProjectWithProgress | null>(null)
-  const [stages, setStages] = useState<ApiStage[]>([])
+  const [stages, setStages] = useState<Stage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [tabValue, setTabValue] = useState(0)
 
-  // stage 목록 새로고침 함수
-  const refreshStages = async () => {
-    if (!id) return
+  const handleStatusChange = async (newStatus: ProjectStatus) => {
+    if (!project) return
     try {
-      const stagesData = await projectService.getProjectStages(parseInt(id))
-      setStages(stagesData)
-    } catch (err) {
-      console.error('Failed to refresh stages:', err)
+      await client.put(`/projects/${project.id}/status`, { status: newStatus })
+      setProject(prev => (prev ? { ...prev, status: newStatus } : null))
+    } catch (error) {
+      console.error('Failed to update project status:', error)
+      throw error
     }
+  }
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue)
   }
 
   useEffect(() => {
@@ -53,9 +74,18 @@ const UserProject: React.FC = () => {
         ])
         setProject({
           ...projectData,
-          progress: 0 // TODO: 실제 진행률 계산 로직 추가
+          progress: 0
         })
-        setStages(stagesData)
+        const convertedStages = stagesData.map(stage => ({
+          id: stage.id,
+          title: stage.name,
+          name: stage.name,
+          stageOrder: stage.stageOrder,
+          order: stage.stageOrder,
+          status: '진행중' as StageStatus,
+          tasks: []
+        }))
+        setStages(convertedStages)
       } catch (err) {
         setError('프로젝트 정보를 불러오는데 실패했습니다.')
       } finally {
@@ -66,48 +96,103 @@ const UserProject: React.FC = () => {
     fetchProject()
   }, [id])
 
-  if (loading) {
-    return <LoadingSpinner />
-  }
-
-  if (error) {
+  if (loading) return <LoadingSpinner />
+  if (error)
     return (
       <ErrorMessage
         message={error}
         onRetry={() => window.location.reload()}
       />
     )
-  }
-
-  if (!project) {
-    return <ErrorMessage message="프로젝트가 존재하지 않습니다." />
-  }
+  if (!project) return <ErrorMessage message="프로젝트가 존재하지 않습니다." />
 
   return (
     <Box sx={{ p: 3 }}>
-      <ProjectHeader project={project} />
-      <ProjectStages 
-        projectId={project.id} 
-        stages={stages as unknown as Stage[]} 
-        onStagesChange={async (updatedStages) => {
-          // API 응답 데이터 형식으로 변환
-          const apiStages = updatedStages.map(stage => ({
-            id: stage.id,
-            name: stage.title,
-            stageOrder: stage.order,
-            tasks: stage.tasks.map(task => ({
-              taskId: task.id,
-              title: task.title,
-              content: task.description,
-              taskOrder: task.order
-            }))
-          }))
-          setStages(apiStages)
-          // 게시판 쪽 stage 목록 새로고침
-          await refreshStages()
-        }}
+      <ProjectHeader
+        project={project}
+        onStatusChange={handleStatusChange}
       />
-      <ProjectArticle projectId={project.id} stages={stages as unknown as Stage[]} />
+
+      <Box
+        sx={{
+          width: '100%',
+          bgcolor: 'white',
+          borderRadius: '8px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+        }}>
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          sx={{
+            borderBottom: '1px solid #E0E0E0',
+            '& .MuiTab-root': {
+              fontSize: '1.25rem',
+              fontWeight: 'bold',
+              py: 3,
+              minHeight: '64px',
+              color: '#666',
+              '&.Mui-selected': {
+                color: '#FFB800'
+              }
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#FFB800',
+              height: '3px'
+            }
+          }}>
+          <Tab
+            label="결제 관리"
+            sx={{
+              flex: 1,
+              maxWidth: 'none'
+            }}
+          />
+          <Tab
+            label="질문 관리"
+            sx={{
+              flex: 1,
+              maxWidth: 'none'
+            }}
+          />
+          <Tab
+            label="진척 관리"
+            sx={{
+              flex: 1,
+              maxWidth: 'none'
+            }}
+          />
+        </Tabs>
+
+        <Box sx={{ bgcolor: 'white', minHeight: '500px' }}>
+          <TabPanel
+            value={tabValue}
+            index={0}>
+            <PaymentManagement
+              projectId={project.id}
+              stages={stages}
+            />
+          </TabPanel>
+
+          <TabPanel
+            value={tabValue}
+            index={1}>
+            <ProjectArticle
+              projectId={project.id}
+              stages={stages}
+            />
+          </TabPanel>
+
+          <TabPanel
+            value={tabValue}
+            index={2}>
+            <ProgressManagement
+              projectId={project.id}
+              stages={stages}
+              onStagesChange={setStages}
+            />
+          </TabPanel>
+        </Box>
+      </Box>
     </Box>
   )
 }

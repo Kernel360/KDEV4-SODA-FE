@@ -52,3 +52,8 @@ export interface Stage {
   endDate?: string
   tasks: Task[]
 }
+
+export interface ProjectWithProgress extends Project {
+  progress: number
+  stages: Stage[]
+}
