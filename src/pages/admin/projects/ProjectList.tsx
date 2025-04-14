@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, Typography, Button } from '@mui/material'
+import { Box, Typography, Button, useTheme } from '@mui/material'
 import { Plus } from 'lucide-react'
 import useProjectStore from '../../../stores/projectStore'
 import DataTable from '../../../components/common/DataTable'
@@ -14,6 +14,7 @@ const ProjectList: React.FC = () => {
   const { projects, isLoading, error, fetchAllProjects } = useProjectStore()
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(5)
+  const theme = useTheme()
 
   useEffect(() => {
     fetchAllProjects()
@@ -32,8 +33,21 @@ const ProjectList: React.FC = () => {
     {
       id: 'title',
       label: '프로젝트명',
-      render: (row: Project) => row.title,
-      onClick: (row: Project) => navigate(`/admin/projects/${row.id}`)
+      render: (row: Project) => (
+        <Typography
+          onClick={() => navigate(`/user/projects/${row.id}`)}
+          sx={{
+            fontSize: '0.875rem',
+            cursor: 'pointer',
+            color: theme.palette.primary.main,
+            '&:hover': {
+              color: theme.palette.primary.dark,
+              textDecoration: 'underline'
+            }
+          }}>
+          {row.title}
+        </Typography>
+      )
     },
     {
       id: 'clientCompany',
@@ -46,6 +60,20 @@ const ProjectList: React.FC = () => {
       render: (row: Project) => row.devCompanyName
     },
     {
+      id: 'status',
+      label: '상태',
+      render: (row: Project) => (
+        <Typography
+          sx={{
+            fontSize: '0.813rem',
+            fontWeight: 500,
+            color: '#4b5563'
+          }}>
+          {row.status || '대기'}
+        </Typography>
+      )
+    },
+    {
       id: 'startDate',
       label: '시작 날짜',
       render: (row: Project) => formatDate(row.startDate)
@@ -54,6 +82,31 @@ const ProjectList: React.FC = () => {
       id: 'endDate',
       label: '마감 날짜',
       render: (row: Project) => formatDate(row.endDate)
+    },
+    {
+      id: 'manage',
+      label: '관리',
+      render: (row: Project) => (
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => navigate(`/admin/projects/${row.id}`)}
+          sx={{
+            minWidth: 'auto',
+            px: 1.5,
+            py: 0.5,
+            fontSize: '0.75rem',
+            borderColor: '#e5e7eb',
+            color: '#64748b',
+            '&:hover': {
+              borderColor: theme.palette.primary.main,
+              color: theme.palette.primary.main,
+              bgcolor: 'transparent'
+            }
+          }}>
+          관리
+        </Button>
+      )
     }
   ]
 

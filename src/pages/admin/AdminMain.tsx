@@ -18,7 +18,6 @@ import {
 import useProjectStore from '../../stores/projectStore'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ErrorMessage from '../../components/common/ErrorMessage'
-import { formatDate } from '../../utils/dateUtils'
 import { useTheme } from '@mui/material/styles'
 
 const AdminMain: React.FC = () => {
