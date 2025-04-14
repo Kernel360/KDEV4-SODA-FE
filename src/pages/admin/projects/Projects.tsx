@@ -1,20 +1,25 @@
-import React, { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, Typography, Button, useTheme } from '@mui/material'
-import { Plus, LayoutDashboard } from 'lucide-react'
-import useProjectStore from '../../../stores/projectStore'
+import { useTheme } from '@mui/material/styles'
+import {
+  Box,
+  Button,
+  TableCell,
+  Typography,
+  Paper
+} from '@mui/material'
+import { LayoutDashboard, Plus } from 'lucide-react'
 import DataTable from '../../../components/common/DataTable'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
-import { formatDate } from '../../../utils/dateUtils'
-import type { Project } from '../../../types/project'
+import useProjectStore from '../../../stores/projectStore'
 
-const ProjectList: React.FC = () => {
+const Projects = () => {
+  const theme = useTheme()
   const navigate = useNavigate()
   const { projects, isLoading, error, fetchAllProjects } = useProjectStore()
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(5)
-  const theme = useTheme()
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   useEffect(() => {
     fetchAllProjects()
@@ -33,7 +38,7 @@ const ProjectList: React.FC = () => {
     {
       id: 'title',
       label: '프로젝트명',
-      render: (row: Project) => (
+      render: (row: any) => (
         <Typography
           onClick={() => navigate(`/admin/projects/${row.id}`)}
           sx={{
@@ -52,41 +57,38 @@ const ProjectList: React.FC = () => {
     {
       id: 'clientCompany',
       label: '고객사',
-      render: (row: Project) => row.clientCompanyName
+      render: (row: any) => (
+        <TableCell>{row.clientCompanyName}</TableCell>
+      )
     },
     {
       id: 'devCompany',
       label: '개발사',
-      render: (row: Project) => row.devCompanyName
+      render: (row: any) => (
+        <TableCell>{row.devCompanyName}</TableCell>
+      )
     },
     {
       id: 'status',
       label: '상태',
-      render: (row: Project) => (
+      render: (row: any) => (
         <Typography
           sx={{
             fontSize: '0.813rem',
             fontWeight: 500,
-            color: '#4b5563'
+            color: row.status === '진행 중' ? theme.palette.success.main :
+                   row.status === '완료' ? theme.palette.info.main :
+                   row.status === '중단' ? theme.palette.error.main :
+                   theme.palette.text.secondary
           }}>
           {row.status || '대기'}
         </Typography>
       )
     },
     {
-      id: 'startDate',
-      label: '시작 날짜',
-      render: (row: Project) => formatDate(row.startDate)
-    },
-    {
-      id: 'endDate',
-      label: '마감 날짜',
-      render: (row: Project) => formatDate(row.endDate)
-    },
-    {
       id: 'dashboard',
-      label: '대시보드',
-      render: (row: Project) => (
+      label: '대시보드 바로가기',
+      render: (row: any) => (
         <Button
           variant="contained"
           size="small"
@@ -122,12 +124,6 @@ const ProjectList: React.FC = () => {
     )
   }
 
-  // 현재 페이지에 해당하는 데이터만 추출
-  const currentPageData = projects.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  )
-
   return (
     <Box>
       <Box
@@ -156,18 +152,19 @@ const ProjectList: React.FC = () => {
         </Button>
       </Box>
 
-      <DataTable
-        columns={columns}
-        data={currentPageData}
-        loading={isLoading}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        totalCount={projects.length}
-        onPageChange={handlePageChange}
-        onRowsPerPageChange={handleRowsPerPageChange}
-      />
+      <Paper elevation={0} sx={{ border: '1px solid #e5e7eb' }}>
+        <DataTable
+          columns={columns}
+          data={projects.slice(page * rowsPerPage, (page + 1) * rowsPerPage)}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          totalCount={projects.length}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+        />
+      </Paper>
     </Box>
   )
 }
 
-export default ProjectList
+export default Projects 

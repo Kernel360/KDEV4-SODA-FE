@@ -236,7 +236,7 @@ const TaskRequestsModal: React.FC<TaskRequestsModalProps> = ({
             {selectedRequest && (
               <IconButton
                 onClick={handleBackToList}
-                size="small">
+              size="small">
                 <ArrowLeft size={16} />
               </IconButton>
             )}
