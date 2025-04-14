@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Box,
@@ -30,7 +30,7 @@ import { useToast } from '../../../contexts/ToastContext'
 import type { Project as ProjectType } from '../../../types/project'
 import { useTheme } from '@mui/material/styles'
 
-const Project: React.FC = () => {
+const Project = () => {
   const navigate = useNavigate()
   const { id } = useParams()
   const theme = useTheme()
@@ -417,7 +417,7 @@ const Project: React.FC = () => {
                     status: '반려'
                   }
                 ].map((item, index, array) => (
-                  <React.Fragment key={item.id}>
+                  <Fragment key={item.id}>
                     <ListItem sx={{ px: 0, py: 2 }}>
                       <ListItemText 
                         primary={
@@ -474,7 +474,7 @@ const Project: React.FC = () => {
                     {index < array.length - 1 && (
                       <Divider sx={{ my: 1 }} />
                     )}
-                  </React.Fragment>
+                  </Fragment>
                 ))}
               </List>
             </Paper>
@@ -515,7 +515,7 @@ const Project: React.FC = () => {
                     comments: 5
                   }
                 ].map((item, index, array) => (
-                  <React.Fragment key={item.id}>
+                  <Fragment key={item.id}>
                     <ListItem sx={{ px: 0, py: 2 }}>
                       <ListItemText 
                         primary={
@@ -596,7 +596,7 @@ const Project: React.FC = () => {
                     {index < array.length - 1 && (
                       <Divider sx={{ my: 1 }} />
                     )}
-                  </React.Fragment>
+                  </Fragment>
                 ))}
               </List>
             </Paper>
