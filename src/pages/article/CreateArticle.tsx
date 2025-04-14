@@ -8,7 +8,7 @@ import { useToast } from '../../contexts/ToastContext'
 import { PriorityType } from '../../types/article'
 import { projectService } from '../../services/projectService'
 import ErrorMessage from '../../components/common/ErrorMessage'
-import { Stage } from '../../types/stage'
+import { Stage, TaskStatus } from '../../types/stage'
 
 const CreateArticle: React.FC = () => {
   const navigate = useNavigate()
@@ -27,7 +27,7 @@ const CreateArticle: React.FC = () => {
   const [formData, setFormData] = useState<ArticleFormData>({
     title: '',
     content: '',
-    stageId: 0,
+    stageId: '',
     priority: PriorityType.MEDIUM,
     deadLine: null,
     files: [],
@@ -38,22 +38,34 @@ const CreateArticle: React.FC = () => {
     const fetchStages = async () => {
       try {
         if (!projectId) return
-        const data = await projectService.getProjectStages(parseInt(projectId))
-        const mappedStages = data.map(stage => ({
+        const response = await projectService.getProjectStages(
+          parseInt(projectId)
+        )
+
+        // response 자체가 stages 배열입니다
+        if (!Array.isArray(response)) {
+          throw new Error('Invalid response format')
+        }
+
+        const mappedStages = response.map((stage: any) => ({
           ...stage,
           order: stage.stageOrder,
-          tasks: stage.tasks.map(task => ({
+          tasks: (stage.tasks || []).map((task: any) => ({
             id: task.taskId,
             title: task.title,
             description: task.content,
-            status: 'TODO',
+            status: '진행 중' as TaskStatus,
             order: task.taskOrder,
             stageId: stage.id
           }))
         }))
-        setStages(mappedStages as unknown as Stage[])
+
+        setStages(mappedStages)
         if (mappedStages.length > 0) {
-          setFormData(prev => ({ ...prev, stageId: mappedStages[0].id }))
+          setFormData(prev => ({
+            ...prev,
+            stageId: String(mappedStages[0].id)
+          }))
         }
       } catch (err) {
         console.error('Error fetching stages:', err)
@@ -81,7 +93,7 @@ const CreateArticle: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!validateForm() || !projectId) return
+    if (!validateForm() || !projectId || !formData.stageId) return
 
     try {
       setLoading(true)
@@ -91,7 +103,7 @@ const CreateArticle: React.FC = () => {
         title: formData.title,
         content: formData.content,
         priority: formData.priority,
-        stageId: formData.stageId,
+        stageId: parseInt(formData.stageId),
         deadLine: formData.deadLine?.toISOString(),
         linkList:
           formData.links?.map(link => ({
