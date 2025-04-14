@@ -140,29 +140,8 @@ const AdminMain: React.FC = () => {
                 최근 3개월간 프로젝트 생성 추이 (더미데이터)
               </Typography>
               <Box sx={{ height: 300, display: 'flex', flexDirection: 'column', width: '100%', position: 'relative' }}>
-                {/* Y축 */}
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    bottom: 40,
-                    width: 40,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-end',
-                    pr: 1
-                  }}>
-                  {[5, 4, 3, 2, 1, 0].map(num => (
-                    <Typography key={num} variant="caption" color="text.secondary">
-                      {num}개
-                    </Typography>
-                  ))}
-                </Box>
-
                 {/* 그래프 영역 */}
-                <Box sx={{ flex: 1, ml: 5, mb: 5, position: 'relative', display: 'flex', alignItems: 'flex-end' }}>
+                <Box sx={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'flex-end' }}>
                   {/* 가로 그리드 라인 */}
                   {[0, 1, 2, 3, 4, 5].map(num => (
                     <Box
@@ -173,7 +152,8 @@ const AdminMain: React.FC = () => {
                         right: 0,
                         bottom: `${(num / 5) * 100}%`,
                         borderBottom: '1px dashed',
-                        borderColor: 'divider'
+                        borderColor: 'divider',
+                        zIndex: 0
                       }}
                     />
                   ))}
@@ -196,40 +176,74 @@ const AdminMain: React.FC = () => {
                     <Box
                       key={index}
                       sx={{
+                        position: 'relative',
                         flex: 1,
                         mx: 1.5,
                         height: `${(data.count / 5) * 100}%`,
-                        bgcolor: '#e2e8f0',
+                        bgcolor: '#4b7355',
                         borderRadius: '2px 2px 0 0',
                         transition: 'all 0.3s ease',
-                        opacity: 0.7,
+                        cursor: 'pointer',
                         '&:hover': {
-                          bgcolor: theme.palette.primary.main,
-                          opacity: 1,
-                          transform: 'translateY(-4px)'
+                          bgcolor: '#3d5c44',
+                          transform: 'translateY(-4px)',
+                          '& .count-tooltip': {
+                            opacity: 1,
+                            visibility: 'visible'
+                          }
                         }
-                      }}
-                    />
+                      }}>
+                      <Box
+                        className="count-tooltip"
+                        sx={{
+                          position: 'absolute',
+                          top: -25,
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          bgcolor: 'rgba(0, 0, 0, 0.8)',
+                          color: 'white',
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          fontSize: '0.75rem',
+                          opacity: 0,
+                          visibility: 'hidden',
+                          transition: 'all 0.2s ease',
+                          whiteSpace: 'nowrap'
+                        }}>
+                        {data.count}개
+                      </Box>
+                    </Box>
                   ))}
                 </Box>
 
                 {/* X축 */}
-                <Box sx={{ height: 40, ml: 5, display: 'flex', alignItems: 'center' }}>
-                  <Box sx={{ flex: 1, display: 'flex', justifyContent: 'space-between' }}>
+                <Box sx={{ height: 60, display: 'flex', alignItems: 'flex-start', mt: 2 }}>
+                  <Box sx={{ flex: 1, display: 'flex' }}>
                     {['1월1주', '1월2주', '1월3주', '1월4주', '2월1주', '2월2주', '2월3주', '2월4주', '3월1주', '3월2주', '3월3주', '3월4주'].map(
                       (week, index) => (
-                        <Typography
+                        <Box
                           key={index}
-                          variant="caption"
-                          color="text.secondary"
                           sx={{
-                            transform: 'rotate(-45deg)',
-                            transformOrigin: 'top left',
-                            whiteSpace: 'nowrap',
-                            mt: 2
+                            flex: 1,
+                            textAlign: 'center',
+                            position: 'relative',
+                            px: 1.5
                           }}>
-                          {week}
-                        </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                              display: 'block',
+                              whiteSpace: 'nowrap',
+                              position: 'absolute',
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              fontSize: '0.75rem'
+                            }}>
+                            {week}
+                          </Typography>
+                        </Box>
                       )
                     )}
                   </Box>
@@ -578,29 +592,8 @@ const AdminMain: React.FC = () => {
                 최근 3개월간 회사 생성 추이 (더미데이터)
               </Typography>
               <Box sx={{ height: 300, display: 'flex', flexDirection: 'column', width: '100%', position: 'relative' }}>
-                {/* Y축 */}
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    bottom: 40,
-                    width: 40,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-end',
-                    pr: 1
-                  }}>
-                  {[5, 4, 3, 2, 1, 0].map(num => (
-                    <Typography key={num} variant="caption" color="text.secondary">
-                      {num}개
-                    </Typography>
-                  ))}
-                </Box>
-
                 {/* 그래프 영역 */}
-                <Box sx={{ flex: 1, ml: 5, mb: 5, position: 'relative', display: 'flex', alignItems: 'flex-end' }}>
+                <Box sx={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'flex-end' }}>
                   {/* 가로 그리드 라인 */}
                   {[0, 1, 2, 3, 4, 5].map(num => (
                     <Box
@@ -611,7 +604,8 @@ const AdminMain: React.FC = () => {
                         right: 0,
                         bottom: `${(num / 5) * 100}%`,
                         borderBottom: '1px dashed',
-                        borderColor: 'divider'
+                        borderColor: 'divider',
+                        zIndex: 0
                       }}
                     />
                   ))}
@@ -634,40 +628,74 @@ const AdminMain: React.FC = () => {
                     <Box
                       key={index}
                       sx={{
+                        position: 'relative',
                         flex: 1,
                         mx: 1.5,
                         height: `${(data.count / 5) * 100}%`,
-                        bgcolor: '#e2e8f0',
+                        bgcolor: '#4b7355',
                         borderRadius: '2px 2px 0 0',
                         transition: 'all 0.3s ease',
-                        opacity: 0.7,
+                        cursor: 'pointer',
                         '&:hover': {
-                          bgcolor: theme.palette.primary.main,
-                          opacity: 1,
-                          transform: 'translateY(-4px)'
+                          bgcolor: '#3d5c44',
+                          transform: 'translateY(-4px)',
+                          '& .count-tooltip': {
+                            opacity: 1,
+                            visibility: 'visible'
+                          }
                         }
-                      }}
-                    />
+                      }}>
+                      <Box
+                        className="count-tooltip"
+                        sx={{
+                          position: 'absolute',
+                          top: -25,
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          bgcolor: 'rgba(0, 0, 0, 0.8)',
+                          color: 'white',
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          fontSize: '0.75rem',
+                          opacity: 0,
+                          visibility: 'hidden',
+                          transition: 'all 0.2s ease',
+                          whiteSpace: 'nowrap'
+                        }}>
+                        {data.count}개
+                      </Box>
+                    </Box>
                   ))}
                 </Box>
 
                 {/* X축 */}
-                <Box sx={{ height: 40, ml: 5, display: 'flex', alignItems: 'center' }}>
-                  <Box sx={{ flex: 1, display: 'flex', justifyContent: 'space-between' }}>
+                <Box sx={{ height: 60, display: 'flex', alignItems: 'flex-start', mt: 2 }}>
+                  <Box sx={{ flex: 1, display: 'flex' }}>
                     {['1월1주', '1월2주', '1월3주', '1월4주', '2월1주', '2월2주', '2월3주', '2월4주', '3월1주', '3월2주', '3월3주', '3월4주'].map(
                       (week, index) => (
-                        <Typography
+                        <Box
                           key={index}
-                          variant="caption"
-                          color="text.secondary"
                           sx={{
-                            transform: 'rotate(-45deg)',
-                            transformOrigin: 'top left',
-                            whiteSpace: 'nowrap',
-                            mt: 2
+                            flex: 1,
+                            textAlign: 'center',
+                            position: 'relative',
+                            px: 1.5
                           }}>
-                          {week}
-                        </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                              display: 'block',
+                              whiteSpace: 'nowrap',
+                              position: 'absolute',
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              fontSize: '0.75rem'
+                            }}>
+                            {week}
+                          </Typography>
+                        </Box>
                       )
                     )}
                   </Box>
