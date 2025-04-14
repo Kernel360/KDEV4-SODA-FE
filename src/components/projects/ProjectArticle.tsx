@@ -174,7 +174,10 @@ const ArticleRow: React.FC<{
   )
 }
 
-const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId, stages: propStages }) => {
+const ProjectArticle: React.FC<ProjectArticleProps> = ({
+  projectId,
+  stages: propStages
+}) => {
   const navigate = useNavigate()
   const [articles, setArticles] = useState<Article[]>([])
   const [loading, setLoading] = useState(true)
@@ -187,7 +190,10 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId, stages: prop
     const fetchArticles = async () => {
       try {
         setLoading(true)
-        const data = await projectService.getProjectArticles(projectId, selectedStage)
+        const data = await projectService.getProjectArticles(
+          projectId,
+          selectedStage
+        )
         console.log('Fetched articles:', data)
         setArticles(data)
       } catch (err) {
@@ -341,7 +347,7 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId, stages: prop
   }
 
   return (
-    <Box sx={{ mt: 3 }}>
+    <Box>
       <Box
         sx={{
           display: 'flex',
@@ -349,61 +355,127 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({ projectId, stages: prop
           alignItems: 'center',
           mb: 3
         }}>
-        <Typography variant="h6">게시판</Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <TextField
-            size="small"
-            placeholder="검색어를 입력하세요"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search size={20} />
-                </InputAdornment>
-              )
-            }}
-            sx={{ width: '300px' }}
-          />
-          <Button
-            variant="contained"
-            startIcon={<Plus size={20} />}
-            onClick={() =>
-              navigate(`/user/projects/${projectId}/articles/create`)
-            }>
-            글쓰기
-          </Button>
-        </Box>
-      </Box>
-
-      <Box sx={{ mb: 3, display: 'flex', gap: 1 }}>
         <Button
-          variant={selectedStage === null ? 'contained' : 'outlined'}
-          onClick={() => setSelectedStage(null)}
+          variant="contained"
+          startIcon={<Plus size={20} />}
+          onClick={() =>
+            navigate(`/user/projects/${projectId}/articles/create`)
+          }
           sx={{
-            bgcolor: selectedStage === null ? 'primary.main' : 'transparent',
-            color: selectedStage === null ? 'white' : 'primary.main',
+            bgcolor: '#FFB800',
             '&:hover': {
-              bgcolor: selectedStage === null ? 'primary.dark' : 'transparent'
+              bgcolor: '#FFB800',
+              opacity: 0.8
             }
           }}>
-          전체
+          글쓰기
         </Button>
-        {propStages.map(stage => (
-          <Button
-            key={stage.id}
-            variant={selectedStage === stage.id ? 'contained' : 'outlined'}
-            onClick={() => setSelectedStage(stage.id)}
+        <TextField
+          size="small"
+          placeholder="검색어를 입력하세요"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search size={20} />
+              </InputAdornment>
+            )
+          }}
+          sx={{
+            width: '300px',
+            '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                borderColor: '#E0E0E0'
+              },
+              '&:hover fieldset': {
+                borderColor: '#FFB800'
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: '#FFB800'
+              }
+            }
+          }}
+        />
+      </Box>
+
+      <Box
+        sx={{
+          mb: 3,
+          mt: 2,
+          width: '100%',
+          overflow: 'auto',
+          '&::-webkit-scrollbar': {
+            height: '6px',
+            backgroundColor: 'transparent'
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'transparent'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'transparent',
+            borderRadius: '3px'
+          },
+          '&:hover::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(0, 0, 0, 0.1)'
+          }
+        }}>
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 0,
+            minWidth: 'min-content',
+            px: 1,
+            py: 1
+          }}>
+          <Box
+            onClick={() => setSelectedStage(null)}
             sx={{
-              bgcolor: selectedStage === stage.id ? 'primary.main' : 'transparent',
-              color: selectedStage === stage.id ? 'white' : 'primary.main',
+              py: 0.8,
+              px: 2,
+              fontSize: '0.9rem',
+              fontWeight: selectedStage === null ? 'bold' : 'normal',
+              color: selectedStage === null ? '#FFB800' : '#666',
+              cursor: 'pointer',
+              position: 'relative',
               '&:hover': {
-                bgcolor: selectedStage === stage.id ? 'primary.dark' : 'transparent'
+                color: '#FFB800'
+              },
+              '&:not(:last-child)::before': {
+                content: '"|"',
+                position: 'absolute',
+                right: 0,
+                color: '#E0E0E0'
               }
             }}>
-            {stage.name}
-          </Button>
-        ))}
+            전체
+          </Box>
+          {propStages.map((stage, _) => (
+            <Box
+              key={stage.id}
+              onClick={() => setSelectedStage(stage.id)}
+              sx={{
+                py: 0.8,
+                px: 2,
+                fontSize: '0.9rem',
+                fontWeight: selectedStage === stage.id ? 'bold' : 'normal',
+                color: selectedStage === stage.id ? '#FFB800' : '#666',
+                cursor: 'pointer',
+                position: 'relative',
+                '&:hover': {
+                  color: '#FFB800'
+                },
+                '&:not(:last-child)::before': {
+                  content: '"|"',
+                  position: 'absolute',
+                  right: 0,
+                  color: '#E0E0E0'
+                }
+              }}>
+              {stage.name}
+            </Box>
+          ))}
+        </Box>
       </Box>
 
       <TableContainer component={Paper}>
