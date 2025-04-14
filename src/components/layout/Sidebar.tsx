@@ -65,17 +65,17 @@ const menuGroups = [
     ]
   },
   {
-    title: '계정',
+    title: '멤버',
     items: [
       {
         id: 'accounts',
-        label: '계정 관리',
+        label: '멤버 관리',
         icon: Users,
         path: '/admin/accounts'
       },
       {
         id: 'account-create',
-        label: '계정 생성',
+        label: '멤버 생성',
         icon: PlusCircle,
         path: '/admin/accounts/create'
       }
