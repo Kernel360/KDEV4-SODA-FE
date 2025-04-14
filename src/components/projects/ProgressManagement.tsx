@@ -13,37 +13,53 @@ import {
   TextField,
   InputAdornment,
   IconButton,
-  Button
+  Button,
+  Modal,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material'
 import {
   Search,
   Edit as EditIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  Add as AddIcon
 } from '@mui/icons-material'
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { Stage } from '../../types/project'
 import { client } from '../../api/client'
 import EditStageModal from './EditStageModal'
+import AddStageModal from './AddStageModal'
 
 interface ProgressManagementProps {
   projectId: number
   stages: Stage[]
+  onStagesChange: (stages: Stage[]) => void
 }
 
 const ProgressManagement: React.FC<ProgressManagementProps> = ({
   projectId,
-  stages
+  stages,
+  onStagesChange
 }) => {
   const navigate = useNavigate()
   const [progressRequests, setProgressRequests] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [editModalOpen, setEditModalOpen] = useState(false)
+  const [addModalOpen, setAddModalOpen] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [selectedStage, setSelectedStage] = useState<Stage | null>(null)
+  const [stageToDelete, setStageToDelete] = useState<Stage | null>(null)
+  const [addPosition, setAddPosition] = useState<number | null>(null)
 
   useEffect(() => {
     const fetchAllRequests = async () => {
       try {
+        if (!stages || stages.length === 0) return
         const allRequests = await Promise.all(
           stages.map(async stage => {
+            if (!stage.tasks) return []
             const stageRequests = await Promise.all(
               stage.tasks.map(async task => {
                 const response = await client.get(`/tasks/${task.id}/requests`)
@@ -74,7 +90,10 @@ const ProgressManagement: React.FC<ProgressManagementProps> = ({
     if (!selectedStage) return
     try {
       await client.put(`/stages/${selectedStage.id}`, { name })
-      // TODO: Refresh stages after edit
+      const updatedStages = stages.map(stage =>
+        stage.id === selectedStage.id ? { ...stage, name } : stage
+      )
+      onStagesChange(updatedStages)
       setEditModalOpen(false)
       setSelectedStage(null)
     } catch (error) {
@@ -82,12 +101,62 @@ const ProgressManagement: React.FC<ProgressManagementProps> = ({
     }
   }
 
-  const handleDeleteClick = async (stageId: number) => {
+  const handleDeleteClick = (stage: Stage) => {
+    setStageToDelete(stage)
+    setDeleteModalOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!stageToDelete) return
     try {
-      await client.delete(`/stages/${stageId}`)
-      // TODO: Refresh stages after delete
+      await client.delete(`/stages/${stageToDelete.id}`)
+      const updatedStages = stages.filter(
+        stage => stage.id !== stageToDelete.id
+      )
+      onStagesChange(updatedStages)
+      setDeleteModalOpen(false)
+      setStageToDelete(null)
     } catch (error) {
       console.error('Failed to delete stage:', error)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false)
+    setStageToDelete(null)
+  }
+
+  const handleDragEnd = (result: any) => {
+    if (!result.destination || !stages) return
+
+    const items = Array.from(stages)
+    const [reorderedItem] = items.splice(result.source.index, 1)
+    items.splice(result.destination.index, 0, reorderedItem)
+
+    onStagesChange(items)
+  }
+
+  const handleAddClick = (position: number) => {
+    setAddPosition(position)
+    setAddModalOpen(true)
+  }
+
+  const handleAddSubmit = async (name: string) => {
+    if (addPosition === null || !stages) return
+    try {
+      const response = await client.post('/stages', {
+        projectId,
+        name,
+        order: addPosition
+      })
+      const newStage = response.data
+      const newStages = [...stages]
+      newStages.splice(addPosition, 0, newStage)
+      onStagesChange(newStages)
+      setAddModalOpen(false)
+      setAddPosition(null)
+    } catch (error) {
+      console.error('Failed to add stage:', error)
     }
   }
 
@@ -97,6 +166,8 @@ const ProgressManagement: React.FC<ProgressManagementProps> = ({
         request.author.toLowerCase().includes(searchTerm.toLowerCase())
       : true
   )
+
+  if (!stages) return null
 
   return (
     <Box sx={{ mb: 4 }}>
@@ -126,89 +197,170 @@ const ProgressManagement: React.FC<ProgressManagementProps> = ({
             backgroundColor: 'rgba(0, 0, 0, 0.1)'
           }
         }}>
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 2,
-            minWidth: 'min-content',
-            px: 1,
-            py: 1
-          }}>
-          {stages.map(stage => {
-            const stageRequests = progressRequests.filter(
-              request => request.stage === stage.name
-            )
-            return (
-              <Paper
-                key={stage.id}
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable
+            droppableId="stages"
+            direction="horizontal">
+            {provided => (
+              <Box
+                ref={provided.innerRef}
+                {...provided.droppableProps}
                 sx={{
-                  p: 2,
-                  width: 150,
-                  cursor: 'pointer',
-                  bgcolor: 'white',
-                  color: '#666',
-                  border: '1px solid',
-                  borderColor: '#E0E0E0',
-                  boxShadow: 'none',
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    borderColor: '#FFB800',
-                    '& .stage-actions': {
-                      opacity: 1
-                    }
-                  }
+                  display: 'flex',
+                  minWidth: 'min-content',
+                  px: 1,
+                  py: 1
                 }}>
                 <Box
                   sx={{
+                    position: 'relative',
+                    width: 50,
+                    height: 100,
                     display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    mb: 1
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    '&:hover .add-button': {
+                      opacity: 1
+                    }
                   }}>
-                  <Typography
-                    variant="h6"
+                  <IconButton
+                    className="add-button"
                     sx={{
-                      fontSize: '1rem',
-                      fontWeight: 'bold',
-                      color: '#666'
-                    }}>
-                    {stage.name}
-                  </Typography>
-                  <Box
-                    className="stage-actions"
-                    sx={{
-                      display: 'flex',
                       opacity: 0,
                       transition: 'opacity 0.2s',
-                      '& > button': {
-                        padding: '2px',
-                        minWidth: 'unset',
-                        color: '#666',
-                        '&:hover': {
-                          color: '#FFB800'
-                        }
+                      padding: '4px',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 184, 0, 0.1)'
                       }
-                    }}>
-                    <Button
-                      onClick={e => {
-                        e.stopPropagation()
-                        handleEditClick(stage)
-                      }}>
-                      <EditIcon fontSize="small" />
-                    </Button>
-                    <Button
-                      onClick={e => {
-                        e.stopPropagation()
-                        handleDeleteClick(stage.id)
-                      }}>
-                      <DeleteIcon fontSize="small" />
-                    </Button>
-                  </Box>
+                    }}
+                    onClick={() => handleAddClick(0)}>
+                    <AddIcon sx={{ color: '#FFB800', fontSize: '1.2rem' }} />
+                  </IconButton>
                 </Box>
-              </Paper>
-            )
-          })}
-        </Box>
+                {stages.map((stage, index) => {
+                  const stageRequests = progressRequests.filter(
+                    request => request.stage === stage.name
+                  )
+                  return (
+                    <React.Fragment key={stage.id}>
+                      <Draggable
+                        draggableId={`stage-${stage.id}`}
+                        index={index}>
+                        {provided => (
+                          <Paper
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            sx={{
+                              p: 2,
+                              width: 150,
+                              cursor: 'pointer',
+                              bgcolor: 'white',
+                              color: '#666',
+                              border: '1px solid',
+                              borderColor: '#E0E0E0',
+                              boxShadow: 'none',
+                              transition: 'all 0.2s',
+                              '&:hover': {
+                                borderColor: '#FFB800',
+                                '& .stage-actions': {
+                                  opacity: 1
+                                }
+                              }
+                            }}>
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'flex-start',
+                                mb: 1
+                              }}>
+                              <Typography
+                                variant="h6"
+                                sx={{
+                                  fontSize: '1rem',
+                                  fontWeight: 'bold',
+                                  color: '#666'
+                                }}>
+                                {stage.name}
+                              </Typography>
+                              <Box
+                                className="stage-actions"
+                                sx={{
+                                  display: 'flex',
+                                  opacity: 0,
+                                  transition: 'opacity 0.2s',
+                                  '& > button': {
+                                    padding: '2px',
+                                    minWidth: 'unset',
+                                    color: '#666',
+                                    '&:hover': {
+                                      color: '#FFB800'
+                                    }
+                                  }
+                                }}>
+                                <IconButton
+                                  onClick={e => {
+                                    e.stopPropagation()
+                                    handleEditClick(stage)
+                                  }}>
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                  onClick={e => {
+                                    e.stopPropagation()
+                                    handleDeleteClick(stage)
+                                  }}>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Box>
+                            </Box>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                color: '#666'
+                              }}>
+                              {stageRequests.length}건
+                            </Typography>
+                          </Paper>
+                        )}
+                      </Draggable>
+                      <Box
+                        sx={{
+                          position: 'relative',
+                          width: 50,
+                          height: 100,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          '&:hover .add-button': {
+                            opacity: 1
+                          }
+                        }}>
+                        <IconButton
+                          className="add-button"
+                          sx={{
+                            opacity: 0,
+                            transition: 'opacity 0.2s',
+                            padding: '4px',
+                            '&:hover': {
+                              backgroundColor: 'rgba(255, 184, 0, 0.1)'
+                            }
+                          }}
+                          onClick={() => handleAddClick(index + 1)}>
+                          <AddIcon
+                            sx={{ color: '#FFB800', fontSize: '1.2rem' }}
+                          />
+                        </IconButton>
+                      </Box>
+                    </React.Fragment>
+                  )
+                })}
+                {provided.placeholder}
+              </Box>
+            )}
+          </Droppable>
+        </DragDropContext>
       </Box>
 
       <Box
@@ -333,6 +485,53 @@ const ProgressManagement: React.FC<ProgressManagementProps> = ({
         onSubmit={handleEditSubmit}
         initialName={selectedStage?.name || ''}
       />
+
+      <AddStageModal
+        open={addModalOpen}
+        onClose={() => {
+          setAddModalOpen(false)
+          setAddPosition(null)
+        }}
+        onSubmit={handleAddSubmit}
+      />
+
+      <Dialog
+        open={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title">
+        <DialogTitle id="delete-dialog-title">단계 삭제</DialogTitle>
+        <DialogContent>
+          <Typography>
+            정말 "{stageToDelete?.name}" 단계를 삭제하시겠습니까?
+            <br />
+            삭제된 단계는 복구할 수 없습니다.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleDeleteCancel}
+            sx={{
+              color: '#666',
+              '&:hover': {
+                color: '#FFB800'
+              }
+            }}>
+            취소
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            variant="contained"
+            sx={{
+              bgcolor: '#FFB800',
+              '&:hover': {
+                bgcolor: '#FFB800',
+                opacity: 0.9
+              }
+            }}>
+            삭제
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

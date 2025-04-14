@@ -188,6 +188,7 @@ const UserProject: React.FC = () => {
             <ProgressManagement
               projectId={project.id}
               stages={stages}
+              onStagesChange={setStages}
             />
           </TabPanel>
         </Box>
