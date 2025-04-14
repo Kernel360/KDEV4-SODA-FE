@@ -132,7 +132,7 @@ const ReplyArticle: React.FC = () => {
         priority: formData.priority,
         stageId: Number(formData.stageId),
         deadLine: formData.deadLine?.toISOString() || '',
-        parentArticleId: Number(articleId), // 답글 작성 시 원본 게시글 ID만 추가
+        parentArticleId: Number(articleId),
         linkList:
           formData.links?.map(link => ({
             urlAddress: link.url,
@@ -140,27 +140,38 @@ const ReplyArticle: React.FC = () => {
           })) || []
       }
 
-      // 답글 생성
-      const response = await projectService.createArticle(
+      // 1. 먼저 답글을 생성합니다
+      const articleResponse = await projectService.createArticle(
         Number(projectId),
         request
       )
+      console.log('Create reply response data:', articleResponse)
 
-      // 파일이 있는 경우 파일 업로드
-      if (formData.files && formData.files.length > 0 && response.data?.id) {
+      if (!articleResponse?.data?.id) {
+        console.log('Response structure:', {
+          response: articleResponse,
+          data: articleResponse?.data,
+          id: articleResponse?.data?.id
+        })
+        throw new Error('답글 생성 후 ID를 받아올 수 없습니다.')
+      }
+
+      const newArticleId = articleResponse.data.id
+
+      // 2. 파일이 있는 경우, 생성된 답글의 ID로 파일을 업로드합니다
+      if (formData.files && formData.files.length > 0) {
         try {
-          await projectService.uploadArticleFiles(
-            response.data.id,
-            formData.files
-          )
+          await projectService.uploadArticleFiles(newArticleId, formData.files)
+          console.log('Files uploaded successfully for reply:', newArticleId)
         } catch (uploadError) {
           console.error('Error uploading files:', uploadError)
           showToast('파일 업로드에 실패했습니다.', 'error')
+          // 파일 업로드 실패 시에도 답글 작성은 완료된 것으로 처리
         }
       }
 
       showToast('답글이 성공적으로 작성되었습니다.', 'success')
-      navigate(`/user/projects/${projectId}`)
+      navigate(`/user/projects/${projectId}/articles/${newArticleId}`) // 새로 생성된 답글로 이동
     } catch (error) {
       console.error('Error creating reply:', error)
       if (error instanceof Error) {

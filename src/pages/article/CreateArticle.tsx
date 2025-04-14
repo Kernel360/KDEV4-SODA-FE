@@ -93,18 +93,17 @@ const CreateArticle: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!validateForm() || !projectId || !formData.stageId) return
+    if (!validateForm() || !projectId) return
 
     try {
       setLoading(true)
-      const parsedProjectId = parseInt(projectId)
       const request = {
-        projectId: parsedProjectId,
+        projectId: Number(projectId),
         title: formData.title,
         content: formData.content,
         priority: formData.priority,
-        stageId: parseInt(formData.stageId),
-        deadLine: formData.deadLine?.toISOString(),
+        stageId: Number(formData.stageId),
+        deadLine: formData.deadLine?.toISOString() || '',
         linkList:
           formData.links?.map(link => ({
             urlAddress: link.url,
@@ -112,36 +111,47 @@ const CreateArticle: React.FC = () => {
           })) || []
       }
 
-      // 게시글 생성
-      const response = await projectService.createArticle(
-        parsedProjectId,
+      // 1. 먼저 게시글을 생성합니다
+      const articleResponse = await projectService.createArticle(
+        Number(projectId),
         request
       )
-      console.log('Created article response:', response)
+      console.log('Create article response data:', articleResponse)
 
-      // 파일이 있는 경우 파일 업로드
-      if (formData.files && formData.files.length > 0 && response.data?.id) {
+      if (!articleResponse?.data?.id) {
+        console.log('Response structure:', {
+          response: articleResponse,
+          data: articleResponse?.data,
+          id: articleResponse?.data?.id
+        })
+        throw new Error('게시글 생성 후 ID를 받아올 수 없습니다.')
+      }
+
+      const newArticleId = articleResponse.data.id
+
+      // 2. 파일이 있는 경우, 생성된 게시글의 ID로 파일을 업로드합니다
+      if (formData.files && formData.files.length > 0) {
         try {
-          await projectService.uploadArticleFiles(
-            response.data.id,
-            formData.files
-          )
-          console.log(
-            'Files uploaded successfully for article:',
-            response.data.id
-          )
+          await projectService.uploadArticleFiles(newArticleId, formData.files)
+          console.log('Files uploaded successfully for article:', newArticleId)
         } catch (uploadError) {
           console.error('Error uploading files:', uploadError)
           showToast('파일 업로드에 실패했습니다.', 'error')
-          // 파일 업로드 실패해도 게시글은 작성 완료로 처리
+          // 파일 업로드 실패 시에도 게시글 작성은 완료된 것으로 처리
         }
       }
 
       showToast('게시글이 성공적으로 작성되었습니다.', 'success')
-      navigate(`/user/projects/${projectId}`)
-    } catch (err) {
-      console.error('Error creating article:', err)
-      showToast('게시글 작성에 실패했습니다.', 'error')
+      navigate(`/user/projects/${projectId}/articles/${newArticleId}`) // 새로 생성된 게시글로 이동
+    } catch (error) {
+      console.error('Error creating article:', error)
+      if (error instanceof Error) {
+        setError(error.message)
+        showToast(error.message, 'error')
+      } else {
+        setError('게시글 작성에 실패했습니다.')
+        showToast('게시글 작성에 실패했습니다.', 'error')
+      }
     } finally {
       setLoading(false)
     }
