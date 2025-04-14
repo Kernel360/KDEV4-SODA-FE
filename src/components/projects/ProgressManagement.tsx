@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   Box,
   Paper,
@@ -14,7 +13,6 @@ import {
   InputAdornment,
   IconButton,
   Button,
-  Modal,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -43,7 +41,6 @@ const ProgressManagement: React.FC<ProgressManagementProps> = ({
   stages,
   onStagesChange
 }) => {
-  const navigate = useNavigate()
   const [progressRequests, setProgressRequests] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [editModalOpen, setEditModalOpen] = useState(false)

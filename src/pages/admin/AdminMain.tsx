@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Box,
@@ -22,16 +22,19 @@ import { useTheme } from '@mui/material/styles'
 import { LayoutDashboard } from 'lucide-react'
 import { companyService } from '../../services/companyService'
 
-const AdminMain: React.FC = () => {
+export default function AdminMain() {
   const navigate = useNavigate()
   const { projects, isLoading, error, fetchAllProjects } = useProjectStore()
   const theme = useTheme()
   const [totalCompanies, setTotalCompanies] = useState<number>(0)
 
   useEffect(() => {
-    fetchAllProjects()
-    fetchCompanies()
-  }, [])
+    const fetchData = async () => {
+      await fetchAllProjects()
+      await fetchCompanies()
+    }
+    fetchData()
+  }, [fetchAllProjects])
 
   const fetchCompanies = async () => {
     try {
@@ -192,12 +195,12 @@ const AdminMain: React.FC = () => {
                         flex: 1,
                         mx: 1.5,
                         height: `${(data.count / 5) * 100}%`,
-                        bgcolor: '#4b7355',
+                        bgcolor: '#94a3b8',
                         borderRadius: '2px 2px 0 0',
                         transition: 'all 0.3s ease',
                         cursor: 'pointer',
                         '&:hover': {
-                          bgcolor: '#3d5c44',
+                          bgcolor: '#64748b',
                           transform: 'translateY(-4px)',
                           '& .count-tooltip': {
                             opacity: 1,
@@ -601,7 +604,7 @@ const AdminMain: React.FC = () => {
                         right: 0,
                         bottom: `${(num / 5) * 100}%`,
                         borderBottom: '1px dashed',
-                        borderColor: 'divider',
+            borderColor: 'divider',
                         zIndex: 0
                       }}
                     />
@@ -629,12 +632,12 @@ const AdminMain: React.FC = () => {
                         flex: 1,
                         mx: 1.5,
                         height: `${(data.count / 5) * 100}%`,
-                        bgcolor: '#4b7355',
+                        bgcolor: '#94a3b8',
                         borderRadius: '2px 2px 0 0',
                         transition: 'all 0.3s ease',
                         cursor: 'pointer',
                         '&:hover': {
-                          bgcolor: '#3d5c44',
+                          bgcolor: '#64748b',
                           transform: 'translateY(-4px)',
                           '& .count-tooltip': {
                             opacity: 1,
@@ -705,5 +708,3 @@ const AdminMain: React.FC = () => {
     </Box>
   )
 }
-
-export default AdminMain
