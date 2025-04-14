@@ -12,7 +12,8 @@ import {
   Typography,
   TextField,
   InputAdornment,
-  IconButton
+  IconButton,
+  Button
 } from '@mui/material'
 import {
   Search,
@@ -104,44 +105,110 @@ const ProgressManagement: React.FC<ProgressManagementProps> = ({
         sx={{ mb: 2, fontWeight: 'bold' }}>
         진행 단계
       </Typography>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 4 }}>
-        {stages.map(stage => (
-          <Paper
-            key={stage.id}
-            sx={{
-              p: 2,
-              minWidth: 200,
-              border: '1px solid #E0E0E0',
-              boxShadow: 'none'
-            }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}>
-              <Typography
-                variant="h6"
-                sx={{ color: '#FFB800' }}>
-                {stage.name}
-              </Typography>
-              <Box>
-                <IconButton
-                  size="small"
-                  onClick={() => handleEditClick(stage)}
-                  sx={{ color: '#FFB800' }}>
-                  <EditIcon />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => handleDeleteClick(stage.id)}
-                  sx={{ color: '#FFB800' }}>
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-            </Box>
-          </Paper>
-        ))}
+      <Box
+        sx={{
+          mb: 4,
+          mt: 2,
+          width: '100%',
+          overflow: 'auto',
+          '&::-webkit-scrollbar': {
+            height: '6px',
+            backgroundColor: 'transparent'
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'transparent'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'transparent',
+            borderRadius: '3px'
+          },
+          '&:hover::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(0, 0, 0, 0.1)'
+          }
+        }}>
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 2,
+            minWidth: 'min-content',
+            px: 1,
+            py: 1
+          }}>
+          {stages.map(stage => {
+            const stageRequests = progressRequests.filter(
+              request => request.stage === stage.name
+            )
+            return (
+              <Paper
+                key={stage.id}
+                sx={{
+                  p: 2,
+                  width: 150,
+                  cursor: 'pointer',
+                  bgcolor: 'white',
+                  color: '#666',
+                  border: '1px solid',
+                  borderColor: '#E0E0E0',
+                  boxShadow: 'none',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    borderColor: '#FFB800',
+                    '& .stage-actions': {
+                      opacity: 1
+                    }
+                  }
+                }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    mb: 1
+                  }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontSize: '1rem',
+                      fontWeight: 'bold',
+                      color: '#666'
+                    }}>
+                    {stage.name}
+                  </Typography>
+                  <Box
+                    className="stage-actions"
+                    sx={{
+                      display: 'flex',
+                      opacity: 0,
+                      transition: 'opacity 0.2s',
+                      '& > button': {
+                        padding: '2px',
+                        minWidth: 'unset',
+                        color: '#666',
+                        '&:hover': {
+                          color: '#FFB800'
+                        }
+                      }
+                    }}>
+                    <Button
+                      onClick={e => {
+                        e.stopPropagation()
+                        handleEditClick(stage)
+                      }}>
+                      <EditIcon fontSize="small" />
+                    </Button>
+                    <Button
+                      onClick={e => {
+                        e.stopPropagation()
+                        handleDeleteClick(stage.id)
+                      }}>
+                      <DeleteIcon fontSize="small" />
+                    </Button>
+                  </Box>
+                </Box>
+              </Paper>
+            )
+          })}
+        </Box>
       </Box>
 
       <Box
@@ -154,7 +221,7 @@ const ProgressManagement: React.FC<ProgressManagementProps> = ({
         <Typography
           variant="h6"
           sx={{ fontWeight: 'bold' }}>
-          결제 관리
+          요청 관리
         </Typography>
         <TextField
           size="small"

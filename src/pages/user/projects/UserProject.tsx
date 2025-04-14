@@ -115,59 +115,83 @@ const UserProject: React.FC = () => {
 
       <Box
         sx={{
-          borderBottom: 1,
-          borderColor: 'divider',
-          mt: 3,
-          '& .MuiTabs-indicator': {
-            backgroundColor: '#FFB800'
-          }
+          width: '100%',
+          bgcolor: 'white',
+          borderRadius: '8px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
         }}>
         <Tabs
           value={tabValue}
           onChange={handleTabChange}
           sx={{
+            borderBottom: '1px solid #E0E0E0',
             '& .MuiTab-root': {
-              textTransform: 'none',
-              minWidth: 120,
-              fontWeight: 'medium',
-              color: 'text.secondary',
+              fontSize: '1.25rem',
+              fontWeight: 'bold',
+              py: 3,
+              minHeight: '64px',
+              color: '#666',
               '&.Mui-selected': {
                 color: '#FFB800'
               }
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#FFB800',
+              height: '3px'
             }
           }}>
-          <Tab label="결제 관리" />
-          <Tab label="질문 관리" />
-          <Tab label="진척 관리" />
+          <Tab
+            label="결제 관리"
+            sx={{
+              flex: 1,
+              maxWidth: 'none'
+            }}
+          />
+          <Tab
+            label="질문 관리"
+            sx={{
+              flex: 1,
+              maxWidth: 'none'
+            }}
+          />
+          <Tab
+            label="진척 관리"
+            sx={{
+              flex: 1,
+              maxWidth: 'none'
+            }}
+          />
         </Tabs>
+
+        <Box sx={{ bgcolor: 'white', minHeight: '500px' }}>
+          <TabPanel
+            value={tabValue}
+            index={0}>
+            <PaymentManagement
+              projectId={project.id}
+              stages={stages}
+            />
+          </TabPanel>
+
+          <TabPanel
+            value={tabValue}
+            index={1}>
+            <ProjectArticle
+              projectId={project.id}
+              stages={stages}
+            />
+          </TabPanel>
+
+          <TabPanel
+            value={tabValue}
+            index={2}>
+            <ProgressManagement
+              projectId={project.id}
+              stages={stages}
+            />
+          </TabPanel>
+        </Box>
       </Box>
-
-      <TabPanel
-        value={tabValue}
-        index={0}>
-        <PaymentManagement
-          projectId={project.id}
-          stages={stages}
-        />
-      </TabPanel>
-
-      <TabPanel
-        value={tabValue}
-        index={1}>
-        <ProjectArticle
-          projectId={project.id}
-          stages={stages}
-        />
-      </TabPanel>
-
-      <TabPanel
-        value={tabValue}
-        index={2}>
-        <ProgressManagement
-          projectId={project.id}
-          stages={stages}
-        />
-      </TabPanel>
     </Box>
   )
 }

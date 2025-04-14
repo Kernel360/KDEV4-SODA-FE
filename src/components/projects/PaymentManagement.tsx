@@ -11,7 +11,8 @@ import {
   TableHead,
   TableRow,
   TextField,
-  InputAdornment
+  InputAdornment,
+  Typography
 } from '@mui/material'
 import { Search, Add } from '@mui/icons-material'
 import { Stage } from '../../types/project'
@@ -28,8 +29,8 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
 }) => {
   const navigate = useNavigate()
   const [paymentRequests, setPaymentRequests] = useState<any[]>([])
-  const [selectedStage, setSelectedStage] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedStage, setSelectedStage] = useState<number | null>(null)
 
   useEffect(() => {
     const fetchAllRequests = async () => {
@@ -57,60 +58,123 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
     fetchAllRequests()
   }, [stages])
 
-  const filteredRequests = paymentRequests.filter(request => {
-    const matchesStage = selectedStage ? request.stage === selectedStage : true
-    const matchesSearch = searchTerm
+  const filteredRequests = paymentRequests.filter(request =>
+    searchTerm
       ? request.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         request.author.toLowerCase().includes(searchTerm.toLowerCase())
-      : true
-    return matchesStage && matchesSearch
-  })
+      : selectedStage === null ||
+        request.stage === stages.find(s => s.id === selectedStage)?.name
+  )
 
   return (
     <Box sx={{ mb: 4 }}>
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: 1,
           mb: 4,
-          flexWrap: 'wrap'
+          mt: 2,
+          width: '100%',
+          overflow: 'auto',
+          '&::-webkit-scrollbar': {
+            height: '6px',
+            backgroundColor: 'transparent'
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'transparent'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'transparent',
+            borderRadius: '3px'
+          },
+          '&:hover::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(0, 0, 0, 0.1)'
+          }
         }}>
-        <Button
-          variant={selectedStage === null ? 'contained' : 'outlined'}
-          onClick={() => setSelectedStage(null)}
+        <Box
           sx={{
-            backgroundColor: selectedStage === null ? '#FFB800' : 'transparent',
-            color: selectedStage === null ? 'white' : '#FFB800',
-            borderColor: '#FFB800',
-            '&:hover': {
-              backgroundColor:
-                selectedStage === null ? '#FFB800' : 'transparent',
-              opacity: 0.8
-            }
+            display: 'flex',
+            gap: 2,
+            minWidth: 'min-content',
+            px: 1,
+            py: 1
           }}>
-          전체 {paymentRequests.length}건
-        </Button>
-        {stages.map(stage => (
-          <Button
-            key={stage.id}
-            variant={selectedStage === stage.name ? 'contained' : 'outlined'}
-            onClick={() => setSelectedStage(stage.name)}
+          <Paper
+            onClick={() => setSelectedStage(null)}
             sx={{
-              backgroundColor:
-                selectedStage === stage.name ? '#FFB800' : 'transparent',
-              color: selectedStage === stage.name ? 'white' : '#FFB800',
-              borderColor: '#FFB800',
+              p: 2,
+              width: 150,
+              cursor: 'pointer',
+              bgcolor: 'white',
+              color: '#666',
+              border: '1px solid',
+              borderColor: selectedStage === null ? '#FFB800' : '#E0E0E0',
+              boxShadow: 'none',
+              transition: 'all 0.2s',
               '&:hover': {
-                backgroundColor:
-                  selectedStage === stage.name ? '#FFB800' : 'transparent',
-                opacity: 0.8
+                borderColor: '#FFB800'
               }
             }}>
-            {stage.name}{' '}
-            {paymentRequests.filter(r => r.stage === stage.name).length}건
-          </Button>
-        ))}
+            <Typography
+              variant="h6"
+              sx={{
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                mb: 1,
+                color: selectedStage === null ? '#FFB800' : '#666'
+              }}>
+              전체
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: '#666'
+              }}>
+              {paymentRequests.length}건
+            </Typography>
+          </Paper>
+          {stages.map(stage => {
+            const stageRequests = paymentRequests.filter(
+              request => request.stage === stage.name
+            )
+            return (
+              <Paper
+                key={stage.id}
+                onClick={() => setSelectedStage(stage.id)}
+                sx={{
+                  p: 2,
+                  width: 150,
+                  cursor: 'pointer',
+                  bgcolor: 'white',
+                  color: '#666',
+                  border: '1px solid',
+                  borderColor:
+                    selectedStage === stage.id ? '#FFB800' : '#E0E0E0',
+                  boxShadow: 'none',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    borderColor: '#FFB800'
+                  }
+                }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontSize: '1rem',
+                    fontWeight: 'bold',
+                    mb: 1,
+                    color: selectedStage === stage.id ? '#FFB800' : '#666'
+                  }}>
+                  {stage.name}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#666'
+                  }}>
+                  {stageRequests.length}건
+                </Typography>
+              </Paper>
+            )
+          })}
+        </Box>
       </Box>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
