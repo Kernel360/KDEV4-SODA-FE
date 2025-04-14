@@ -98,18 +98,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   })
 
   const [errors, setErrors] = useState<FormErrors>({})
-  const [clientCompanyEmployees, setClientCompanyEmployees] = useState<
-    Employee[]
-  >([])
-  const [developerCompanyEmployees, setDeveloperCompanyEmployees] = useState<
-    Employee[]
-  >([])
-  const [clientSelectedEmployees, setClientSelectedEmployees] = useState<
-    string[]
-  >([])
-  const [developerSelectedEmployees, setDeveloperSelectedEmployees] = useState<
-    string[]
-  >([])
+  const [, setClientCompanyEmployees] = useState<Employee[]>([])
+  const [, setDeveloperCompanyEmployees] = useState<Employee[]>([])
+  const [, setClientSelectedEmployees] = useState<string[]>([])
+  const [, setDeveloperSelectedEmployees] = useState<string[]>([])
   const [clientManagers, setClientManagers] = useState<string[]>([])
   const [clientParticipants, setClientParticipants] = useState<string[]>([])
   const [developerManagers, setDeveloperManagers] = useState<string[]>([])
@@ -555,7 +547,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
           onChange={handleSelectChange}
           label="프로젝트 상태"
           required>
-          {Object.entries(ProjectStatus).map(([key, value]) => (
+          {Object.entries(ProjectStatus).map(([_, value]) => (
             <MenuItem
               key={value}
               value={value}>
