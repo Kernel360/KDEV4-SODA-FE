@@ -457,10 +457,7 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
       <AddStageModal
         open={isAddStageModalOpen}
         onClose={() => setIsAddStageModalOpen(false)}
-        onAddStage={handleAddStage}
-        projectId={projectId}
-        stages={transformedStages}
-        selectedPosition={selectedPosition}
+        onSubmit={handleAddStage}
       />
     </Box>
   )
