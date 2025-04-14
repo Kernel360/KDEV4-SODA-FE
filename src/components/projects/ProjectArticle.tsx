@@ -62,7 +62,7 @@ const ArticleRow: React.FC<{
   const createdAt = new Date(article.createdAt)
 
   // 부모 게시물이 삭제된 경우
-  if (article.deleted) {
+  if (article.deleted && !article.parentArticleId) {
     return (
       <>
         <TableRow
@@ -80,21 +80,23 @@ const ArticleRow: React.FC<{
         </TableRow>
         {article.children &&
           article.children.length > 0 &&
-          article.children.map((child: any) => (
-            <ArticleRow
-              key={child.id}
-              article={child}
-              projectId={projectId}
-              level={level + 1}
-              index={index}
-              totalCount={totalCount}
-              articles={articles}
-              getPriorityColor={getPriorityColor}
-              getPriorityText={getPriorityText}
-              getStatusColor={getStatusColor}
-              getStatusText={getStatusText}
-            />
-          ))}
+          article.children
+            .filter((child: any) => !child.deleted) // 삭제된 답글은 표시하지 않음
+            .map((child: any) => (
+              <ArticleRow
+                key={child.id}
+                article={child}
+                projectId={projectId}
+                level={level + 1}
+                index={index}
+                totalCount={totalCount}
+                articles={articles}
+                getPriorityColor={getPriorityColor}
+                getPriorityText={getPriorityText}
+                getStatusColor={getStatusColor}
+                getStatusText={getStatusText}
+              />
+            ))}
       </>
     )
   }
@@ -155,21 +157,23 @@ const ArticleRow: React.FC<{
       </TableRow>
       {article.children &&
         article.children.length > 0 &&
-        article.children.map((child: any) => (
-          <ArticleRow
-            key={child.id}
-            article={child}
-            projectId={projectId}
-            level={level + 1}
-            index={index}
-            totalCount={totalCount}
-            articles={articles}
-            getPriorityColor={getPriorityColor}
-            getPriorityText={getPriorityText}
-            getStatusColor={getStatusColor}
-            getStatusText={getStatusText}
-          />
-        ))}
+        article.children
+          .filter((child: any) => !child.deleted) // 삭제된 답글은 표시하지 않음
+          .map((child: any) => (
+            <ArticleRow
+              key={child.id}
+              article={child}
+              projectId={projectId}
+              level={level + 1}
+              index={index}
+              totalCount={totalCount}
+              articles={articles}
+              getPriorityColor={getPriorityColor}
+              getPriorityText={getPriorityText}
+              getStatusColor={getStatusColor}
+              getStatusText={getStatusText}
+            />
+          ))}
     </>
   )
 }
@@ -265,7 +269,18 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
   }
 
   const filteredArticles = articles
-    .filter(article => !article.parentArticleId) // 최상위 게시물만 표시 (삭제 여부와 관계없이)
+    .filter(article => {
+      // 답글이 없는 게시글은 삭제된 경우 목록에서 제외
+      if (
+        !article.parentArticleId &&
+        !article.children?.length &&
+        article.deleted
+      ) {
+        return false
+      }
+      // 답글이 있는 게시글은 삭제 여부와 관계없이 표시
+      return !article.parentArticleId
+    })
     .filter(article =>
       searchQuery
         ? article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

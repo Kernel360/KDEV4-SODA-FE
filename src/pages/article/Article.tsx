@@ -114,6 +114,42 @@ const Article: React.FC = () => {
     return <ErrorMessage message="게시글을 찾을 수 없습니다." />
   }
 
+  if (article.deleted && !article.parentArticleId) {
+    return (
+      <Box sx={{ mt: 3 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            mb: 3
+          }}>
+          <IconButton onClick={() => navigate(`/user/projects/${projectId}`)}>
+            <ArrowLeft size={24} />
+          </IconButton>
+          <Typography
+            variant="h5"
+            color="error">
+            삭제된 게시글입니다
+          </Typography>
+        </Box>
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="body1">
+            이 게시글은 삭제되었지만 답글이 있어 표시됩니다.
+          </Typography>
+        </Paper>
+        <Box sx={{ mt: 2 }}>
+          <Button
+            variant="outlined"
+            onClick={() => navigate(`/user/projects/${projectId}`)}
+            startIcon={<ArrowLeft size={16} />}>
+            목록
+          </Button>
+        </Box>
+      </Box>
+    )
+  }
+
   const isAuthor = currentUser === article.memberName
 
   return (
