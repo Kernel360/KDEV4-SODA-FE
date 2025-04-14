@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Typography, Button, useTheme } from '@mui/material'
-import { Plus } from 'lucide-react'
+import { Plus, LayoutDashboard } from 'lucide-react'
 import useProjectStore from '../../../stores/projectStore'
 import DataTable from '../../../components/common/DataTable'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
@@ -35,7 +35,7 @@ const ProjectList: React.FC = () => {
       label: '프로젝트명',
       render: (row: Project) => (
         <Typography
-          onClick={() => navigate(`/user/projects/${row.id}`)}
+          onClick={() => navigate(`/admin/projects/${row.id}`)}
           sx={{
             fontSize: '0.875rem',
             cursor: 'pointer',
@@ -84,27 +84,26 @@ const ProjectList: React.FC = () => {
       render: (row: Project) => formatDate(row.endDate)
     },
     {
-      id: 'manage',
-      label: '관리',
+      id: 'dashboard',
+      label: '대시보드',
       render: (row: Project) => (
         <Button
-          variant="outlined"
+          variant="contained"
           size="small"
-          onClick={() => navigate(`/admin/projects/${row.id}`)}
+          startIcon={<LayoutDashboard size={16} />}
+          onClick={() => navigate(`/user/projects/${row.id}`)}
           sx={{
             minWidth: 'auto',
             px: 1.5,
             py: 0.5,
             fontSize: '0.75rem',
-            borderColor: '#e5e7eb',
-            color: '#64748b',
+            backgroundColor: '#FBBF24',
             '&:hover': {
-              borderColor: theme.palette.primary.main,
-              color: theme.palette.primary.main,
-              bgcolor: 'transparent'
-            }
+              backgroundColor: '#FCD34D'
+            },
+            color: '#ffffff'
           }}>
-          관리
+          대시보드
         </Button>
       )
     }

@@ -19,6 +19,7 @@ import useProjectStore from '../../stores/projectStore'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import { useTheme } from '@mui/material/styles'
+import { LayoutDashboard } from 'lucide-react'
 
 const AdminMain: React.FC = () => {
   const navigate = useNavigate()
@@ -129,10 +130,10 @@ const AdminMain: React.FC = () => {
                 bgcolor: '#fff',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
               }}>
-              <Typography
-                sx={{
+        <Typography
+          sx={{
                   fontSize: '1.25rem',
-                  fontWeight: 600,
+            fontWeight: 600,
                   color: '#1a1a1a',
                   mb: 3
                 }}>
@@ -260,9 +261,9 @@ const AdminMain: React.FC = () => {
                     fontSize: '1.25rem',
                     fontWeight: 600,
                     color: '#1a1a1a'
-                  }}>
-                  진행중인 프로젝트
-                </Typography>
+          }}>
+          진행중인 프로젝트
+        </Typography>
                 <Button
                   variant="outlined"
                   onClick={handleViewMoreProjects}
@@ -280,34 +281,34 @@ const AdminMain: React.FC = () => {
                 </Button>
               </Box>
               <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
+          <Table>
+            <TableHead>
+              <TableRow>
                       <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>프로젝트명</TableCell>
                       <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>개발사</TableCell>
                       <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>고객사</TableCell>
                       <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>상태</TableCell>
-                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>관리</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
+                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>대시보드 바로가기</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
                     {projects.slice(0, 3).map(project => (
                       <TableRow key={project.id} hover>
-                        <TableCell>
-                          <Typography
-                            onClick={() => handleProjectClick(project.id)}
-                            sx={{
-                              fontSize: '0.875rem',
-                              cursor: 'pointer',
-                              color: theme.palette.primary.main,
-                              '&:hover': {
-                                color: theme.palette.primary.dark,
-                                textDecoration: 'underline'
-                              }
-                            }}>
-                            {project.title}
-                          </Typography>
-                        </TableCell>
+                  <TableCell>
+                    <Typography
+                      onClick={() => handleProjectManageClick(project.id)}
+                      sx={{
+                        fontSize: '0.875rem',
+                        cursor: 'pointer',
+                        color: theme.palette.primary.main,
+                        '&:hover': {
+                          color: theme.palette.primary.dark,
+                          textDecoration: 'underline'
+                        }
+                      }}>
+                      {project.title}
+                    </Typography>
+                  </TableCell>
                         <TableCell sx={{ fontSize: '0.875rem', color: '#4b5563' }}>{project.devCompanyName}</TableCell>
                         <TableCell sx={{ fontSize: '0.875rem', color: '#4b5563' }}>{project.clientCompanyName}</TableCell>
                         <TableCell>
@@ -335,23 +336,22 @@ const AdminMain: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           <Button
-                            variant="outlined"
+                            variant="contained"
                             size="small"
+                            startIcon={<LayoutDashboard size={16} />}
                             onClick={() => handleProjectManageClick(project.id)}
                             sx={{
                               minWidth: 'auto',
                               px: 1.5,
                               py: 0.5,
                               fontSize: '0.75rem',
-                              borderColor: '#e5e7eb',
-                              color: '#64748b',
+                              backgroundColor: '#FBBF24',
                               '&:hover': {
-                                borderColor: theme.palette.primary.main,
-                                color: theme.palette.primary.main,
-                                bgcolor: 'transparent'
-                              }
+                                backgroundColor: '#FCD34D'
+                              },
+                              color: '#ffffff'
                             }}>
-                            관리
+                            대시보드
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -406,40 +406,49 @@ const AdminMain: React.FC = () => {
                   <TableHead>
                     <TableRow>
                       <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>프로젝트명</TableCell>
-                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>요청 수</TableCell>
+                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>승인요청 수</TableCell>
                       <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>질문 수</TableCell>
                       <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>마지막 활동</TableCell>
-                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>관리</TableCell>
+                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>대시보드 바로가기</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {[
                       { 
                         id: 1,
-                        name: '프로젝트 A', 
+                        title: '프로젝트 A', 
                         requestCount: 15,
                         questionCount: 9,
-                        lastActivity: '2024-03-20' 
+                        lastActivity: '2024-03-20',
+                        devCompanyName: '개발사 A',
+                        clientCompanyName: '고객사 A',
+                        status: '진행 중'
                       },
                       { 
                         id: 2,
-                        name: '프로젝트 B', 
+                        title: '프로젝트 B', 
                         requestCount: 12,
                         questionCount: 6,
-                        lastActivity: '2024-03-19' 
+                        lastActivity: '2024-03-19',
+                        devCompanyName: '개발사 B',
+                        clientCompanyName: '고객사 B',
+                        status: '진행 중'
                       },
                       { 
                         id: 3,
-                        name: '프로젝트 C', 
+                        title: '프로젝트 C', 
                         requestCount: 8,
                         questionCount: 7,
-                        lastActivity: '2024-03-18' 
+                        lastActivity: '2024-03-18',
+                        devCompanyName: '개발사 C',
+                        clientCompanyName: '고객사 C',
+                        status: '진행 중'
                       }
                     ].map((project, index) => (
                       <TableRow key={index} hover>
                         <TableCell>
                           <Typography
-                            onClick={() => handleProjectClick(project.id)}
+                            onClick={() => handleProjectManageClick(project.id)}
                             sx={{
                               fontSize: '0.875rem',
                               cursor: 'pointer',
@@ -449,7 +458,7 @@ const AdminMain: React.FC = () => {
                                 textDecoration: 'underline'
                               }
                             }}>
-                            {project.name}
+                            {project.title}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -475,30 +484,29 @@ const AdminMain: React.FC = () => {
                         <TableCell sx={{ fontSize: '0.875rem', color: '#4b5563' }}>{project.lastActivity}</TableCell>
                         <TableCell>
                           <Button
-                            variant="outlined"
+                            variant="contained"
                             size="small"
-                            onClick={() => handleProjectManageClick(project.id)}
+                            startIcon={<LayoutDashboard size={16} />}
+                            onClick={() => handleProjectClick(project.id)}
                             sx={{
                               minWidth: 'auto',
                               px: 1.5,
                               py: 0.5,
                               fontSize: '0.75rem',
-                              borderColor: '#e5e7eb',
-                              color: '#64748b',
+                              backgroundColor: '#FBBF24',
                               '&:hover': {
-                                borderColor: theme.palette.primary.main,
-                                color: theme.palette.primary.main,
-                                bgcolor: 'transparent'
-                              }
+                                backgroundColor: '#FCD34D'
+                              },
+                              color: '#ffffff'
                             }}>
-                            관리
+                            대시보드
                           </Button>
                         </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
             </Paper>
           </Grid>
         </Grid>
@@ -551,10 +559,10 @@ const AdminMain: React.FC = () => {
         {/* 회사 생성 추이 */}
         <Grid container spacing={3} sx={{ mt: 2 }}>
           <Grid item xs={12}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 3,
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
                 border: '1px solid #e5e7eb',
                 borderRadius: 2,
                 bgcolor: '#fff',
@@ -665,7 +673,7 @@ const AdminMain: React.FC = () => {
                   </Box>
                 </Box>
               </Box>
-            </Paper>
+        </Paper>
           </Grid>
         </Grid>
       </Box>
