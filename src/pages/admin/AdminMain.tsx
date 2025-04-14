@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Box,
@@ -22,16 +22,19 @@ import { useTheme } from '@mui/material/styles'
 import { LayoutDashboard } from 'lucide-react'
 import { companyService } from '../../services/companyService'
 
-const AdminMain: React.FC = () => {
+export default function AdminMain() {
   const navigate = useNavigate()
   const { projects, isLoading, error, fetchAllProjects } = useProjectStore()
   const theme = useTheme()
   const [totalCompanies, setTotalCompanies] = useState<number>(0)
 
   useEffect(() => {
-    fetchAllProjects()
-    fetchCompanies()
-  }, [])
+    const fetchData = async () => {
+      await fetchAllProjects()
+      await fetchCompanies()
+    }
+    fetchData()
+  }, [fetchAllProjects])
 
   const fetchCompanies = async () => {
     try {
@@ -705,5 +708,3 @@ const AdminMain: React.FC = () => {
     </Box>
   )
 }
-
-export default AdminMain
