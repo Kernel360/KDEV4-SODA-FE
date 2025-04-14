@@ -48,23 +48,6 @@ const menuGroups = [
     ]
   },
   {
-    title: '계정',
-    items: [
-      {
-        id: 'accounts',
-        label: '계정 관리',
-        icon: Users,
-        path: '/admin/accounts'
-      },
-      {
-        id: 'account-create',
-        label: '계정 생성',
-        icon: PlusCircle,
-        path: '/admin/accounts/create'
-      }
-    ]
-  },
-  {
     title: '회사',
     items: [
       {
@@ -78,6 +61,23 @@ const menuGroups = [
         label: '회사 생성',
         icon: PlusCircle,
         path: '/admin/companies/create'
+      }
+    ]
+  },
+  {
+    title: '계정',
+    items: [
+      {
+        id: 'accounts',
+        label: '계정 관리',
+        icon: Users,
+        path: '/admin/accounts'
+      },
+      {
+        id: 'account-create',
+        label: '계정 생성',
+        icon: PlusCircle,
+        path: '/admin/accounts/create'
       }
     ]
   }
