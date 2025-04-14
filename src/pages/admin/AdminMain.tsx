@@ -195,12 +195,12 @@ export default function AdminMain() {
                         flex: 1,
                         mx: 1.5,
                         height: `${(data.count / 5) * 100}%`,
-                        bgcolor: '#4b7355',
+                        bgcolor: '#94a3b8',
                         borderRadius: '2px 2px 0 0',
                         transition: 'all 0.3s ease',
                         cursor: 'pointer',
                         '&:hover': {
-                          bgcolor: '#3d5c44',
+                          bgcolor: '#64748b',
                           transform: 'translateY(-4px)',
                           '& .count-tooltip': {
                             opacity: 1,
@@ -632,12 +632,12 @@ export default function AdminMain() {
                         flex: 1,
                         mx: 1.5,
                         height: `${(data.count / 5) * 100}%`,
-                        bgcolor: '#4b7355',
+                        bgcolor: '#94a3b8',
                         borderRadius: '2px 2px 0 0',
                         transition: 'all 0.3s ease',
                         cursor: 'pointer',
                         '&:hover': {
-                          bgcolor: '#3d5c44',
+                          bgcolor: '#64748b',
                           transform: 'translateY(-4px)',
                           '& .count-tooltip': {
                             opacity: 1,

@@ -10,11 +10,11 @@ interface Company {
 interface User {
   name: string
   authId: string
-  email: string
+  position: string
+  phoneNumber: string
   role: string
   firstLogin: boolean
-  phoneNumber?: string
-  position?: string
+  email?: string
   company?: Company
 }
 
