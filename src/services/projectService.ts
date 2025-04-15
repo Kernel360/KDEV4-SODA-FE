@@ -224,7 +224,7 @@ export const projectService = {
       if (!response.data || !response.data.data || !response.data.data.id) {
         throw new Error('Invalid response format from create article API')
       }
-      return response.data.data
+      return response.data
     } catch (error) {
       console.error('Error creating article:', error)
       throw error

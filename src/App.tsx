@@ -36,6 +36,9 @@ import UserProfile from './pages/user/UserProfile'
 import TaskDetailPage from './pages/tasks/TaskDetailPage'
 import CreateRequest from './pages/user/projects/CreateRequest'
 import UserDashboard from './pages/user/UserDashboard'
+import RequestList from './pages/user/RequestList'
+import RecentPosts from './pages/user/RecentPosts'
+import Projects from './pages/user/Projects'
 
 const App: React.FC = () => {
   return (
@@ -147,6 +150,18 @@ const App: React.FC = () => {
               <Route
                 path="additional-info"
                 element={<UserInfo />}
+              />
+              <Route
+                path="requests"
+                element={<RequestList />}
+              />
+              <Route
+                path="recent-posts"
+                element={<RecentPosts />}
+              />
+              <Route
+                path="projects"
+                element={<Projects />}
               />
               <Route
                 path="projects/:id"

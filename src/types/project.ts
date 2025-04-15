@@ -2,19 +2,26 @@ export interface Project {
   id: number
   title: string
   description: string
-  devCompanyName: string
-  clientCompanyName: string
   projectName: string
+  status: string
   startDate: string
   endDate: string
-  status: ProjectStatus
+  clientCompanyId: number
+  devCompanyId: number
+  clientCompanyName: string
+  devCompanyName: string
   clientCompanyManagers: string[]
   clientCompanyMembers: string[]
   devCompanyManagers: string[]
   devCompanyMembers: string[]
 }
 
-export type ProjectStatus = '대기' | '진행 중' | '완료' | '중단'
+export type ProjectStatus =
+  | '계약'
+  | '진행중'
+  | '납품완료'
+  | '하자보수'
+  | '일시중단'
 
 export interface ProjectMember {
   id: number

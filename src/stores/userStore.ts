@@ -6,6 +6,7 @@ interface UserState {
   user: ApiUser | null
   setUser: (user: ApiUser | null) => void
   clearUser: () => void
+  logout: () => void
 }
 
 // localStorage에서 user 데이터 가져오기
@@ -15,7 +16,15 @@ export const useUserStore = create<UserState>()(
     (set) => ({
       user: null,
       setUser: (user) => set({ user }),
-      clearUser: () => set({ user: null })
+      clearUser: () => {
+        localStorage.removeItem('user')
+        set({ user: null })
+      },
+      logout: () => {
+        localStorage.removeItem('user')
+        localStorage.removeItem('token')
+        set({ user: null })
+      }
     }),
     {
       name: 'user-storage'

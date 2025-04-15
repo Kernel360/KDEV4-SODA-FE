@@ -36,11 +36,11 @@ const UploadBox = styled(Box)(({ theme }) => ({
 export interface ArticleFormData {
   title: string
   content: string
-  stageId: number
+  stageId: string
   priority: PriorityType
   deadLine: Date | null
-  files?: File[]
-  links?: { title: string; url: string }[]
+  files: File[]
+  links: { url: string; title: string }[]
 }
 
 interface ArticleFormProps {
@@ -149,7 +149,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 <Select
                   value={localFormData.stageId}
                   onChange={e =>
-                    handleChange('stageId', e.target.value as number)
+                    handleChange('stageId', e.target.value as string)
                   }
                   required
                   size="small">
