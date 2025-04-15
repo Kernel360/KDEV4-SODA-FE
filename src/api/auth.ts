@@ -1,6 +1,6 @@
 import { API_ENDPOINTS } from './config'
 import { apiRequest } from './client'
-import type { LoginRequest, LoginResponse, FindIdRequest, FindIdResponse, RequestPasswordResetRequest, VerifyCodeRequest, ResetPasswordRequest, SignupRequest, SignupResponse, User } from '../types/api'
+import type { LoginRequest, LoginResponse, FindIdRequest, FindIdResponse, RequestPasswordResetRequest, VerifyCodeRequest, ResetPasswordRequest, SignupRequest, SignupResponse, User, UpdateUserInfoResponse } from '../types/api'
 import { instance } from './config'
 
 export const login = async (data: LoginRequest) => {
@@ -70,4 +70,27 @@ export const updatePassword = (data: {
   newPassword: string
 }) => {
   return instance.put('/members/me/password', data)
+}
+
+export const updateUserInfo = async (data: {
+  memberId: number
+  name: string
+  email: string
+  phoneNumber: string
+  authId: string
+  password: string
+  position: string
+}): Promise<UpdateUserInfoResponse> => {
+  try {
+    const response = await apiRequest<UpdateUserInfoResponse>('PUT', `/members/${data.memberId}`, data)
+    return {
+      status: response?.data?.status || 'success',
+      code: response?.data?.code || '200',
+      message: response?.data?.message || '사용자 정보가 성공적으로 수정되었습니다.',
+      data: response?.data?.data || null
+    }
+  } catch (error) {
+    console.error('Error updating user info:', error)
+    throw error
+  }
 } 
