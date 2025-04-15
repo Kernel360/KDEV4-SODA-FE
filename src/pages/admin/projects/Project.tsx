@@ -2,7 +2,6 @@ import { useEffect, useState, Fragment } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Box,
-  Typography,
   Paper,
   Button,
   List,
