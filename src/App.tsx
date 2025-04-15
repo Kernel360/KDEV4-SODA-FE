@@ -17,7 +17,6 @@ import {
   CompanyList,
   Company,
   EditCompany,
-  UserMain,
   UserProject,
   UserAccountDetail,
   CreateCompany,
@@ -36,6 +35,7 @@ import CssBaseline from '@mui/material/CssBaseline'
 import UserProfile from './pages/user/UserProfile'
 import TaskDetailPage from './pages/tasks/TaskDetailPage'
 import CreateRequest from './pages/user/projects/CreateRequest'
+import UserDashboard from './pages/user/UserDashboard'
 
 const App: React.FC = () => {
   return (
@@ -142,7 +142,7 @@ const App: React.FC = () => {
               }>
               <Route
                 index
-                element={<UserMain />}
+                element={<UserDashboard />}
               />
               <Route
                 path="additional-info"
