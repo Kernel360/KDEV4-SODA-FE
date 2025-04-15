@@ -30,3 +30,9 @@ export const apiRequest = async <T>(
     throw error
   }
 }
+
+export const API_ENDPOINTS = {
+  // ... existing endpoints ...
+  UPDATE_INFO: '/api/v1/auth/update-info',
+  // ... existing endpoints ...
+} as const
