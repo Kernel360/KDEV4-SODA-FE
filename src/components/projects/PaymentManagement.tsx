@@ -12,59 +12,105 @@ import {
   TableRow,
   TextField,
   InputAdornment,
-  Typography
+  Typography,
+  Pagination
 } from '@mui/material'
 import { Search, Add } from '@mui/icons-material'
-import { Stage } from '../../types/project'
 import { client } from '../../api/client'
+import dayjs from 'dayjs'
 
-interface PaymentManagementProps {
-  projectId: number
-  stages: Stage[]
+interface Request {
+  requestId: number;
+  stageId: number;
+  memberId: number;
+  memberName: string;
+  title: string;
+  content: string;
+  links: {
+    id: number;
+    urlAddress: string;
+    urlDescription: string;
+  }[];
+  files: any[];
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-const PaymentManagement: React.FC<PaymentManagementProps> = ({
-  projectId,
-  stages
-}) => {
+interface Stage {
+  id: number;
+  name: string;
+}
+
+interface PaymentManagementProps {
+  projectId: number;
+  stages: Stage[];
+}
+
+const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages }) => {
   const navigate = useNavigate()
-  const [paymentRequests, setPaymentRequests] = useState<any[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
   const [selectedStage, setSelectedStage] = useState<number | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [requests, setRequests] = useState<Request[]>([])
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [totalRequests, setTotalRequests] = useState(0)
+
+  const fetchRequests = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const queryParams = new URLSearchParams({
+        status: 'PENDING',
+        page: page.toString(),
+        size: '5'
+      });
+      
+      if (selectedStage) {
+        queryParams.append('stageId', selectedStage.toString());
+      }
+
+      const response = await client.get(`/projects/${projectId}/requests?${queryParams.toString()}`);
+      
+      if (response.data.status === 'success' && response.data.data) {
+        setRequests(response.data.data.content);
+        setTotalPages(response.data.data.totalPages);
+      } else {
+        setError('요청 목록을 불러오는데 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Failed to fetch requests:', error);
+      setError('요청 목록을 불러오는데 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTotalRequests = async () => {
+    try {
+      const response = await client.get(`/projects/${projectId}/requests?status=PENDING&size=1`);
+      if (response.data.status === 'success' && response.data.data) {
+        setTotalRequests(response.data.data.totalElements);
+      }
+    } catch (error) {
+      console.error('Failed to fetch total requests:', error);
+    }
+  };
 
   useEffect(() => {
-    const fetchAllRequests = async () => {
-      try {
-        const allRequests = await Promise.all(
-          stages.map(async stage => {
-            const stageRequests = await Promise.all(
-              stage.tasks.map(async task => {
-                const response = await client.get(`/tasks/${task.id}/requests`)
-                return response.data.map((request: any) => ({
-                  ...request,
-                  stage: stage.name
-                }))
-              })
-            )
-            return stageRequests.flat()
-          })
-        )
-        setPaymentRequests(allRequests.flat())
-      } catch (error) {
-        console.error('Failed to fetch requests:', error)
-      }
-    }
+    fetchRequests();
+  }, [projectId, selectedStage, page]);
 
-    fetchAllRequests()
-  }, [stages])
+  useEffect(() => {
+    fetchTotalRequests();
+  }, [projectId]);
 
-  const filteredRequests = paymentRequests.filter(request =>
-    searchTerm
-      ? request.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.author.toLowerCase().includes(searchTerm.toLowerCase())
-      : selectedStage === null ||
-        request.stage === stages.find(s => s.id === selectedStage)?.name
-  )
+  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value - 1);
+  };
 
   return (
     <Box sx={{ mb: 4 }}>
@@ -128,12 +174,12 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
               sx={{
                 color: '#666'
               }}>
-              {paymentRequests.length}건
+              {totalRequests}건
             </Typography>
           </Paper>
           {stages.map(stage => {
-            const stageRequests = paymentRequests.filter(
-              request => request.stage === stage.name
+            const stageRequests = requests.filter(
+              request => request.stageId === stage.id
             )
             return (
               <Paper
@@ -177,23 +223,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() =>
-            navigate(`/user/projects/${projectId}/requests/create`)
-          }
-          sx={{
-            bgcolor: '#FFB800',
-            '&:hover': {
-              bgcolor: '#FFB800',
-              opacity: 0.8
-            }
-          }}>
-          새로운 요청 추가
-        </Button>
-
+      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
         <TextField
           size="small"
           placeholder="검색어를 입력하세요"
@@ -206,78 +236,82 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
               </InputAdornment>
             )
           }}
-          sx={{
-            width: 250,
-            '& .MuiOutlinedInput-root': {
-              '& fieldset': {
-                borderColor: '#E0E0E0'
-              },
-              '&:hover fieldset': {
-                borderColor: '#FFB800'
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#FFB800'
-              }
-            }
-          }}
+          sx={{ flex: 1 }}
         />
+
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => navigate(`/user/projects/${projectId}/requests/create`)}
+          sx={{
+            bgcolor: '#FFB800',
+            '&:hover': {
+              bgcolor: '#FFB800',
+              opacity: 0.8
+            }
+          }}>
+          새로운 요청 추가
+        </Button>
       </Box>
 
-      <TableContainer
-        component={Paper}
-        sx={{ boxShadow: 'none', border: '1px solid #E0E0E0' }}>
+      {error && (
+        <Typography color="error" sx={{ mb: 2 }}>
+          {error}
+        </Typography>
+      )}
+
+      <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '1px solid #E0E0E0' }}>
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
-              <TableCell
-                align="center"
-                sx={{ width: '8%' }}>
-                번호
-              </TableCell>
-              <TableCell
-                align="center"
-                sx={{ width: '15%' }}>
-                단계
-              </TableCell>
-              <TableCell
-                align="center"
-                sx={{ width: '47%' }}>
-                제목
-              </TableCell>
-              <TableCell
-                align="center"
-                sx={{ width: '15%' }}>
-                작성자
-              </TableCell>
-              <TableCell
-                align="center"
-                sx={{ width: '15%' }}>
-                등록일
-              </TableCell>
+              <TableCell>제목</TableCell>
+              <TableCell>작성자</TableCell>
+              <TableCell>단계</TableCell>
+              <TableCell>작성일</TableCell>
+              <TableCell>상태</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredRequests.map((request, index) => (
-              <TableRow
-                key={request.id}
-                sx={{
-                  '&:hover': {
-                    backgroundColor: '#F5F5F5',
-                    cursor: 'pointer'
-                  }
-                }}>
-                <TableCell align="center">{index + 1}</TableCell>
-                <TableCell align="center">{request.stage}</TableCell>
-                <TableCell>{request.title}</TableCell>
-                <TableCell align="center">{request.author}</TableCell>
-                <TableCell align="center">
-                  {new Date(request.createdAt).toLocaleDateString()}
-                </TableCell>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center">로딩 중...</TableCell>
               </TableRow>
-            ))}
+            ) : requests.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center">승인 대기 중인 요청이 없습니다.</TableCell>
+              </TableRow>
+            ) : (
+              requests.map((request) => (
+                <TableRow 
+                  key={request.requestId}
+                  hover
+                  onClick={() => {/* TODO: 요청 상세 보기 */}}
+                  sx={{ cursor: 'pointer' }}
+                >
+                  <TableCell>{request.title}</TableCell>
+                  <TableCell>{request.memberName}</TableCell>
+                  <TableCell>
+                    {stages.find(stage => stage.id === request.stageId)?.name || '-'}
+                  </TableCell>
+                  <TableCell>
+                    {dayjs(request.createdAt).format('YYYY-MM-DD HH:mm')}
+                  </TableCell>
+                  <TableCell>승인 대기중</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
+
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+        <Pagination
+          count={totalPages}
+          page={page + 1}
+          onChange={handlePageChange}
+          color="primary"
+        />
+      </Box>
     </Box>
   )
 }

@@ -51,8 +51,15 @@ const CreateRequest: React.FC = () => {
 
       try {
         const response = await client.get(`/projects/${projectId}/stages`)
-        const stagesData = Array.isArray(response.data) ? response.data : []
-        setStages(stagesData)
+        console.log('Stages response:', response) // 디버깅용 로그
+        if (response.data && Array.isArray(response.data)) {
+          setStages(response.data)
+        } else if (response.data && Array.isArray(response.data.data)) {
+          setStages(response.data.data)
+        } else {
+          console.error('Unexpected response format:', response.data)
+          setError('단계 정보를 불러오는데 실패했습니다.')
+        }
       } catch (error) {
         console.error('Failed to fetch stages:', error)
         setError('단계 정보를 불러오는데 실패했습니다.')
@@ -101,21 +108,19 @@ const CreateRequest: React.FC = () => {
     e.preventDefault()
     if (!selectedStage || !title.trim() || !description.trim()) return
 
-    const formData = new FormData();
-    formData.append('stageId', selectedStage.toString());
-    formData.append('title', title.trim());
-    formData.append('description', description.trim());
-    files.forEach(file => {
-      formData.append('files', file);
-    });
-    formData.append('links', JSON.stringify(links));
-
     try {
-      await client.post(`/projects/${projectId}/requests`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const requestData = {
+        title: title.trim(),
+        content: description.trim(),
+        projectId: Number(projectId),
+        stageId: selectedStage,
+        links: links.map(link => ({
+          urlAddress: link.url,
+          urlDescription: link.description
+        }))
+      };
+
+      await client.post('/requests', requestData);
       navigate(`/user/projects/${projectId}`);
     } catch (error) {
       console.error('Failed to create request:', error);
@@ -140,7 +145,23 @@ const CreateRequest: React.FC = () => {
                 onChange={e => setSelectedStage(Number(e.target.value))}
                 required>
                 {stages.map(stage => (
-                  <MenuItem key={stage.id} value={stage.id}>{stage.name}</MenuItem>
+                  <MenuItem 
+                    key={stage.id} 
+                    value={stage.id}
+                    sx={{
+                      py: 1,
+                      px: 2
+                    }}>
+                    <Box>
+                      <Typography>{stage.name}</Typography>
+                      <Typography 
+                        variant="caption" 
+                        color="text.secondary"
+                        sx={{ display: 'block' }}>
+                        {stage.description || '설명 없음'}
+                      </Typography>
+                    </Box>
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
