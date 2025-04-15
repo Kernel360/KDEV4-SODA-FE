@@ -11,22 +11,18 @@ import {
 } from '@mui/material'
 import {
   LayoutDashboard,
-  ListTodo,
-  MessageSquare,
-  ClipboardList
+  ClipboardList,
+  FileText,
+  Briefcase
 } from 'lucide-react'
-import SideBar from './Sidebar'
 
-const UserSidebar: React.FC = () => {
+interface UserSidebarProps {
+  isOpen: boolean
+}
+
+const UserSidebar: React.FC<UserSidebarProps> = ({ isOpen }) => {
   const navigate = useNavigate()
   const location = useLocation()
-
-  const userData = localStorage.getItem('user')
-  const isAdmin = userData ? JSON.parse(userData).role === 'ADMIN' : false
-
-  if (isAdmin) {
-    return <SideBar />
-  }
 
   const isActive = (path: string) => {
     return location.pathname === path
@@ -34,23 +30,23 @@ const UserSidebar: React.FC = () => {
 
   const menuItems = [
     {
-      path: '/user',
+      path: '/user/dashboard',
       icon: <LayoutDashboard size={24} />,
       text: '대시보드'
     },
     {
       path: '/user/requests',
-      icon: <ListTodo size={24} />,
+      icon: <ClipboardList size={24} />,
       text: '요청사항 목록'
     },
     {
       path: '/user/recent-posts',
-      icon: <MessageSquare size={24} />,
+      icon: <FileText size={24} />,
       text: '최근 게시글'
     },
     {
       path: '/user/projects',
-      icon: <ClipboardList size={24} />,
+      icon: <Briefcase size={24} />,
       text: '참여 중인 프로젝트'
     }
   ]
@@ -58,7 +54,7 @@ const UserSidebar: React.FC = () => {
   return (
     <Box
       sx={{
-        width: 280,
+        width: isOpen ? 280 : 0,
         flexShrink: 0,
         borderRight: '1px solid',
         borderColor: 'divider',
@@ -69,7 +65,9 @@ const UserSidebar: React.FC = () => {
         top: 64,
         pt: 2,
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        transition: 'width 0.3s ease',
+        overflow: 'hidden'
       }}>
       <List>
         {menuItems.map((item, index) => (
