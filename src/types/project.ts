@@ -16,7 +16,12 @@ export interface Project {
   devCompanyMembers: string[]
 }
 
-export type ProjectStatus = '대기' | '진행 중' | '완료' | '중단'
+export type ProjectStatus =
+  | '계약'
+  | '진행중'
+  | '납품완료'
+  | '하자보수'
+  | '일시중단'
 
 export interface ProjectMember {
   id: number
