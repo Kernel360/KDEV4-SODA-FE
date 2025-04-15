@@ -1,20 +1,24 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, User, LogOut, ChevronDown } from 'lucide-react'
+import {
+  Bell,
+  User,
+  LogOut,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react'
 import {
   Badge,
   IconButton,
   Menu,
   MenuItem,
-  ListItemIcon,
-  ListItemText,
   AppBar,
   Toolbar,
   Typography,
   Box
 } from '@mui/material'
 import { useUserStore } from '../../stores/userStore'
-import Cookies from 'js-cookie'
 
 interface Notification {
   id: number
@@ -25,15 +29,16 @@ interface Notification {
 }
 
 interface HeaderProps {
-  sx?: React.CSSProperties | any
+  onSidebarToggle: () => void
+  isSidebarOpen: boolean
 }
 
-const Header: React.FC<HeaderProps> = ({ sx }) => {
+const Header: React.FC<HeaderProps> = ({ onSidebarToggle, isSidebarOpen }) => {
   const navigate = useNavigate()
   const [notificationAnchor, setNotificationAnchor] =
     useState<null | HTMLElement>(null)
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null)
-  const { user, clearUser } = useUserStore()
+  const { user, logout } = useUserStore()
 
   // Mock data - replace with actual data from your backend
   const notifications: Notification[] = [
@@ -82,185 +87,155 @@ const Header: React.FC<HeaderProps> = ({ sx }) => {
   }
 
   const handleLogout = () => {
-    // Clear localStorage
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-
-    // Clear cookies
-    Cookies.remove('refreshToken')
-
-    // Clear user state
-    clearUser()
-
-    // Close profile menu
+    logout()
     handleProfileClose()
-
-    // Navigate to main page
-    navigate('/')
+    navigate('/login')
   }
 
   const handleMyPage = () => {
-    if (user?.authId) {
-      navigate(`/user/${user.authId}`)
-    }
     handleProfileClose()
+    navigate('/user/profile')
   }
 
   return (
     <AppBar
-      position="static"
-      color="default"
-      elevation={0}
+      position="fixed"
       sx={{
-        backgroundColor: 'white',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
         width: '100%',
-        ...sx
+        zIndex: 1200,
+        backgroundColor: 'background.paper',
+        color: 'text.primary',
+        boxShadow: 'none',
+        borderBottom: '1px solid',
+        borderColor: 'divider'
       }}>
-      <Toolbar
-        sx={{
-          justifyContent: 'space-between',
-          minHeight: '64px !important',
-          px: { xs: 2, sm: 4, md: 6 }
-        }}>
-        <Box
+      <Toolbar>
+        <IconButton
+          edge="start"
+          color="inherit"
+          aria-label="menu"
+          onClick={onSidebarToggle}
+          sx={{ mr: 2 }}>
+          {isSidebarOpen ? (
+            <ChevronLeft size={24} />
+          ) : (
+            <ChevronRight size={24} />
+          )}
+        </IconButton>
+        <Typography
+          variant="h5"
+          component="div"
           sx={{
-            display: 'flex',
-            alignItems: 'center',
-            cursor: 'pointer'
+            flexGrow: 1,
+            cursor: 'pointer',
+            color: '#F59E0B',
+            fontWeight: 'bold'
           }}
           onClick={handleLogoClick}>
-          <Typography
-            variant="h5"
-            component="div"
-            sx={{
-              fontWeight: 700,
-              color: '#F59E0B',
-              letterSpacing: 'tight'
-            }}>
-            SODA
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-          <IconButton
-            onClick={handleNotificationClick}
-            sx={{
-              color: 'text.secondary',
-              '&:hover': { color: 'primary.main' }
-            }}>
-            <Badge
-              variant="dot"
-              color="error"
-              invisible={unreadNotifications === 0}>
-              <Bell size={20} />
-            </Badge>
-          </IconButton>
-
-          <Box
-            onClick={handleProfileClick}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              cursor: 'pointer',
-              '&:hover': {
-                '& .username': { color: 'primary.main' },
-                '& .chevron': { color: 'primary.main' }
-              }
-            }}>
-            <Typography
-              variant="body1"
-              className="username"
+          SODA
+        </Typography>
+        {user && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+            <IconButton
+              onClick={handleNotificationClick}
               sx={{
-                color: 'text.primary',
-                transition: 'color 0.2s'
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main' }
               }}>
-              {user?.name || '사용자'}
-            </Typography>
-            <ChevronDown
-              size={20}
-              className="chevron"
-              style={{
-                color: '#374151',
-                transition: 'color 0.2s'
-              }}
-            />
-          </Box>
+              <Badge
+                variant="dot"
+                color="error"
+                invisible={unreadNotifications === 0}>
+                <Bell size={20} />
+              </Badge>
+            </IconButton>
 
-          <Menu
-            anchorEl={notificationAnchor}
-            open={Boolean(notificationAnchor)}
-            onClose={handleNotificationClose}
-            sx={{
-              '& .MuiPaper-root': {
-                minWidth: '320px',
-                marginTop: '8px',
-                borderRadius: '8px',
-                boxShadow:
-                  '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
-              }
-            }}>
-            {notifications.map(notification => (
-              <MenuItem
-                key={notification.id}
-                sx={{
-                  py: 1.5,
-                  px: 2,
-                  '&:hover': { backgroundColor: 'action.hover' },
-                  ...(!notification.isRead && {
-                    backgroundColor: 'action.selected'
-                  })
-                }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                  <Typography
-                    variant="body2"
-                    color="text.primary">
-                    {notification.message}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ mt: 0.5 }}>
-                    {new Date(notification.createdAt).toLocaleDateString()}
-                  </Typography>
-                </Box>
+            <Box
+              onClick={handleProfileClick}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                cursor: 'pointer',
+                '&:hover': {
+                  opacity: 0.8
+                }
+              }}>
+              <Typography variant="body1">{user.name}</Typography>
+              <ChevronDown size={16} />
+            </Box>
+
+            <Menu
+              anchorEl={notificationAnchor}
+              open={Boolean(notificationAnchor)}
+              onClose={handleNotificationClose}
+              sx={{
+                '& .MuiPaper-root': {
+                  minWidth: '320px',
+                  marginTop: '8px',
+                  borderRadius: '8px',
+                  boxShadow:
+                    '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+                }
+              }}>
+              {notifications.map(notification => (
+                <MenuItem
+                  key={notification.id}
+                  sx={{
+                    py: 1.5,
+                    px: 2,
+                    '&:hover': { backgroundColor: 'action.hover' },
+                    ...(!notification.isRead && {
+                      backgroundColor: 'action.selected'
+                    })
+                  }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography
+                      variant="body2"
+                      color="text.primary">
+                      {notification.message}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mt: 0.5 }}>
+                      {new Date(notification.createdAt).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+            </Menu>
+
+            <Menu
+              anchorEl={profileAnchor}
+              open={Boolean(profileAnchor)}
+              onClose={handleProfileClose}
+              sx={{
+                '& .MuiPaper-root': {
+                  minWidth: '200px',
+                  marginTop: '8px',
+                  borderRadius: '8px',
+                  boxShadow:
+                    '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+                }
+              }}>
+              <MenuItem onClick={handleMyPage}>
+                <User
+                  size={16}
+                  style={{ marginRight: 8 }}
+                />
+                마이페이지
               </MenuItem>
-            ))}
-          </Menu>
-
-          <Menu
-            anchorEl={profileAnchor}
-            open={Boolean(profileAnchor)}
-            onClose={handleProfileClose}
-            sx={{
-              '& .MuiPaper-root': {
-                minWidth: '200px',
-                marginTop: '8px',
-                borderRadius: '8px',
-                boxShadow:
-                  '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
-              }
-            }}>
-            <MenuItem
-              onClick={handleMyPage}
-              sx={{ py: 1 }}>
-              <ListItemIcon>
-                <User size={20} />
-              </ListItemIcon>
-              <ListItemText>마이페이지</ListItemText>
-            </MenuItem>
-            <MenuItem
-              onClick={handleLogout}
-              sx={{ py: 1 }}>
-              <ListItemIcon>
-                <LogOut size={20} />
-              </ListItemIcon>
-              <ListItemText>로그아웃</ListItemText>
-            </MenuItem>
-          </Menu>
-        </Box>
+              <MenuItem onClick={handleLogout}>
+                <LogOut
+                  size={16}
+                  style={{ marginRight: 8 }}
+                />
+                로그아웃
+              </MenuItem>
+            </Menu>
+          </Box>
+        )}
       </Toolbar>
     </AppBar>
   )

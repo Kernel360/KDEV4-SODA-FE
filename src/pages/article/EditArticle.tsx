@@ -6,7 +6,8 @@ import { Box, Typography } from '@mui/material'
 import ArticleForm, {
   ArticleFormData
 } from '../../components/articles/ArticleForm'
-import { Stage } from '../../types/stage'
+import { Stage, TaskStatus } from '../../types/stage'
+import { useToast } from '../../contexts/ToastContext'
 
 const EditArticle: React.FC = () => {
   const { projectId, articleId } = useParams<{
@@ -14,6 +15,7 @@ const EditArticle: React.FC = () => {
     articleId: string
   }>()
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [article, setArticle] = useState<Article | null>(null)
   const [stages, setStages] = useState<Stage[]>([])
   const [loading, setLoading] = useState(true)
@@ -21,7 +23,7 @@ const EditArticle: React.FC = () => {
   const [formData, setFormData] = useState<ArticleFormData>({
     title: '',
     content: '',
-    stageId: stages[0]?.id || 0,
+    stageId: '',
     priority: PriorityType.MEDIUM,
     deadLine: null,
     files: [],
@@ -31,16 +33,54 @@ const EditArticle: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [articleResponse, stagesResponse] = await Promise.all([
-          projectService.getArticleDetail(Number(projectId), Number(articleId)),
-          projectService.getProjectStages(Number(projectId))
-        ])
+        if (!projectId || !articleId) return
+
+        // 먼저 게시글 상세 정보를 가져옵니다
+        const articleResponse = await projectService.getArticleDetail(
+          Number(projectId),
+          Number(articleId)
+        )
+
+        if (!articleResponse) {
+          throw new Error('게시글 정보를 가져올 수 없습니다.')
+        }
+
         setArticle(articleResponse)
-        setStages(stagesResponse as unknown as Stage[])
+
+        // 그 다음 단계 정보를 가져옵니다
+        const stagesResponse = await projectService.getProjectStages(
+          Number(projectId)
+        )
+
+        if (!stagesResponse || !Array.isArray(stagesResponse)) {
+          throw new Error('단계 정보를 가져올 수 없습니다.')
+        }
+
+        // Transform API response to Stage type
+        const transformedStages = stagesResponse.map(stage => ({
+          id: stage.id,
+          name: stage.name,
+          stageOrder: stage.stageOrder,
+          order: stage.stageOrder,
+          tasks: (stage.tasks || []).map(task => ({
+            id: task.taskId,
+            title: task.title,
+            description: task.content,
+            status: '진행 중' as TaskStatus,
+            order: task.taskOrder,
+            stageId: stage.id
+          }))
+        }))
+
+        setStages(transformedStages)
+
+        // 게시글 정보로 폼 데이터를 설정합니다 (단계 정보를 가져온 후)
         setFormData({
           title: articleResponse.title,
           content: articleResponse.content,
-          stageId: articleResponse.stageId || stages[0]?.id || 0,
+          stageId: String(
+            articleResponse.stageId || transformedStages[0]?.id || ''
+          ),
           priority: articleResponse.priority,
           deadLine: articleResponse.deadLine
             ? new Date(articleResponse.deadLine)
@@ -53,8 +93,8 @@ const EditArticle: React.FC = () => {
             })) || []
         })
       } catch (error) {
-        setError('데이터를 불러오는데 실패했습니다.')
         console.error('Error fetching data:', error)
+        setError('데이터를 불러오는데 실패했습니다.')
       } finally {
         setLoading(false)
       }
@@ -66,27 +106,57 @@ const EditArticle: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      if (!articleId) {
-        throw new Error('게시글 ID가 없습니다.')
+      if (!articleId || !projectId) {
+        throw new Error('게시글 ID 또는 프로젝트 ID가 없습니다.')
       }
-      await projectService.updateArticle(Number(articleId), {
+
+      const userId = localStorage.getItem('userId')
+      if (!userId) {
+        throw new Error('사용자 정보를 찾을 수 없습니다.')
+      }
+
+      const request = {
         projectId: Number(projectId),
         title: formData.title,
         content: formData.content,
         priority: formData.priority,
-        deadLine: formData.deadLine?.toISOString() || '',
-        memberId: Number(articleId),
-        stageId: formData.stageId,
+        stageId: Number(formData.stageId),
+        deadLine: formData.deadLine?.toISOString() || '', // null 대신 빈 문자열 사용
+        memberId: Number(userId),
         linkList:
           formData.links?.map(link => ({
             urlAddress: link.url,
             urlDescription: link.title
           })) || []
-      })
+      }
+
+      console.log('Updating article with request:', request) // 요청 데이터 로깅
+      await projectService.updateArticle(Number(articleId), request)
+
+      // 파일이 있는 경우 파일 업로드
+      if (formData.files && formData.files.length > 0) {
+        try {
+          await projectService.uploadArticleFiles(
+            Number(articleId),
+            formData.files
+          )
+        } catch (uploadError) {
+          console.error('Error uploading files:', uploadError)
+          showToast('파일 업로드에 실패했습니다.', 'error')
+        }
+      }
+
+      showToast('게시글이 성공적으로 수정되었습니다.', 'success')
       navigate(`/user/projects/${projectId}/articles/${articleId}`)
     } catch (error) {
-      setError('게시글 수정에 실패했습니다.')
       console.error('Error updating article:', error)
+      if (error instanceof Error) {
+        setError(error.message)
+        showToast(error.message, 'error')
+      } else {
+        setError('게시글 수정에 실패했습니다.')
+        showToast('게시글 수정에 실패했습니다.', 'error')
+      }
     }
   }
 
