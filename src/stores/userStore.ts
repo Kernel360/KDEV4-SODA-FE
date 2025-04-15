@@ -8,7 +8,7 @@ interface Company {
 }
 
 interface User {
-  id: number
+  id?: number
   name: string
   authId: string
   position: string
