@@ -13,6 +13,7 @@ import {
 import { ClipboardList, LayoutDashboard } from 'lucide-react'
 import { projectService } from '../../services/projectService'
 import useProjectStore from '../../stores/projectStore'
+import SideBar from './Sidebar'
 
 const UserSidebar: React.FC = () => {
   const navigate = useNavigate()
@@ -51,18 +52,21 @@ const UserSidebar: React.FC = () => {
     fetchProjects()
   }, [fetchAllProjects])
 
+  // Check if user is ADMIN
+  const userData = localStorage.getItem('user')
+  const isAdmin = userData ? JSON.parse(userData).role === 'ADMIN' : false
+
+  // If user is ADMIN, render SideBar
+  if (isAdmin) {
+    return <SideBar />
+  }
+
   const isActive = (path: string) => {
     return location.pathname === path
   }
 
   const handleDashboardClick = () => {
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      const user = JSON.parse(userData)
-      navigate(user.role === 'ADMIN' ? '/admin' : '/user')
-    } else {
-      navigate('/user')
-    }
+    navigate('/user')
   }
 
   const ProjectItem = ({ id, title }: { id: number; title: string }) => (
@@ -97,15 +101,6 @@ const UserSidebar: React.FC = () => {
       </ListItemButton>
     </ListItem>
   )
-
-  const getDashboardText = () => {
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      const user = JSON.parse(userData)
-      return user.role === 'ADMIN' ? '관리자 페이지로 돌아가기' : '대시보드'
-    }
-    return '대시보드'
-  }
 
   return (
     <Box
@@ -147,7 +142,7 @@ const UserSidebar: React.FC = () => {
               <LayoutDashboard size={24} />
             </ListItemIcon>
             <ListItemText
-              primary={getDashboardText()}
+              primary="대시보드"
               primaryTypographyProps={{
                 fontSize: '0.875rem'
               }}
@@ -167,11 +162,7 @@ const UserSidebar: React.FC = () => {
           color: 'text.secondary',
           fontWeight: 500
         }}>
-        {localStorage.getItem('user')
-          ? JSON.parse(localStorage.getItem('user')!).role === 'ADMIN'
-            ? '전체 프로젝트 목록'
-            : '참여 중인 프로젝트'
-          : '프로젝트 목록'}
+        참여 중인 프로젝트
       </Typography>
       <List sx={{ flexGrow: 1, overflow: 'auto' }}>
         {error ? (
