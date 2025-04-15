@@ -318,5 +318,12 @@ export const projectService = {
       console.error('Error updating article:', error)
       throw error
     }
+  },
+
+  async deleteArticleLink(articleId: number, linkId: number): Promise<void> {
+    const response = await client.delete(
+      `/articles/${articleId}/links/${linkId}`
+    )
+    return response.data
   }
 }

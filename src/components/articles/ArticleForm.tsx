@@ -40,7 +40,8 @@ export interface ArticleFormData {
   priority: PriorityType
   deadLine: Date | null
   files: File[]
-  links: { url: string; title: string }[]
+  links: { id?: number; url: string; title: string }[]
+  articleId?: string
 }
 
 interface ArticleFormProps {
@@ -57,6 +58,7 @@ interface ArticleFormProps {
   onChange: (data: ArticleFormData) => void
   onSubmit: (e: React.FormEvent) => void
   onCancel: () => void
+  onDeleteLink?: (linkId: number) => void
 }
 
 const ArticleForm: React.FC<ArticleFormProps> = ({
@@ -68,11 +70,13 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   validationErrors = {},
   onChange,
   onSubmit,
-  onCancel
+  onCancel,
+  onDeleteLink
 }) => {
   const [localFormData, setLocalFormData] = useState<ArticleFormData>(formData)
   const [linkTitle, setLinkTitle] = useState('')
   const [linkUrl, setLinkUrl] = useState('')
+  const [, setIsDeletingLink] = useState(false)
 
   const handleChange = (
     field: keyof ArticleFormData,
@@ -107,10 +111,24 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     }
   }
 
-  const handleRemoveLink = (index: number) => {
-    const links = [...(localFormData.links || [])]
-    links.splice(index, 1)
-    handleChange('links', links)
+  const handleRemoveLink = async (index: number, linkId?: number) => {
+    try {
+      setIsDeletingLink(true)
+
+      if (mode === 'edit' && linkId && onDeleteLink) {
+        // 수정 모드일 때는 부모 컴포넌트의 onDeleteLink를 호출하여 링크 삭제를 처리
+        onDeleteLink(linkId)
+      }
+
+      // 로컬 상태에서 링크 제거
+      const links = [...(localFormData.links || [])]
+      links.splice(index, 1)
+      handleChange('links', links)
+    } catch (error) {
+      console.error('Error removing link:', error)
+    } finally {
+      setIsDeletingLink(false)
+    }
   }
 
   const getTitle = () => {
@@ -326,7 +344,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                             </Box>
                             <IconButton
                               size="small"
-                              onClick={() => handleRemoveLink(index)}>
+                              onClick={() => handleRemoveLink(index, link.id)}>
                               <Trash2 size={16} />
                             </IconButton>
                           </Box>

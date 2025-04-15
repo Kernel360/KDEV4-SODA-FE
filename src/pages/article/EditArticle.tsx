@@ -8,6 +8,7 @@ import ArticleForm, {
 } from '../../components/articles/ArticleForm'
 import { Stage, TaskStatus } from '../../types/stage'
 import { useToast } from '../../contexts/ToastContext'
+import { useUserStore } from '../../stores/userStore'
 
 const EditArticle: React.FC = () => {
   const { projectId, articleId } = useParams<{
@@ -16,6 +17,7 @@ const EditArticle: React.FC = () => {
   }>()
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const { user } = useUserStore()
   const [article, setArticle] = useState<Article | null>(null)
   const [stages, setStages] = useState<Stage[]>([])
   const [loading, setLoading] = useState(true)
@@ -31,6 +33,13 @@ const EditArticle: React.FC = () => {
   })
 
   useEffect(() => {
+    // 로그인 상태 확인
+    if (!user) {
+      showToast('로그인이 필요합니다.', 'error')
+      navigate('/login')
+      return
+    }
+
     const fetchData = async () => {
       try {
         if (!projectId || !articleId) return
@@ -88,6 +97,7 @@ const EditArticle: React.FC = () => {
           files: [],
           links:
             articleResponse.linkList?.map(link => ({
+              id: link.id,
               title: link.urlDescription,
               url: link.urlAddress
             })) || []
@@ -101,7 +111,39 @@ const EditArticle: React.FC = () => {
     }
 
     fetchData()
-  }, [projectId, articleId])
+  }, [projectId, articleId, user, navigate, showToast])
+
+  const handleDeleteLink = async (linkId: number) => {
+    if (!linkId || !articleId) return
+
+    try {
+      setLoading(true)
+      // 1. 링크 삭제 API 호출
+      await projectService.deleteArticleLink(Number(articleId), linkId)
+
+      // 2. formData에서 해당 링크를 즉시 제거
+      setFormData(prev => ({
+        ...prev,
+        links: prev.links.filter(link => link.id !== linkId)
+      }))
+
+      // 3. 게시글 정보를 다시 가져와서 상태 업데이트
+      const updatedArticle = await projectService.getArticleDetail(
+        Number(projectId),
+        Number(articleId)
+      )
+      if (updatedArticle) {
+        setArticle(updatedArticle)
+      }
+
+      showToast('링크가 삭제되었습니다.', 'success')
+    } catch (error) {
+      console.error('Error deleting link:', error)
+      showToast('링크 삭제에 실패했습니다.', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -110,19 +152,21 @@ const EditArticle: React.FC = () => {
         throw new Error('게시글 ID 또는 프로젝트 ID가 없습니다.')
       }
 
-      const userId = localStorage.getItem('userId')
-      if (!userId) {
-        throw new Error('사용자 정보를 찾을 수 없습니다.')
+      if (!user) {
+        showToast('로그인이 필요합니다.', 'error')
+        navigate('/login')
+        return
       }
 
+      // 현재 formData의 상태로 게시글 수정
       const request = {
         projectId: Number(projectId),
         title: formData.title,
         content: formData.content,
         priority: formData.priority,
         stageId: Number(formData.stageId),
-        deadLine: formData.deadLine?.toISOString() || '', // null 대신 빈 문자열 사용
-        memberId: Number(userId),
+        deadLine: formData.deadLine?.toISOString() || '',
+        memberId: user.id,
         linkList:
           formData.links?.map(link => ({
             urlAddress: link.url,
@@ -130,8 +174,11 @@ const EditArticle: React.FC = () => {
           })) || []
       }
 
-      console.log('Updating article with request:', request) // 요청 데이터 로깅
-      await projectService.updateArticle(Number(articleId), request)
+      console.log('Updating article with request:', request)
+      const updatedArticle = await projectService.updateArticle(
+        Number(articleId),
+        request
+      )
 
       // 파일이 있는 경우 파일 업로드
       if (formData.files && formData.files.length > 0) {
@@ -146,15 +193,25 @@ const EditArticle: React.FC = () => {
         }
       }
 
+      // 최종 상태 업데이트
+      setArticle(updatedArticle)
+      setFormData(prev => ({
+        ...prev,
+        links:
+          updatedArticle.linkList?.map(link => ({
+            id: link.id,
+            title: link.urlDescription,
+            url: link.urlAddress
+          })) || []
+      }))
+
       showToast('게시글이 성공적으로 수정되었습니다.', 'success')
       navigate(`/user/projects/${projectId}/articles/${articleId}`)
     } catch (error) {
       console.error('Error updating article:', error)
       if (error instanceof Error) {
-        setError(error.message)
         showToast(error.message, 'error')
       } else {
-        setError('게시글 수정에 실패했습니다.')
         showToast('게시글 수정에 실패했습니다.', 'error')
       }
     }
@@ -190,6 +247,7 @@ const EditArticle: React.FC = () => {
         onCancel={() =>
           navigate(`/user/projects/${projectId}/articles/${articleId}`)
         }
+        onDeleteLink={handleDeleteLink}
       />
     </Box>
   )
