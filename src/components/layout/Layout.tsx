@@ -1,63 +1,57 @@
-import React from 'react'
-import { Box, Theme } from '@mui/material'
-import { useLocation } from 'react-router-dom'
-import Header from './Header'
-import Sidebar from './Sidebar'
+import React, { useState, useEffect } from 'react'
+import { Box, useTheme } from '@mui/material'
+import { useUserStore } from '../../stores/userStore'
+import SideBar from './Sidebar'
 import UserSidebar from './UserSidebar'
+import Header from './Header'
 
-interface LayoutProps {
-  children: React.ReactNode
-}
+const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const theme = useTheme()
+  const { user, setUser } = useUserStore()
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const location = useLocation()
-  const isAdminRoute = location.pathname.startsWith('/admin')
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser)
+        setUser(parsedUser)
+      } catch (error) {
+        console.error('Error parsing user data:', error)
+        localStorage.removeItem('user')
+      }
+    }
+  }, [setUser])
+
+  const handleSidebarToggle = () => {
+    setIsSidebarOpen(!isSidebarOpen)
+  }
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100vh',
-        position: 'relative'
-      }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      <Header
+        onSidebarToggle={handleSidebarToggle}
+        isSidebarOpen={isSidebarOpen}
+      />
+      {user?.role === 'ADMIN' ? (
+        <SideBar isOpen={isSidebarOpen} />
+      ) : (
+        <UserSidebar isOpen={isSidebarOpen} />
+      )}
       <Box
+        component="main"
         sx={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: (theme: Theme) => theme.zIndex.drawer + 1,
-          backgroundColor: 'background.paper'
+          flexGrow: 1,
+          p: 3,
+          width: '100%',
+          marginLeft: isSidebarOpen ? '280px' : 0,
+          transition: theme.transitions.create('margin', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen
+          })
         }}>
-        <Header />
-      </Box>
-      <Box sx={{ display: 'flex', flex: 1, mt: '64px' }}>
-        <Box
-          component="nav"
-          sx={{
-            width: 280,
-            flexShrink: 0,
-            position: 'fixed',
-            height: 'calc(100vh - 64px)',
-            borderRight: '1px solid',
-            borderColor: 'divider',
-            backgroundColor: 'background.paper',
-            overflowY: 'auto'
-          }}>
-          {isAdminRoute ? <Sidebar /> : <UserSidebar />}
-        </Box>
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            p: 3,
-            ml: '280px',
-            minHeight: 'calc(100vh - 64px)',
-            overflowY: 'auto'
-          }}>
-          {children}
-        </Box>
+        <Box sx={{ height: 64 }} /> {/* Header height spacer */}
+        {children}
       </Box>
     </Box>
   )

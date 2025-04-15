@@ -6,84 +6,16 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Divider,
   Box,
-  Typography
+  Divider
 } from '@mui/material'
-import {
-  Users,
-  Building2,
-  ClipboardList,
-  PlusCircle,
-  LayoutDashboard
-} from 'lucide-react'
+import { LayoutDashboard, Users, Building2, ClipboardList } from 'lucide-react'
 
-const menuGroups = [
-  {
-    title: '대시보드',
-    items: [
-      {
-        id: 'dashboard',
-        label: '대시보드',
-        icon: LayoutDashboard,
-        path: '/admin'
-      }
-    ]
-  },
-  {
-    title: '프로젝트',
-    items: [
-      {
-        id: 'projects',
-        label: '프로젝트 관리',
-        icon: ClipboardList,
-        path: '/admin/projects'
-      },
-      {
-        id: 'project-create',
-        label: '프로젝트 생성',
-        icon: PlusCircle,
-        path: '/admin/projects/create'
-      }
-    ]
-  },
-  {
-    title: '회사',
-    items: [
-      {
-        id: 'companies',
-        label: '회사 관리',
-        icon: Building2,
-        path: '/admin/companies'
-      },
-      {
-        id: 'company-create',
-        label: '회사 생성',
-        icon: PlusCircle,
-        path: '/admin/companies/create'
-      }
-    ]
-  },
-  {
-    title: '멤버',
-    items: [
-      {
-        id: 'accounts',
-        label: '멤버 관리',
-        icon: Users,
-        path: '/admin/accounts'
-      },
-      {
-        id: 'account-create',
-        label: '멤버 생성',
-        icon: PlusCircle,
-        path: '/admin/accounts/create'
-      }
-    ]
-  }
-]
+interface SidebarProps {
+  isOpen: boolean
+}
 
-const Sidebar = () => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -91,81 +23,84 @@ const Sidebar = () => {
     return location.pathname === path
   }
 
-  const MenuItem = ({ item }: { item: (typeof menuGroups)[0]['items'][0] }) => (
-    <ListItem disablePadding>
-      <ListItemButton
-        onClick={() => navigate(item.path)}
-        selected={isActive(item.path)}
-        sx={{
-          borderRadius: 1,
-          mx: 1,
-          '&.Mui-selected': {
-            backgroundColor: 'primary.50',
-            color: 'primary.main',
-            '&:hover': {
-              backgroundColor: 'primary.100'
-            },
-            '& .MuiListItemIcon-root': {
-              color: 'primary.main'
-            }
-          }
-        }}>
-        <ListItemIcon sx={{ minWidth: 40 }}>
-          <item.icon size={20} />
-        </ListItemIcon>
-        <ListItemText
-          primary={item.label}
-          primaryTypographyProps={{
-            fontSize: '0.875rem'
-          }}
-        />
-      </ListItemButton>
-    </ListItem>
-  )
+  const menuItems = [
+    {
+      path: '/admin',
+      icon: <LayoutDashboard size={24} />,
+      text: '대시보드'
+    },
+    {
+      path: '/admin/accounts',
+      icon: <Users size={24} />,
+      text: '계정 관리'
+    },
+    {
+      path: '/admin/companies',
+      icon: <Building2 size={24} />,
+      text: '회사 관리'
+    },
+    {
+      path: '/admin/projects',
+      icon: <ClipboardList size={24} />,
+      text: '프로젝트 관리'
+    }
+  ]
 
   return (
     <Box
       sx={{
-        width: '100%',
-        height: '100%',
-        overflowY: 'auto',
-        '&::-webkit-scrollbar': {
-          width: '4px'
-        },
-        '&::-webkit-scrollbar-track': {
-          background: 'transparent'
-        },
-        '&::-webkit-scrollbar-thumb': {
-          background: 'rgba(0, 0, 0, 0.1)',
-          borderRadius: '4px'
-        },
-        '&::-webkit-scrollbar-thumb:hover': {
-          background: 'rgba(0, 0, 0, 0.2)'
-        }
+        width: isOpen ? 280 : 0,
+        flexShrink: 0,
+        borderRight: '1px solid',
+        borderColor: 'divider',
+        height: '100vh',
+        backgroundColor: 'background.paper',
+        position: 'fixed',
+        left: 0,
+        top: 64,
+        pt: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'width 0.3s ease',
+        overflow: 'hidden'
       }}>
-      {menuGroups.map((group, index) => (
-        <React.Fragment key={group.title}>
-          {index > 0 && <Divider sx={{ my: 2 }} />}
-          <Typography
-            variant="overline"
-            sx={{
-              px: 3,
-              py: 1,
-              color: 'text.secondary',
-              fontWeight: 500
-            }}>
-            {group.title}
-          </Typography>
-          <List>
-            {group.items.map(item => (
-              <MenuItem
-                key={item.id}
-                item={item}
-              />
-            ))}
-          </List>
-        </React.Fragment>
-      ))}
+      <List>
+        {menuItems.map((item, index) => (
+          <React.Fragment key={item.path}>
+            <ListItem
+              disablePadding
+              sx={{ mb: index === 0 ? 2 : 1 }}>
+              <ListItemButton
+                selected={isActive(item.path)}
+                onClick={() => navigate(item.path)}
+                sx={{
+                  borderRadius: 1,
+                  mx: 1,
+                  py: 1.5,
+                  '&.Mui-selected': {
+                    backgroundColor: 'primary.50',
+                    color: 'primary.main',
+                    '&:hover': {
+                      backgroundColor: 'primary.100'
+                    },
+                    '& .MuiListItemIcon-root': {
+                      color: 'primary.main'
+                    }
+                  }
+                }}>
+                <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
+                <ListItemText
+                  primary={item.text}
+                  primaryTypographyProps={{
+                    fontSize: '0.875rem'
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+            {index === 0 && <Divider sx={{ my: 2 }} />}
+          </React.Fragment>
+        ))}
+      </List>
     </Box>
   )
 }

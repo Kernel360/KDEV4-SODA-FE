@@ -3,10 +3,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { login } from '../../api/auth'
 import type { LoginRequest } from '../../types/api'
 import { useUserStore } from '../../stores/userStore'
+import { useToast } from '../../contexts/ToastContext'
 
 const Login: React.FC = () => {
   const navigate = useNavigate()
   const { setUser } = useUserStore()
+  const { showToast } = useToast()
   const [formData, setFormData] = useState<LoginRequest>({
     authId: '',
     password: ''
@@ -30,7 +32,7 @@ const Login: React.FC = () => {
     try {
       const response = await login(formData)
       console.log('Login Response:', response)
-      
+
       if (response.status === 'success' && response.data) {
         // 토큰이 없으면 에러 처리
         if (!response.data.token) {
@@ -41,10 +43,16 @@ const Login: React.FC = () => {
         // 토큰과 사용자 정보 저장
         localStorage.setItem('token', response.data.token)
         localStorage.setItem('user', JSON.stringify(response.data.data))
-        
+
         // userStore 상태 업데이트
-        setUser(response.data.data)
-        
+        const userData = {
+          id: parseInt(response.data.data.authId),
+          ...response.data.data,
+          role: response.data.data.role.toUpperCase() as 'ADMIN' | 'USER'
+        }
+        setUser(userData)
+        showToast('환영합니다!', 'success')
+
         // role에 따른 라우팅 (대소문자 구분 없이 체크)
         console.log('User Role:', response.data.data.role)
         const userRole = response.data.data.role?.toUpperCase()
@@ -56,11 +64,11 @@ const Login: React.FC = () => {
           setError('잘못된 사용자 역할입니다.')
         }
       } else {
-        setError(response.message || '로그인에 실패했습니다.')
+        showToast('로그인에 실패했습니다.', 'error')
       }
     } catch (error) {
-      console.error('Login Error:', error)
-      setError('로그인 중 오류가 발생했습니다. 다시 시도해주세요.')
+      console.error('Login error:', error)
+      showToast('로그인 중 오류가 발생했습니다.', 'error')
     } finally {
       setIsLoading(false)
     }
