@@ -112,7 +112,7 @@ const Project = () => {
           </Button>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
             <Box sx={{ fontWeight: 600, fontSize: '2rem' }}>
-              {project.title}
+            {project.title}
             </Box>
             <Box
               sx={{
@@ -154,21 +154,21 @@ const Project = () => {
                         ? '일시중단'
                         : project.status}
             </Box>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              variant="contained"
-              startIcon={<LayoutDashboard size={20} />}
-              onClick={() => navigate(`/user/projects/${id}`)}
-              sx={{
-                backgroundColor: '#FBBF24',
-                '&:hover': {
-                  backgroundColor: '#FCD34D'
-                },
-                color: '#ffffff'
-              }}>
-              대시보드 바로가기
-            </Button>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="contained"
+            startIcon={<LayoutDashboard size={20} />}
+            onClick={() => navigate(`/user/projects/${id}`)}
+            sx={{
+              backgroundColor: '#FBBF24',
+              '&:hover': {
+                backgroundColor: '#FCD34D'
+              },
+              color: '#ffffff'
+            }}>
+            대시보드 바로가기
+          </Button>
           </Box>
         </Box>
 
@@ -207,38 +207,38 @@ const Project = () => {
                   <Stack
                     direction="row"
                     spacing={1}>
-                    <Button
-                      variant="contained"
-                      startIcon={<Edit size={20} />}
-                      onClick={() => navigate(`/admin/projects/${id}/edit`)}
-                      sx={{
+          <Button
+            variant="contained"
+            startIcon={<Edit size={20} />}
+            onClick={() => navigate(`/admin/projects/${id}/edit`)}
+            sx={{
                         backgroundColor: '#F59E0B',
-                        '&:hover': {
-                          backgroundColor: '#FCD34D'
-                        }
-                      }}>
-                      수정
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      sx={{
-                        borderColor: '#ef5350',
-                        color: '#ef5350',
-                        '&:hover': {
-                          borderColor: '#d32f2f',
-                          backgroundColor: 'transparent'
-                        }
-                      }}
-                      onClick={() => setOpenDeleteDialog(true)}>
-                      삭제
-                    </Button>
+              '&:hover': {
+                backgroundColor: '#FCD34D'
+              }
+            }}>
+            수정
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            sx={{
+              borderColor: '#ef5350',
+              color: '#ef5350',
+              '&:hover': {
+                borderColor: '#d32f2f',
+                backgroundColor: 'transparent'
+              }
+            }}
+            onClick={() => setOpenDeleteDialog(true)}>
+            삭제
+          </Button>
                   </Stack>
                 </Stack>
               </Grid>
 
-              <Grid
-                item
+          <Grid
+            item
                 xs={4}>
                 <Stack spacing={3}>
                   <Stack
@@ -255,7 +255,7 @@ const Project = () => {
                         고객사
                       </Box>
                       <Box sx={{ fontSize: '1rem', fontWeight: 500 }}>
-                        {project.clientCompanyName}
+                {project.clientCompanyName}
                       </Box>
                     </Stack>
                   </Stack>
@@ -293,13 +293,13 @@ const Project = () => {
                       </IconButton>
                     </Stack>
                     <Collapse in={showClientMembers}>
-                      <List
-                        dense
+              <List
+                dense
                         disablePadding
                         sx={{ mt: 1 }}>
-                        {project.clientCompanyManagers.map((manager, index) => (
-                          <ListItem
-                            key={index}
+                {project.clientCompanyManagers.map((manager, index) => (
+                  <ListItem
+                    key={index}
                             sx={{
                               px: 0,
                               py: 0.5
@@ -353,16 +353,16 @@ const Project = () => {
                                 }
                               }}
                             />
-                          </ListItem>
-                        ))}
-                      </List>
+                  </ListItem>
+                ))}
+              </List>
                     </Collapse>
-                  </Box>
+            </Box>
                 </Stack>
-              </Grid>
+          </Grid>
 
-              <Grid
-                item
+          <Grid
+            item
                 xs={4}>
                 <Stack spacing={3}>
                   <Stack
@@ -379,7 +379,7 @@ const Project = () => {
                         개발사
                       </Box>
                       <Box sx={{ fontSize: '1rem', fontWeight: 500 }}>
-                        {project.devCompanyName}
+                {project.devCompanyName}
                       </Box>
                     </Stack>
                   </Stack>
@@ -417,13 +417,13 @@ const Project = () => {
                       </IconButton>
                     </Stack>
                     <Collapse in={showDevMembers}>
-                      <List
-                        dense
+              <List
+                dense
                         disablePadding
                         sx={{ mt: 1 }}>
-                        {project.devCompanyManagers.map((manager, index) => (
-                          <ListItem
-                            key={index}
+                {project.devCompanyManagers.map((manager, index) => (
+                  <ListItem
+                    key={index}
                             sx={{
                               px: 0,
                               py: 0.5
@@ -477,13 +477,13 @@ const Project = () => {
                                 }
                               }}
                             />
-                          </ListItem>
-                        ))}
-                      </List>
+                  </ListItem>
+                ))}
+              </List>
                     </Collapse>
-                  </Box>
+            </Box>
                 </Stack>
-              </Grid>
+          </Grid>
 
               <Grid
                 item
@@ -671,7 +671,7 @@ const Project = () => {
                           }
                         }}
                       />
-                    </ListItem>
+                  </ListItem>
                     {index < array.length - 1 && <Divider sx={{ my: 1 }} />}
                   </Fragment>
                 ))}
@@ -857,7 +857,7 @@ const Project = () => {
                           }
                         }}
                       />
-                    </ListItem>
+                  </ListItem>
                     {index < array.length - 1 && <Divider sx={{ my: 1 }} />}
                   </Fragment>
                 ))}
