@@ -298,32 +298,58 @@ export const projectService = {
     await client.delete(`/projects/${projectId}/articles/${articleId}`)
   },
 
+  // 게시글 수정
   async updateArticle(
     articleId: number,
     data: {
       projectId: number
       title: string
       content: string
-      priority: PriorityType
       deadLine: string
       memberId: number
       stageId: number
-      linkList: { urlAddress: string; urlDescription: string }[]
+      priority: PriorityType
     }
   ): Promise<Article> {
     try {
       const response = await client.put(`/articles/${articleId}`, data)
-      return response.data.data
+      if (response.data.status === 'success') {
+        return response.data.data
+      }
+      throw new Error(response.data.message || '게시글 수정에 실패했습니다.')
     } catch (error) {
       console.error('Error updating article:', error)
       throw error
     }
   },
 
+  // 게시글 링크 삭제
   async deleteArticleLink(articleId: number, linkId: number): Promise<void> {
-    const response = await client.delete(
-      `/articles/${articleId}/links/${linkId}`
-    )
-    return response.data
+    try {
+      const response = await client.delete(
+        `/articles/${articleId}/links/${linkId}`
+      )
+      if (response.data.status !== 'success') {
+        throw new Error(response.data.message || '링크 삭제에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('Error deleting article link:', error)
+      throw error
+    }
+  },
+
+  // 게시글 파일 삭제
+  async deleteArticleFile(articleId: number, fileId: number): Promise<void> {
+    try {
+      const response = await client.delete(
+        `/articles/${articleId}/files/${fileId}`
+      )
+      if (response.data.status !== 'success') {
+        throw new Error(response.data.message || '파일 삭제에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('Error deleting article file:', error)
+      throw error
+    }
   }
 }

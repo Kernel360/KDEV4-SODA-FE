@@ -39,7 +39,12 @@ export interface ArticleFormData {
   stageId: string
   priority: PriorityType
   deadLine: Date | null
-  files: File[]
+  files: Array<{
+    id?: number
+    name: string
+    url: string
+    type: string
+  }>
   links: { id?: number; url: string; title: string }[]
   articleId?: string
 }
@@ -59,6 +64,7 @@ interface ArticleFormProps {
   onSubmit: (e: React.FormEvent) => void
   onCancel: () => void
   onDeleteLink?: (linkId: number) => void
+  onDeleteFile?: (fileId: number) => void
 }
 
 const ArticleForm: React.FC<ArticleFormProps> = ({
@@ -71,7 +77,8 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   onChange,
   onSubmit,
   onCancel,
-  onDeleteLink
+  onDeleteLink,
+  onDeleteFile
 }) => {
   const [localFormData, setLocalFormData] = useState<ArticleFormData>(formData)
   const [linkTitle, setLinkTitle] = useState('')
@@ -85,7 +92,12 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       | number
       | Date
       | null
-      | File[]
+      | Array<{
+          id?: number
+          name: string
+          url: string
+          type: string
+        }>
       | { title: string; url: string }[]
   ) => {
     const newFormData = { ...localFormData, [field]: value }
@@ -95,17 +107,34 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const files = Array.from(e.target.files)
+      const files = Array.from(e.target.files).map(file => ({
+        name: file.name,
+        url: URL.createObjectURL(file),
+        type: file.type
+      }))
       handleChange('files', [...(localFormData.files || []), ...files])
     }
   }
 
   const handleAddLink = () => {
     if (linkTitle && linkUrl) {
-      handleChange('links', [
+      // 중복 링크 체크
+      const isDuplicate = localFormData.links.some(
+        link => link.url === linkUrl && link.title === linkTitle
+      )
+
+      if (isDuplicate) {
+        console.log('중복된 링크입니다:', { title: linkTitle, url: linkUrl })
+        return
+      }
+
+      console.log('새 링크 추가:', { title: linkTitle, url: linkUrl })
+      const newLinks = [
         ...(localFormData.links || []),
         { title: linkTitle, url: linkUrl }
-      ])
+      ]
+      console.log('추가 후 링크 목록:', newLinks)
+      handleChange('links', newLinks)
       setLinkTitle('')
       setLinkUrl('')
     }
@@ -113,21 +142,83 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 
   const handleRemoveLink = async (index: number, linkId?: number) => {
     try {
+      console.log('링크 삭제 버튼 클릭:', {
+        index,
+        linkId,
+        mode,
+        links: localFormData.links
+      })
       setIsDeletingLink(true)
 
-      if (mode === 'edit' && linkId && onDeleteLink) {
-        // 수정 모드일 때는 부모 컴포넌트의 onDeleteLink를 호출하여 링크 삭제를 처리
-        onDeleteLink(linkId)
-      }
+      const targetLink = localFormData.links?.[index]
+      console.log('삭제할 링크 정보:', targetLink)
 
-      // 로컬 상태에서 링크 제거
-      const links = [...(localFormData.links || [])]
-      links.splice(index, 1)
-      handleChange('links', links)
+      if (mode === 'edit' && onDeleteLink) {
+        if (targetLink?.id) {
+          console.log('수정 모드에서 링크 삭제 API 호출:', {
+            linkId: targetLink.id
+          })
+          await onDeleteLink(targetLink.id)
+          console.log('링크 삭제 API 호출 완료')
+
+          // API 호출 성공 후 로컬 상태에서 링크 제거
+          const updatedLinks = localFormData.links.filter(
+            link => link.id !== targetLink.id
+          )
+          console.log('업데이트된 링크 목록:', updatedLinks)
+          handleChange('links', updatedLinks)
+        } else {
+          console.log('새로 추가된 링크 삭제:', { index })
+          const links = [...(localFormData.links || [])]
+          links.splice(index, 1)
+          handleChange('links', links)
+        }
+      } else {
+        console.log('생성 모드에서 로컬 링크 삭제:', { index })
+        const links = [...(localFormData.links || [])]
+        links.splice(index, 1)
+        handleChange('links', links)
+      }
     } catch (error) {
-      console.error('Error removing link:', error)
+      console.error('링크 삭제 중 에러 발생:', error)
     } finally {
       setIsDeletingLink(false)
+    }
+  }
+
+  const handleRemoveFile = async (fileId: number | undefined) => {
+    try {
+      console.log('파일 삭제 시작:', { fileId, files: localFormData.files })
+      const targetFile = localFormData.files?.find(file => file.id === fileId)
+      console.log('삭제할 파일 정보:', targetFile)
+
+      if (mode === 'edit' && onDeleteFile) {
+        if (targetFile?.id) {
+          console.log('수정 모드에서 파일 삭제 API 호출:', {
+            fileId: targetFile.id
+          })
+          await onDeleteFile(targetFile.id)
+          console.log('파일 삭제 API 호출 완료')
+        } else {
+          console.log('새로 추가된 파일 삭제')
+          const files = [...(localFormData.files || [])]
+          const fileIndex = files.findIndex(file => !file.id)
+          if (fileIndex !== -1) {
+            files.splice(fileIndex, 1)
+            handleChange('files', files)
+          }
+        }
+      } else {
+        console.log('생성 모드에서 로컬 파일 삭제')
+        const files = [...(localFormData.files || [])]
+        const fileIndex = files.findIndex(file => !file.id)
+        if (fileIndex !== -1) {
+          files.splice(fileIndex, 1)
+          handleChange('files', files)
+        }
+      }
+    } catch (error) {
+      console.error('파일 삭제 중 에러 발생:', error)
     }
   }
 
@@ -165,16 +256,17 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   단계
                 </Typography>
                 <Select
-                  value={localFormData.stageId}
-                  onChange={e =>
-                    handleChange('stageId', e.target.value as string)
-                  }
+                  labelId="stage-label"
+                  id="stage"
+                  value={formData.stageId || ''}
+                  onChange={e => handleChange('stageId', e.target.value)}
+                  label="단계"
                   required
-                  size="small">
+                  fullWidth>
                   {stages.map(stage => (
                     <MenuItem
                       key={stage.id}
-                      value={stage.id}>
+                      value={String(stage.id)}>
                       {stage.name}
                     </MenuItem>
                   ))}
@@ -322,7 +414,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       <Stack spacing={1}>
                         {localFormData.links.map((link, index) => (
                           <Box
-                            key={index}
+                            key={link.id || index}
                             sx={{
                               display: 'flex',
                               alignItems: 'center',
@@ -407,11 +499,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                           </Typography>
                           <IconButton
                             size="small"
-                            onClick={() => {
-                              const files = [...localFormData.files!]
-                              files.splice(index, 1)
-                              handleChange('files', files)
-                            }}>
+                            onClick={() => handleRemoveFile(file.id)}>
                             <Trash2 size={16} />
                           </IconButton>
                         </Box>

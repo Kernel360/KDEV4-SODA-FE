@@ -31,9 +31,10 @@ const EditArticle: React.FC = () => {
     files: [],
     links: []
   })
+  const [deletedFiles, setDeletedFiles] = useState<number[]>([])
+  const [deletedLinks, setDeletedLinks] = useState<number[]>([])
 
   useEffect(() => {
-    // 로그인 상태 확인
     if (!user) {
       showToast('로그인이 필요합니다.', 'error')
       navigate('/login')
@@ -44,64 +45,85 @@ const EditArticle: React.FC = () => {
       try {
         if (!projectId || !articleId) return
 
-        // 먼저 게시글 상세 정보를 가져옵니다
-        const articleResponse = await projectService.getArticleDetail(
-          Number(projectId),
-          Number(articleId)
-        )
+        const [articleResponse, stagesResponse] = await Promise.all([
+          projectService.getArticleDetail(Number(projectId), Number(articleId)),
+          projectService.getProjectStages(Number(projectId))
+        ])
 
-        if (!articleResponse) {
-          throw new Error('게시글 정보를 가져올 수 없습니다.')
+        console.log('Article Response:', articleResponse)
+        console.log('Stages Response:', stagesResponse)
+
+        if (articleResponse) {
+          console.log('Article Response:', articleResponse)
+          setArticle(articleResponse)
+
+          // stages 데이터가 먼저 로드되었는지 확인
+          const currentStages = stages.length > 0 ? stages : stagesResponse
+          console.log('Current Stages:', currentStages)
+
+          // article의 stageName과 일치하는 stage를 찾음
+          const matchingStage = currentStages.find(
+            stage => stage.name === articleResponse.stageName
+          )
+          console.log('Matching Stage:', matchingStage)
+
+          const initialFormData = {
+            title: articleResponse.title,
+            content: articleResponse.content,
+            stageId: matchingStage ? String(matchingStage.id) : '',
+            priority: articleResponse.priority,
+            deadLine: articleResponse.deadLine
+              ? new Date(articleResponse.deadLine)
+              : null,
+            files:
+              articleResponse.fileList
+                ?.filter(file => !file.deleted)
+                ?.map(file => ({
+                  id: file.id,
+                  url: file.url,
+                  name: file.name,
+                  type: ''
+                })) || [],
+            links:
+              articleResponse.linkList
+                ?.filter(link => !link.deleted)
+                ?.map(link => ({
+                  id: link.id,
+                  title: link.urlDescription,
+                  url: link.urlAddress
+                })) || []
+          }
+          console.log('Initial Form Data:', initialFormData)
+          setFormData(initialFormData)
         }
 
-        setArticle(articleResponse)
-
-        // 그 다음 단계 정보를 가져옵니다
-        const stagesResponse = await projectService.getProjectStages(
-          Number(projectId)
-        )
-
-        if (!stagesResponse || !Array.isArray(stagesResponse)) {
-          throw new Error('단계 정보를 가져올 수 없습니다.')
-        }
-
-        // Transform API response to Stage type
-        const transformedStages = stagesResponse.map(stage => ({
-          id: stage.id,
-          name: stage.name,
-          stageOrder: stage.stageOrder,
-          order: stage.stageOrder,
-          tasks: (stage.tasks || []).map(task => ({
-            id: task.taskId,
-            title: task.title,
-            description: task.content,
-            status: '진행 중' as TaskStatus,
-            order: task.taskOrder,
-            stageId: stage.id
+        if (stagesResponse) {
+          const convertedStages = stagesResponse.map(stage => ({
+            ...stage,
+            tasks: (stage.tasks || []).map(task => ({
+              id: task.taskId,
+              title: task.title,
+              description: task.content,
+              status: 'PENDING' as TaskStatus,
+              order: task.taskOrder
+            }))
           }))
-        }))
+          console.log('Converted stages:', convertedStages)
+          setStages(convertedStages)
 
-        setStages(transformedStages)
-
-        // 게시글 정보로 폼 데이터를 설정합니다 (단계 정보를 가져온 후)
-        setFormData({
-          title: articleResponse.title,
-          content: articleResponse.content,
-          stageId: String(
-            articleResponse.stageId || transformedStages[0]?.id || ''
-          ),
-          priority: articleResponse.priority,
-          deadLine: articleResponse.deadLine
-            ? new Date(articleResponse.deadLine)
-            : null,
-          files: [],
-          links:
-            articleResponse.linkList?.map(link => ({
-              id: link.id,
-              title: link.urlDescription,
-              url: link.urlAddress
-            })) || []
-        })
+          // stages가 로드된 후 article의 stageName을 기준으로 stageId를 다시 설정
+          if (article) {
+            const matchingStage = convertedStages.find(
+              stage => stage.name === article.stageName
+            )
+            if (matchingStage) {
+              setFormData(prev => ({
+                ...prev,
+                stageId: String(matchingStage.id)
+              }))
+            }
+          }
+        }
       } catch (error) {
         console.error('Error fetching data:', error)
         setError('데이터를 불러오는데 실패했습니다.')
@@ -113,36 +135,28 @@ const EditArticle: React.FC = () => {
     fetchData()
   }, [projectId, articleId, user, navigate, showToast])
 
-  const handleDeleteLink = async (linkId: number) => {
-    if (!linkId || !articleId) return
-
-    try {
-      setLoading(true)
-      // 1. 링크 삭제 API 호출
-      await projectService.deleteArticleLink(Number(articleId), linkId)
-
-      // 2. formData에서 해당 링크를 즉시 제거
-      setFormData(prev => ({
-        ...prev,
-        links: prev.links.filter(link => link.id !== linkId)
-      }))
-
-      // 3. 게시글 정보를 다시 가져와서 상태 업데이트
-      const updatedArticle = await projectService.getArticleDetail(
-        Number(projectId),
-        Number(articleId)
-      )
-      if (updatedArticle) {
-        setArticle(updatedArticle)
-      }
-
-      showToast('링크가 삭제되었습니다.', 'success')
-    } catch (error) {
-      console.error('Error deleting link:', error)
-      showToast('링크 삭제에 실패했습니다.', 'error')
-    } finally {
-      setLoading(false)
+  const handleDeleteLink = (linkId: number) => {
+    if (!linkId) {
+      console.error('링크 삭제 실패: linkId가 없습니다.')
+      return
     }
+    setDeletedLinks(prev => [...prev, linkId])
+    setFormData(prev => ({
+      ...prev,
+      links: prev.links.filter(link => link.id !== linkId)
+    }))
+  }
+
+  const handleDeleteFile = (fileId: number) => {
+    if (!fileId) {
+      console.error('파일 삭제 실패: fileId가 없습니다.')
+      return
+    }
+    setDeletedFiles(prev => [...prev, fileId])
+    setFormData(prev => ({
+      ...prev,
+      files: prev.files.filter(file => file.id !== fileId)
+    }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -158,15 +172,38 @@ const EditArticle: React.FC = () => {
         return
       }
 
-      // 현재 formData의 상태로 게시글 수정
+      console.log('현재 사용자 정보:', user)
+      console.log('수정할 게시글 데이터:', formData)
+
+      // 1. 삭제된 파일 처리
+      if (deletedFiles.length > 0) {
+        console.log('삭제할 파일 ID 목록:', deletedFiles)
+        await Promise.all(
+          deletedFiles.map(fileId =>
+            projectService.deleteArticleFile(Number(articleId), fileId)
+          )
+        )
+      }
+
+      // 2. 삭제된 링크 처리
+      if (deletedLinks.length > 0) {
+        console.log('삭제할 링크 ID 목록:', deletedLinks)
+        await Promise.all(
+          deletedLinks.map(linkId =>
+            projectService.deleteArticleLink(Number(articleId), linkId)
+          )
+        )
+      }
+
+      // 3. 게시글 수정
       const request = {
         projectId: Number(projectId),
         title: formData.title,
         content: formData.content,
-        priority: formData.priority,
-        stageId: Number(formData.stageId),
         deadLine: formData.deadLine?.toISOString() || '',
-        memberId: user.id,
+        memberId: user.memberId,
+        stageId: Number(formData.stageId),
+        priority: formData.priority,
         linkList:
           formData.links?.map(link => ({
             urlAddress: link.url,
@@ -174,41 +211,41 @@ const EditArticle: React.FC = () => {
           })) || []
       }
 
-      console.log('Updating article with request:', request)
+      console.log('게시글 수정 요청 데이터:', request)
       const updatedArticle = await projectService.updateArticle(
         Number(articleId),
         request
       )
+      console.log('게시글 수정 응답:', updatedArticle)
 
-      // 파일이 있는 경우 파일 업로드
-      if (formData.files && formData.files.length > 0) {
+      // 4. 새로 추가된 파일 업로드
+      const newFiles = formData.files.filter(file => !file.id)
+      if (newFiles.length > 0) {
+        console.log('새로 추가된 파일 업로드 시작:', newFiles)
         try {
-          await projectService.uploadArticleFiles(
-            Number(articleId),
-            formData.files
+          const fileObjects = await Promise.all(
+            newFiles.map(async file => {
+              const response = await fetch(file.url)
+              const blob = await response.blob()
+              return new File([blob], file.name, { type: file.type })
+            })
           )
+
+          const uploadResponse = await projectService.uploadArticleFiles(
+            Number(articleId),
+            fileObjects
+          )
+          console.log('파일 업로드 응답:', uploadResponse)
         } catch (uploadError) {
-          console.error('Error uploading files:', uploadError)
+          console.error('파일 업로드 에러:', uploadError)
           showToast('파일 업로드에 실패했습니다.', 'error')
         }
       }
 
-      // 최종 상태 업데이트
-      setArticle(updatedArticle)
-      setFormData(prev => ({
-        ...prev,
-        links:
-          updatedArticle.linkList?.map(link => ({
-            id: link.id,
-            title: link.urlDescription,
-            url: link.urlAddress
-          })) || []
-      }))
-
       showToast('게시글이 성공적으로 수정되었습니다.', 'success')
       navigate(`/user/projects/${projectId}/articles/${articleId}`)
     } catch (error) {
-      console.error('Error updating article:', error)
+      console.error('게시글 수정 중 에러 발생:', error)
       if (error instanceof Error) {
         showToast(error.message, 'error')
       } else {
@@ -248,6 +285,7 @@ const EditArticle: React.FC = () => {
           navigate(`/user/projects/${projectId}/articles/${articleId}`)
         }
         onDeleteLink={handleDeleteLink}
+        onDeleteFile={handleDeleteFile}
       />
     </Box>
   )
