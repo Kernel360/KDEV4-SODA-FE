@@ -10,7 +10,6 @@ import {
 import ProjectHeader from '../../../components/projects/ProjectHeader'
 import ProjectArticle from '../../../components/projects/ProjectArticle'
 import PaymentManagement from '../../../components/projects/PaymentManagement'
-import ProgressManagement from '../../../components/projects/ProgressManagement'
 import { projectService } from '../../../services/projectService'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
@@ -154,13 +153,6 @@ const UserProject: React.FC = () => {
               maxWidth: 'none'
             }}
           />
-          <Tab
-            label="진척 관리"
-            sx={{
-              flex: 1,
-              maxWidth: 'none'
-            }}
-          />
         </Tabs>
 
         <Box sx={{ bgcolor: 'white', minHeight: '500px' }}>
@@ -179,16 +171,6 @@ const UserProject: React.FC = () => {
             <ProjectArticle
               projectId={project.id}
               stages={stages}
-            />
-          </TabPanel>
-
-          <TabPanel
-            value={tabValue}
-            index={2}>
-            <ProgressManagement
-              projectId={project.id}
-              stages={stages}
-              onStagesChange={setStages}
             />
           </TabPanel>
         </Box>
