@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Box,
   Typography,
@@ -84,6 +84,10 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   const [linkTitle, setLinkTitle] = useState('')
   const [linkUrl, setLinkUrl] = useState('')
   const [, setIsDeletingLink] = useState(false)
+
+  useEffect(() => {
+    setLocalFormData(formData)
+  }, [formData])
 
   const handleChange = (
     field: keyof ArticleFormData,
@@ -258,7 +262,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 <Select
                   labelId="stage-label"
                   id="stage"
-                  value={formData.stageId || ''}
+                  value={localFormData.stageId || ''}
                   onChange={e => handleChange('stageId', e.target.value)}
                   label="단계"
                   required

@@ -285,23 +285,31 @@ const Article: React.FC = () => {
                   <List>
                     {article.linkList
                       .filter(link => !link.deleted)
-                      .map((link, index) => (
-                        <ListItem key={index}>
-                          <ListItemIcon>
-                            <Link2 size={20} />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={
-                              <MuiLink
-                                href={link.urlAddress}
-                                target="_blank"
-                                rel="noopener noreferrer">
-                                {link.urlDescription || link.urlAddress}
-                              </MuiLink>
-                            }
-                          />
-                        </ListItem>
-                      ))}
+                      .map((link, index) => {
+                        const url =
+                          link.urlAddress.startsWith('http://') ||
+                          link.urlAddress.startsWith('https://')
+                            ? link.urlAddress
+                            : `https://${link.urlAddress}`
+
+                        return (
+                          <ListItem key={index}>
+                            <ListItemIcon>
+                              <Link2 size={20} />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={
+                                <MuiLink
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer">
+                                  {link.urlDescription || link.urlAddress}
+                                </MuiLink>
+                              }
+                            />
+                          </ListItem>
+                        )
+                      })}
                   </List>
                 </Box>
               )}
