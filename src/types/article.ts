@@ -42,12 +42,14 @@ export interface ArticleFile {
   id: number
   name: string
   url: string
+  deleted?: boolean
 }
 
 export interface ArticleLink {
   id: number
   urlAddress: string
   urlDescription: string
+  deleted?: boolean
 }
 
 export interface LinkUploadDTO {

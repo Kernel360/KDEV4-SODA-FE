@@ -30,14 +30,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       text: '대시보드'
     },
     {
-      path: '/admin/accounts',
-      icon: <Users size={24} />,
-      text: '계정 관리'
-    },
-    {
       path: '/admin/companies',
       icon: <Building2 size={24} />,
       text: '회사 관리'
+    },
+    {
+      path: '/admin/accounts',
+      icon: <Users size={24} />,
+      text: '계정 관리'
     },
     {
       path: '/admin/projects',

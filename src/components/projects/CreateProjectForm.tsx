@@ -17,6 +17,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers'
 import type { CompanyListItem, CompanyMember } from '../../types/api' // Assuming ApiResponse is defined
 import { getCompanyMembers } from '../../api/company'
+import { Dayjs } from 'dayjs'
 
 interface CreateProjectFormProps {
   loading: boolean
@@ -64,8 +65,8 @@ export default function CreateProjectForm({
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    startDate: '',
-    endDate: '',
+    startDate: null as Dayjs | null,
+    endDate: null as Dayjs | null,
     clientCompanyId: '',
     developmentCompanyId: '',
     clientManagers: [] as string[],
@@ -117,11 +118,8 @@ export default function CreateProjectForm({
     setFormData(prev => ({ ...prev, [name]: selectedValues }))
   }
 
-  const handleDateChange = (name: string, date: Date | string | null) => {
-    // Format date if it's a Date object, otherwise use the string or empty string
-    const formattedDate =
-      date instanceof Date ? date.toISOString().split('T')[0] : date || ''
-    setFormData(prev => ({ ...prev, [name]: formattedDate }))
+  const handleDateChange = (name: string, date: Dayjs | null) => {
+    setFormData(prev => ({ ...prev, [name]: date }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -162,10 +160,11 @@ export default function CreateProjectForm({
       }
 
       // 날짜 유효성 검증
-      const startDate = new Date(formData.startDate)
-      const endDate = new Date(formData.endDate)
-
-      if (startDate >= endDate) {
+      if (
+        formData.startDate &&
+        formData.endDate &&
+        formData.startDate.isAfter(formData.endDate)
+      ) {
         setErrors(prev => ({
           ...prev,
           endDate: '종료일은 시작일보다 이후여야 합니다.'
@@ -199,7 +198,14 @@ export default function CreateProjectForm({
         return
       }
 
-      await onSave(formData)
+      // 날짜를 ISO 문자열로 변환 (YYYY-MM-DD 형식)
+      const formattedData = {
+        ...formData,
+        startDate: formData.startDate?.format('YYYY-MM-DD') || '',
+        endDate: formData.endDate?.format('YYYY-MM-DD') || ''
+      }
+
+      await onSave(formattedData)
     } catch (error: any) {
       if (error instanceof Error) {
         setErrors(prev => ({
@@ -592,7 +598,7 @@ export default function CreateProjectForm({
 
       <DatePicker
         label="시작일"
-        value={formData.startDate ? new Date(formData.startDate) : null}
+        value={formData.startDate}
         onChange={date => handleDateChange('startDate', date)}
         sx={{ mb: 2, mr: 1, width: 'calc(50% - 4px)' }}
         slotProps={{ textField: { required: true } }}
@@ -600,10 +606,10 @@ export default function CreateProjectForm({
 
       <DatePicker
         label="종료일"
-        value={formData.endDate ? new Date(formData.endDate) : null}
+        value={formData.endDate}
         onChange={date => handleDateChange('endDate', date)}
         sx={{ mb: 2, width: 'calc(50% - 4px)' }}
-        minDate={formData.startDate ? new Date(formData.startDate) : undefined}
+        minDate={formData.startDate || undefined}
         slotProps={{ textField: { required: true } }}
       />
 

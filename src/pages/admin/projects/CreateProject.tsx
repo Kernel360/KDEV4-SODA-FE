@@ -5,9 +5,10 @@ import { getCompanyList } from '../../../api/company'
 import { useToast } from '../../../contexts/ToastContext'
 import type { CompanyListItem } from '../../../types/api'
 import { projectService } from '../../../services/projectService'
-import type { CreateProjectRequest } from '../../../services/projectService'
 import CreateProjectForm from '../../../components/projects/CreateProjectForm'
 import axios from 'axios'
+import { LocalizationProvider } from '@mui/x-date-pickers'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 
 export default function CreateProject() {
   const navigate = useNavigate()
@@ -50,52 +51,55 @@ export default function CreateProject() {
     developmentManagers: string[]
     developmentParticipants: string[]
   }) => {
-    let requestData: CreateProjectRequest = {
-      title: '',
-      description: '',
-      startDate: '',
-      endDate: '',
-      clientCompanyId: 0,
-      devCompanyId: 0,
-      devManagers: [],
-      devMembers: [],
-      clientManagers: [],
-      clientMembers: []
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    // 회사 ID를 숫자로 변환
+    const clientCompanyId = parseInt(formData.clientCompanyId)
+    const developmentCompanyId = parseInt(formData.developmentCompanyId)
+
+    // 담당자 ID들을 숫자 배열로 변환
+    const clientManagers = formData.clientManagers.map(id => parseInt(id))
+    const developmentManagers = formData.developmentManagers.map(id =>
+      parseInt(id)
+    )
+    const clientParticipants = formData.clientParticipants.map(id =>
+      parseInt(id)
+    )
+    const developmentParticipants = formData.developmentParticipants.map(id =>
+      parseInt(id)
+    )
+
+    // 날짜 형식을 ISO 문자열로 변환
+    const startDate = new Date(formData.startDate).toISOString()
+    const endDate = new Date(formData.endDate).toISOString()
+
+    const requestData = {
+      title: formData.name,
+      description: formData.description || '',
+      status: 'CONTRACT',
+      startDate: startDate,
+      endDate: endDate,
+      clientCompanyId: clientCompanyId,
+      devCompanyId: developmentCompanyId,
+      devManagers: developmentManagers,
+      devMembers: developmentParticipants || [],
+      clientManagers: clientManagers,
+      clientMembers: clientParticipants || []
     }
 
     try {
-      setLoading(true)
-      setError(null)
+      console.log('Sending request data:', requestData)
+      const response = await projectService.createProject(requestData)
 
-      // 회사 선택 확인
-      if (!formData.clientCompanyId || !formData.developmentCompanyId) {
-        setError('고객사와 개발사를 모두 선택해주세요.')
-        return
+      if (response) {
+        setSuccess('프로젝트가 성공적으로 생성되었습니다.')
+        showToast('프로젝트가 성공적으로 생성되었습니다.', 'success')
+        setTimeout(() => {
+          navigate('/admin/projects')
+        }, 1500)
       }
-
-      requestData = {
-        title: formData.name,
-        description: formData.description,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        clientCompanyId: parseInt(formData.clientCompanyId),
-        devCompanyId: parseInt(formData.developmentCompanyId),
-        devManagers: formData.developmentManagers.map(id => parseInt(id)),
-        devMembers: formData.developmentParticipants.map(id => parseInt(id)),
-        clientManagers: formData.clientManagers.map(id => parseInt(id)),
-        clientMembers: formData.clientParticipants.map(id => parseInt(id))
-      }
-
-      // API 호출을 통해 프로젝트 생성
-      await projectService.createProject(requestData)
-
-      // 성공 메시지 표시
-      setSuccess('프로젝트가 성공적으로 생성되었습니다.')
-
-      // 1초 후 프로젝트 목록 페이지로 이동
-      setTimeout(() => {
-        navigate('/admin/projects')
-      }, 1000)
     } catch (err) {
       console.error('프로젝트 생성 중 오류:', err)
       if (axios.isAxiosError(err)) {
@@ -104,6 +108,7 @@ export default function CreateProject() {
         console.error('요청 데이터:', requestData)
       }
       setError('프로젝트 생성 중 오류가 발생했습니다.')
+      showToast('프로젝트 생성 중 오류가 발생했습니다.', 'error')
     } finally {
       setLoading(false)
     }
@@ -114,20 +119,22 @@ export default function CreateProject() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography
-        variant="h5"
-        gutterBottom>
-        프로젝트 생성
-      </Typography>
-      <CreateProjectForm
-        loading={loading}
-        error={error}
-        success={success}
-        companies={companies}
-        onSave={handleSave}
-        onCancel={handleCancel}
-      />
-    </Box>
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Box sx={{ p: 3 }}>
+        <Typography
+          variant="h5"
+          gutterBottom>
+          프로젝트 생성
+        </Typography>
+        <CreateProjectForm
+          loading={loading}
+          error={error}
+          success={success}
+          companies={companies}
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
+      </Box>
+    </LocalizationProvider>
   )
 }
