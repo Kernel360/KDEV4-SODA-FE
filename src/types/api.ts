@@ -9,12 +9,20 @@ export interface Company {
 
 export interface User {
   id: number
+  memberId: number
+  authId: string
   name: string
   email: string
   phoneNumber: string
   position: string
-  company: string
   role: string
+  firstLogin: boolean
+  company?: {
+    id: number
+    name: string
+    phoneNumber: string
+    companyNumber: string
+  }
 }
 
 export interface ApiResponse<T> {
@@ -27,6 +35,7 @@ export interface ApiResponse<T> {
 export interface LoginResponse {
   token: string
   data: {
+    memberId: number
     name: string
     authId: string
     position: string
@@ -105,7 +114,7 @@ export interface SignupRequest {
   authId: string
   password: string
   role: 'USER' | 'ADMIN'
-  companyId: number
+  companyId?: number | null
 }
 
 export interface SignupResponse {
@@ -288,4 +297,11 @@ export interface UpdateTaskResponseRequest {
     urlAddress: string
     urlDescription: string
   }>
+}
+
+export interface UpdateUserInfoResponse {
+  status: 'success' | 'error'
+  code: string
+  message: string
+  data: User | null
 }
