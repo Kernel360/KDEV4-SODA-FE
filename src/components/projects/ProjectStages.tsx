@@ -189,13 +189,13 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
 
       // Optimistic update: 먼저 UI에 stage 추가
       const newStage: Stage = {
-        id: Date.now(), // 임시 ID
-        title: title,
-        order: position,
-        status: '대기' as StageStatus,
+        id: 0,
+        title: '',
+        name: '',
+        stageOrder: 0,
+        order: 0,
+        status: '대기',
         tasks: [],
-        stageOrder: undefined,
-        name: undefined
       }
 
       const updatedStages = [...transformedStages]

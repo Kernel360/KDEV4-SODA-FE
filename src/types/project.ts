@@ -49,15 +49,15 @@ export interface Task {
 }
 
 export interface Stage {
-  stageOrder: any | number
-  name: any | string
   id: number
   title: string
+  name: string
+  description?: string
+  stageOrder: number
   order: number
   status: StageStatus
-  startDate?: string
-  endDate?: string
   tasks: Task[]
+  projectId?: number
 }
 
 export interface ProjectWithProgress extends Project {

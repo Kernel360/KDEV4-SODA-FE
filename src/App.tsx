@@ -39,6 +39,7 @@ import UserDashboard from './pages/user/UserDashboard'
 import RequestList from './pages/user/RequestList'
 import RecentPosts from './pages/user/RecentPosts'
 import Projects from './pages/user/Projects'
+import RequestDetail from './pages/user/projects/RequestDetail'
 
 const App: React.FC = () => {
   return (
@@ -194,6 +195,10 @@ const App: React.FC = () => {
               <Route
                 path="projects/:projectId/requests/create"
                 element={<CreateRequest />}
+              />
+              <Route
+                path="projects/:projectId/requests/:requestId"
+                element={<RequestDetail />}
               />
             </Route>
 
