@@ -57,6 +57,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [totalRequests, setTotalRequests] = useState(0)
+  const [stageRequests, setStageRequests] = useState<{ [key: number]: number }>({})
 
   const fetchRequests = async () => {
     try {
@@ -73,14 +74,35 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
         queryParams.append('stageId', selectedStage.toString());
       }
 
-      const response = await client.get(`/projects/${projectId}/requests?${queryParams.toString()}`);
-      
-      if (response.data.status === 'success' && response.data.data) {
-        setRequests(response.data.data.content);
-        setTotalPages(response.data.data.totalPages);
-      } else {
-        setError('요청 목록을 불러오는데 실패했습니다.');
+      const stagePromises = stages.map(stage => 
+        client.get(`/projects/${projectId}/requests?status=PENDING&stageId=${stage.id}&size=1`)
+      );
+
+      const totalPromise = client.get(`/projects/${projectId}/requests?status=PENDING&size=1`);
+
+      const [pageResponse, totalResponse, ...stageResponses] = await Promise.all([
+        client.get(`/projects/${projectId}/requests?${queryParams.toString()}`),
+        totalPromise,
+        ...stagePromises
+      ]);
+
+      if (pageResponse.data.status === 'success' && pageResponse.data.data) {
+        setRequests(pageResponse.data.data.content);
+        setTotalPages(pageResponse.data.data.totalPages);
       }
+
+      if (totalResponse.data.status === 'success' && totalResponse.data.data) {
+        setTotalRequests(totalResponse.data.data.totalElements);
+      }
+
+      const stageCounts: { [key: number]: number } = {};
+      stageResponses.forEach((response, index) => {
+        if (response.data.status === 'success' && response.data.data) {
+          stageCounts[stages[index].id] = response.data.data.totalElements;
+        }
+      });
+      setStageRequests(stageCounts);
+
     } catch (error) {
       console.error('Failed to fetch requests:', error);
       setError('요청 목록을 불러오는데 실패했습니다.');
@@ -89,24 +111,9 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
     }
   };
 
-  const fetchTotalRequests = async () => {
-    try {
-      const response = await client.get(`/projects/${projectId}/requests?status=PENDING&size=1`);
-      if (response.data.status === 'success' && response.data.data) {
-        setTotalRequests(response.data.data.totalElements);
-      }
-    } catch (error) {
-      console.error('Failed to fetch total requests:', error);
-    }
-  };
-
   useEffect(() => {
     fetchRequests();
   }, [projectId, selectedStage, page]);
-
-  useEffect(() => {
-    fetchTotalRequests();
-  }, [projectId]);
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
     setPage(value - 1);
@@ -177,49 +184,44 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
               {totalRequests}건
             </Typography>
           </Paper>
-          {stages.map(stage => {
-            const stageRequests = requests.filter(
-              request => request.stageId === stage.id
-            )
-            return (
-              <Paper
-                key={stage.id}
-                onClick={() => setSelectedStage(stage.id)}
+          {stages.map(stage => (
+            <Paper
+              key={stage.id}
+              onClick={() => setSelectedStage(stage.id)}
+              sx={{
+                p: 2,
+                width: 150,
+                cursor: 'pointer',
+                bgcolor: 'white',
+                color: '#666',
+                border: '1px solid',
+                borderColor:
+                  selectedStage === stage.id ? '#FFB800' : '#E0E0E0',
+                boxShadow: 'none',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  borderColor: '#FFB800'
+                }
+              }}>
+              <Typography
+                variant="h6"
                 sx={{
-                  p: 2,
-                  width: 150,
-                  cursor: 'pointer',
-                  bgcolor: 'white',
-                  color: '#666',
-                  border: '1px solid',
-                  borderColor:
-                    selectedStage === stage.id ? '#FFB800' : '#E0E0E0',
-                  boxShadow: 'none',
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    borderColor: '#FFB800'
-                  }
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  mb: 1,
+                  color: selectedStage === stage.id ? '#FFB800' : '#666'
                 }}>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontSize: '1rem',
-                    fontWeight: 'bold',
-                    mb: 1,
-                    color: selectedStage === stage.id ? '#FFB800' : '#666'
-                  }}>
-                  {stage.name}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: '#666'
-                  }}>
-                  {stageRequests.length}건
-                </Typography>
-              </Paper>
-            )
-          })}
+                {stage.name}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: '#666'
+                }}>
+                {stageRequests[stage.id] || 0}건
+              </Typography>
+            </Paper>
+          ))}
         </Box>
       </Box>
 
