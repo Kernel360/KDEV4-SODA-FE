@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, Typography, Button } from '@mui/material'
+import { Box, Button } from '@mui/material'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 
 interface ErrorMessageProps {
@@ -24,12 +24,15 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, onRetry }) => {
         size={48}
         color="error"
       />
-      <Typography
-        variant="h6"
-        color="error"
-        align="center">
+      <Box
+        sx={{
+          fontSize: '1.25rem',
+          fontWeight: 500,
+          color: 'error.main',
+          textAlign: 'center'
+        }}>
         {message}
-      </Typography>
+      </Box>
       {onRetry && (
         <Button
           variant="outlined"

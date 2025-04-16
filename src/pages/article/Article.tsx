@@ -13,7 +13,11 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText
 } from '@mui/material'
 import type { Article as ArticleType } from '../../types/article'
 import { projectService } from '../../services/projectService'
@@ -242,21 +246,23 @@ const Article: React.FC = () => {
               </Typography>
               {article.fileList && article.fileList.length > 0 ? (
                 <Stack spacing={1}>
-                  {article.fileList.map((file: any) => (
-                    <Stack
-                      key={file.id}
-                      direction="row"
-                      alignItems="center"
-                      spacing={1}>
-                      <FileText size={16} />
-                      <MuiLink
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer">
-                        {file.name}
-                      </MuiLink>
-                    </Stack>
-                  ))}
+                  {article.fileList
+                    .filter(file => !file.deleted)
+                    .map((file: any) => (
+                      <Stack
+                        key={file.id}
+                        direction="row"
+                        alignItems="center"
+                        spacing={1}>
+                        <FileText size={16} />
+                        <MuiLink
+                          href={file.url}
+                          target="_blank"
+                          rel="noopener noreferrer">
+                          {file.name}
+                        </MuiLink>
+                      </Stack>
+                    ))}
                 </Stack>
               ) : (
                 <Typography
@@ -274,37 +280,38 @@ const Article: React.FC = () => {
                 sx={{ mb: 1 }}>
                 첨부링크
               </Typography>
-              {article.linkList && article.linkList.length > 0 ? (
-                <Stack spacing={1}>
-                  {article.linkList.map((link: any) => {
-                    const url =
-                      link.urlAddress.startsWith('http://') ||
-                      link.urlAddress.startsWith('https://')
-                        ? link.urlAddress
-                        : `https://${link.urlAddress}`
-                    return (
-                      <Stack
-                        key={link.id}
-                        direction="row"
-                        alignItems="center"
-                        spacing={1}>
-                        <Link2 size={16} />
-                        <MuiLink
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer">
-                          {link.urlDescription}
-                        </MuiLink>
-                      </Stack>
-                    )
-                  })}
-                </Stack>
-              ) : (
-                <Typography
-                  variant="body2"
-                  color="text.secondary">
-                  없음
-                </Typography>
+              {article.linkList && article.linkList.length > 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <List>
+                    {article.linkList
+                      .filter(link => !link.deleted)
+                      .map((link, index) => {
+                        const url =
+                          link.urlAddress.startsWith('http://') ||
+                          link.urlAddress.startsWith('https://')
+                            ? link.urlAddress
+                            : `https://${link.urlAddress}`
+
+                        return (
+                          <ListItem key={index}>
+                            <ListItemIcon>
+                              <Link2 size={20} />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={
+                                <MuiLink
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer">
+                                  {link.urlDescription || link.urlAddress}
+                                </MuiLink>
+                              }
+                            />
+                          </ListItem>
+                        )
+                      })}
+                  </List>
+                </Box>
               )}
             </Box>
           </Stack>

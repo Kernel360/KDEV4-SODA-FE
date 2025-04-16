@@ -113,60 +113,72 @@ export const projectService = {
 
   // 프로젝트 생성
   async createProject(project: CreateProjectRequest): Promise<Project> {
-    // 필수 필드 검증
-    const requiredFields = [
-      'title',
-      'description',
-      'startDate',
-      'endDate',
-      'clientCompanyId',
-      'devCompanyId',
-      'devManagers',
-      'devMembers',
-      'clientManagers',
-      'clientMembers'
-    ]
+    try {
+      // 필수 필드 검증
+      const requiredFields = [
+        'title',
+        'description',
+        'startDate',
+        'endDate',
+        'clientCompanyId',
+        'devCompanyId',
+        'devManagers',
+        'devMembers',
+        'clientManagers',
+        'clientMembers'
+      ]
 
-    const missingFields = requiredFields.filter(field => {
-      const value = project[field as keyof CreateProjectRequest]
-      return (
-        value === undefined ||
-        value === null ||
-        (Array.isArray(value) && value.length === 0) ||
-        (typeof value === 'string' && value.trim() === '')
-      )
-    })
+      const missingFields = requiredFields.filter(field => {
+        const value = project[field as keyof CreateProjectRequest]
+        return (
+          value === undefined ||
+          value === null ||
+          (Array.isArray(value) && value.length === 0) ||
+          (typeof value === 'string' && value.trim() === '')
+        )
+      })
 
-    if (missingFields.length > 0) {
-      throw new Error(
-        `다음 필수 필드가 누락되었습니다: ${missingFields.join(', ')}`
-      )
+      if (missingFields.length > 0) {
+        throw new Error(
+          `다음 필수 필드가 누락되었습니다: ${missingFields.join(', ')}`
+        )
+      }
+
+      // 날짜 유효성 검증
+      const startDate = new Date(project.startDate)
+      const endDate = new Date(project.endDate)
+
+      if (startDate >= endDate) {
+        throw new Error('종료일은 시작일보다 이후여야 합니다.')
+      }
+
+      // 회사 ID 유효성 검증
+      if (project.clientCompanyId === project.devCompanyId) {
+        throw new Error('고객사와 개발사는 서로 다른 회사여야 합니다.')
+      }
+
+      // 담당자 유효성 검증
+      if (project.devManagers.length === 0) {
+        throw new Error('개발사 담당자는 최소 1명 이상이어야 합니다.')
+      }
+
+      if (project.clientManagers.length === 0) {
+        throw new Error('고객사 담당자는 최소 1명 이상이어야 합니다.')
+      }
+
+      const response = await client.post('/projects', project)
+
+      if (response.data.status === 'success') {
+        return response.data.data
+      } else {
+        throw new Error(
+          response.data.message || '프로젝트 생성에 실패했습니다.'
+        )
+      }
+    } catch (error) {
+      console.error('Error in createProject:', error)
+      throw error
     }
-
-    // 날짜 유효성 검증
-    const startDate = new Date(project.startDate)
-    const endDate = new Date(project.endDate)
-
-    if (startDate >= endDate) {
-      throw new Error('종료일은 시작일보다 이후여야 합니다.')
-    }
-
-    // 회사 ID 유효성 검증
-    if (project.clientCompanyId === project.devCompanyId) {
-      throw new Error('고객사와 개발사는 서로 다른 회사여야 합니다.')
-    }
-
-    // 담당자 유효성 검증
-    if (project.devManagers.length === 0) {
-      throw new Error('개발사 담당자는 최소 1명 이상이어야 합니다.')
-    }
-
-    if (project.clientManagers.length === 0) {
-      throw new Error('고객사 담당자는 최소 1명 이상이어야 합니다.')
-    }
-
-    const response = await client.post('/projects', project)
-    return response.data.data
   },
 
   // 프로젝트 수정
@@ -286,24 +298,57 @@ export const projectService = {
     await client.delete(`/projects/${projectId}/articles/${articleId}`)
   },
 
+  // 게시글 수정
   async updateArticle(
     articleId: number,
     data: {
       projectId: number
       title: string
       content: string
-      priority: PriorityType
       deadLine: string
       memberId: number
       stageId: number
-      linkList: { urlAddress: string; urlDescription: string }[]
+      priority: PriorityType
     }
   ): Promise<Article> {
     try {
       const response = await client.put(`/articles/${articleId}`, data)
-      return response.data.data
+      if (response.data.status === 'success') {
+        return response.data.data
+      }
+      throw new Error(response.data.message || '게시글 수정에 실패했습니다.')
     } catch (error) {
       console.error('Error updating article:', error)
+      throw error
+    }
+  },
+
+  // 게시글 링크 삭제
+  async deleteArticleLink(articleId: number, linkId: number): Promise<void> {
+    try {
+      const response = await client.delete(
+        `/articles/${articleId}/links/${linkId}`
+      )
+      if (response.data.status !== 'success') {
+        throw new Error(response.data.message || '링크 삭제에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('Error deleting article link:', error)
+      throw error
+    }
+  },
+
+  // 게시글 파일 삭제
+  async deleteArticleFile(articleId: number, fileId: number): Promise<void> {
+    try {
+      const response = await client.delete(
+        `/articles/${articleId}/files/${fileId}`
+      )
+      if (response.data.status !== 'success') {
+        throw new Error(response.data.message || '파일 삭제에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('Error deleting article file:', error)
       throw error
     }
   }

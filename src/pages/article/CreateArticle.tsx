@@ -129,15 +129,28 @@ const CreateArticle: React.FC = () => {
 
       const newArticleId = articleResponse.data.id
 
-      // 2. 파일이 있는 경우, 생성된 게시글의 ID로 파일을 업로드합니다
-      if (formData.files && formData.files.length > 0) {
+      // 새로 추가된 파일이 있는 경우 파일 업로드
+      const newFiles = formData.files.filter(file => !file.id)
+      if (newFiles.length > 0) {
+        console.log('새로 추가된 파일 업로드 시작:', newFiles)
         try {
-          await projectService.uploadArticleFiles(newArticleId, formData.files)
-          console.log('Files uploaded successfully for article:', newArticleId)
+          // URL.createObjectURL로 생성된 URL에서 실제 File 객체를 가져옴
+          const fileObjects = await Promise.all(
+            newFiles.map(async file => {
+              const response = await fetch(file.url)
+              const blob = await response.blob()
+              return new File([blob], file.name, { type: file.type })
+            })
+          )
+
+          const uploadResponse = await projectService.uploadArticleFiles(
+            Number(newArticleId),
+            fileObjects
+          )
+          console.log('파일 업로드 응답:', uploadResponse)
         } catch (uploadError) {
-          console.error('Error uploading files:', uploadError)
+          console.error('파일 업로드 에러:', uploadError)
           showToast('파일 업로드에 실패했습니다.', 'error')
-          // 파일 업로드 실패 시에도 게시글 작성은 완료된 것으로 처리
         }
       }
 

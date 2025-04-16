@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, Paper, Typography } from '@mui/material'
+import { Box, Paper } from '@mui/material'
 import { useNavigate, useParams } from 'react-router-dom'
 import ProjectForm from '../../../components/common/ProjectForm'
 import { Project } from '../../../types/project'
@@ -239,11 +239,6 @@ const EditProject: React.FC = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Paper sx={{ p: 3 }}>
-        <Typography
-          variant="h5"
-          sx={{ mb: 3 }}>
-          {project?.title}
-        </Typography>
         <ProjectForm
           companies={formattedCompanies}
           employees={formattedEmployees}

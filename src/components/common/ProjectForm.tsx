@@ -213,10 +213,20 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
 
   const handleSelectChange = (e: SelectChangeEvent<string>) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-    if (errors[name as keyof FormErrors]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
+
+    // 회사 선택이 변경될 때 해당 회사의 담당자 목록 초기화
+    if (name === 'clientCompanyId') {
+      setClientManagers([])
+      setClientParticipants([])
+    } else if (name === 'developerCompanyId') {
+      setDeveloperManagers([])
+      setDeveloperParticipants([])
     }
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
   }
 
   const handleDateChange = (name: string, value: Dayjs | null) => {
