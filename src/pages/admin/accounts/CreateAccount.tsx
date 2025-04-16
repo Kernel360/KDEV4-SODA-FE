@@ -98,7 +98,7 @@ export default function CreateAccount() {
         authId: formData.authId,
         password: formData.password,
         role: formData.role,
-        companyId: formData.role === 'ADMIN' ? 0 : Number(formData.companyId)
+        companyId: formData.role === 'ADMIN' ? null : Number(formData.companyId)
       })
 
       if (response.status === 'success') {
