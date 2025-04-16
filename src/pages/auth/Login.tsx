@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { login } from '../../api/auth'
-import type { LoginRequest } from '../../types/api'
+import type { LoginRequest, User } from '../../types/api'
 import { useUserStore } from '../../stores/userStore'
 import { useToast } from '../../contexts/ToastContext'
 
@@ -34,24 +34,35 @@ const Login: React.FC = () => {
       console.log('Login Response:', response)
 
       if (response.status === 'success' && response.data) {
-        // 토큰이 없으면 에러 처리
-        if (!response.data.token) {
-          setError('토큰이 없습니다. 다시 시도해주세요.')
-          return
+        // 토큰이 있으면 저장
+        if (response.data.token) {
+          localStorage.setItem('token', response.data.token)
         }
 
-        // 토큰과 사용자 정보 저장
-        localStorage.setItem('token', response.data.token)
+        // 사용자 정보 저장
         localStorage.setItem('user', JSON.stringify(response.data.data))
 
         // userStore 상태 업데이트
-        const userData = {
-          id: parseInt(response.data.data.authId),
-          ...response.data.data,
-          role: response.data.data.role.toUpperCase() as 'ADMIN' | 'USER'
+        const userData: User = {
+          id: response.data.data.memberId,
+          memberId: response.data.data.memberId,
+          name: response.data.data.name,
+          authId: response.data.data.authId,
+          position: response.data.data.position || '',
+          phoneNumber: response.data.data.phoneNumber || '',
+          role: response.data.data.role.toUpperCase() as 'ADMIN' | 'USER',
+          firstLogin: response.data.data.firstLogin,
+          email: '',
+          company: response.data.data.company
         }
         setUser(userData)
         showToast('환영합니다!', 'success')
+
+        // firstLogin 값 확인하여 초기 정보 설정 화면으로 리다이렉션
+        if (response.data.data.firstLogin) {
+          navigate('/user-info')
+          return
+        }
 
         // role에 따른 라우팅 (대소문자 구분 없이 체크)
         console.log('User Role:', response.data.data.role)
