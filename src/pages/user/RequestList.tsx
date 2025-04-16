@@ -7,10 +7,8 @@ import {
   CardContent,
   Typography,
   Chip,
-  IconButton
 } from '@mui/material'
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos'
-import AddIcon from '@mui/icons-material/Add'
 
 const RequestList: React.FC = () => {
   const navigate = useNavigate()
@@ -23,31 +21,29 @@ const RequestList: React.FC = () => {
           onClick={() => navigate('/user')}>
           뒤로가기
         </Button>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/user/projects/requests/create')}>
-          새 요청
-        </Button>
       </Box>
 
       <Typography variant="h4" sx={{ mb: 4 }}>
         요청사항 목록
       </Typography>
 
-      <div className="grid gap-4">
-        {/* 예시 요청사항 카드 */}
+      <div className="space-y-4">
+        {/* 예시 요청 카드 */}
         <Card>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-              <Typography variant="h6">웹사이트 리뉴얼 요청</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box>
+                  <Typography variant="h6">웹사이트 리뉴얼 요청</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    프로젝트: 웹사이트 리뉴얼 | 2024-03-20
+                  </Typography>
+                </Box>
+              </Box>
               <Chip label="진행중" color="primary" />
             </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              프로젝트: 웹사이트 리뉴얼
-            </Typography>
             <Typography variant="body1">
-              기존 웹사이트의 디자인을 현대적으로 개선하고자 합니다. 메인 페이지와 서브 페이지의 레이아웃을 변경하고, 반응형 디자인을 적용하고 싶습니다.
+              기존 웹사이트의 디자인을 현대적으로 개선하고자 합니다. 주요 변경사항은 다음과 같습니다:
             </Typography>
           </CardContent>
         </Card>
@@ -55,14 +51,18 @@ const RequestList: React.FC = () => {
         <Card>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-              <Typography variant="h6">로고 디자인 수정</Typography>
-              <Chip label="완료" color="success" />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box>
+                  <Typography variant="h6">앱 기능 추가 요청</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    프로젝트: 모바일 앱 개발 | 2024-03-19
+                  </Typography>
+                </Box>
+              </Box>
+              <Chip label="검토중" color="warning" />
             </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              프로젝트: 브랜드 아이덴티티
-            </Typography>
             <Typography variant="body1">
-              기존 로고의 색상을 조금 더 밝게 수정하고, 심볼의 크기를 약간 키우고 싶습니다.
+              사용자 피드백을 바탕으로 새로운 기능을 추가하고 싶습니다. 자세한 내용은 첨부된 문서를 참고해주세요.
             </Typography>
           </CardContent>
         </Card>

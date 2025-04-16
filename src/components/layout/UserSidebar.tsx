@@ -30,7 +30,7 @@ const UserSidebar: React.FC<UserSidebarProps> = ({ isOpen }) => {
 
   const menuItems = [
     {
-      path: '/user/dashboard',
+      path: '/user',
       icon: <LayoutDashboard size={24} />,
       text: '대시보드'
     },

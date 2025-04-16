@@ -10,7 +10,6 @@ import {
   Avatar
 } from '@mui/material'
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos'
-import AddIcon from '@mui/icons-material/Add'
 
 const RecentPosts: React.FC = () => {
   const navigate = useNavigate()
@@ -23,19 +22,13 @@ const RecentPosts: React.FC = () => {
           onClick={() => navigate('/user')}>
           뒤로가기
         </Button>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/user/projects/articles/create')}>
-          새 질문
-        </Button>
       </Box>
 
       <Typography variant="h4" sx={{ mb: 4 }}>
         최근 질문
       </Typography>
 
-      <div className="grid gap-4">
+      <div className="space-y-4">
         {/* 예시 질문 카드 */}
         <Card>
           <CardContent>
