@@ -17,7 +17,6 @@ import {
   CompanyList,
   Company,
   EditCompany,
-  UserMain,
   UserProject,
   UserAccountDetail,
   CreateCompany,
@@ -36,9 +35,11 @@ import CssBaseline from '@mui/material/CssBaseline'
 import UserProfile from './pages/user/UserProfile'
 import TaskDetailPage from './pages/tasks/TaskDetailPage'
 import CreateRequest from './pages/user/projects/CreateRequest'
+import UserDashboard from './pages/user/UserDashboard'
 import RequestList from './pages/user/RequestList'
 import RecentPosts from './pages/user/RecentPosts'
 import Projects from './pages/user/Projects'
+import RequestDetail from './pages/user/projects/RequestDetail'
 
 const App: React.FC = () => {
   return (
@@ -145,7 +146,7 @@ const App: React.FC = () => {
               }>
               <Route
                 index
-                element={<UserMain />}
+                element={<UserDashboard />}
               />
               <Route
                 path="additional-info"
@@ -194,6 +195,10 @@ const App: React.FC = () => {
               <Route
                 path="projects/:projectId/requests/create"
                 element={<CreateRequest />}
+              />
+              <Route
+                path="projects/:projectId/requests/:requestId"
+                element={<RequestDetail />}
               />
             </Route>
 
