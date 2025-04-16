@@ -1,86 +1,83 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Box,
+  Button,
+  Card,
+  CardContent,
   Typography,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
-  Chip
+  Chip,
+  Avatar
 } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos'
+import AddIcon from '@mui/icons-material/Add'
 
 const RecentPosts: React.FC = () => {
   const navigate = useNavigate()
 
-  // TODO: 실제 API 연동 후 데이터로 교체
-  const posts = [
-    {
-      id: 1,
-      title: '프로젝트 진행 상황 보고',
-      project: 'KDEV4 프로젝트',
-      date: '2024-03-20',
-      type: '진행보고'
-    },
-    {
-      id: 2,
-      title: '기능 개발 완료 안내',
-      project: 'SODA 프로젝트',
-      date: '2024-03-19',
-      type: '완료보고'
-    }
-  ]
-
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography
-        variant="h5"
-        sx={{ mb: 3 }}>
-        최근 게시글 (더미 데이터)
+    <div className="space-y-6">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Button
+          startIcon={<ArrowBackIosIcon />}
+          onClick={() => navigate('/user')}>
+          뒤로가기
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => navigate('/user/projects/articles/create')}>
+          새 질문
+        </Button>
+      </Box>
+
+      <Typography variant="h4" sx={{ mb: 4 }}>
+        최근 질문
       </Typography>
-      <Paper
-        elevation={0}
-        sx={{ p: 2, bgcolor: 'background.paper' }}>
-        <List>
-          {posts.map((post, index) => (
-            <React.Fragment key={post.id}>
-              <ListItem
-                button
-                onClick={() => navigate(`/user/projects/${post.id}`)} // 추후 게시글 페이지로 변경 예정
-                sx={{
-                  '&:hover': {
-                    backgroundColor: 'action.hover'
-                  }
-                }}>
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: 'medium' }}>
-                        {post.title}
-                      </Typography>
-                      <Chip
-                        label={post.type}
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                      />
-                    </Box>
-                  }
-                  secondary={`프로젝트: ${post.project} | 작성일: ${post.date}`}
-                  secondaryTypographyProps={{
-                    color: 'text.secondary'
-                  }}
-                />
-              </ListItem>
-              {index < posts.length - 1 && <Divider />}
-            </React.Fragment>
-          ))}
-        </List>
-      </Paper>
-    </Box>
+
+      <div className="grid gap-4">
+        {/* 예시 질문 카드 */}
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar>U</Avatar>
+                <Box>
+                  <Typography variant="h6">디자인 수정 관련 문의</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    프로젝트: 웹사이트 리뉴얼 | 2024-03-20
+                  </Typography>
+                </Box>
+              </Box>
+              <Chip label="답변 대기" color="warning" />
+            </Box>
+            <Typography variant="body1">
+              현재 진행중인 디자인 수정 작업에서 색상 팔레트 변경이 필요한데, 어떤 색상 조합을 추천해주시나요?
+            </Typography>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar>U</Avatar>
+                <Box>
+                  <Typography variant="h6">기능 구현 관련 질문</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    프로젝트: 모바일 앱 개발 | 2024-03-19
+                  </Typography>
+                </Box>
+              </Box>
+              <Chip label="답변 완료" color="success" />
+            </Box>
+            <Typography variant="body1">
+              사용자 인증 기능 구현 시 보안 관련 추가 조치가 필요한지 확인 부탁드립니다.
+            </Typography>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   )
 }
 

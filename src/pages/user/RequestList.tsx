@@ -1,72 +1,73 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Box,
+  Button,
+  Card,
+  CardContent,
   Typography,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  Divider
+  Chip,
+  IconButton
 } from '@mui/material'
-// import { useNavigate } from 'react-router-dom'
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos'
+import AddIcon from '@mui/icons-material/Add'
 
 const RequestList: React.FC = () => {
-  //const navigate = useNavigate()
-
-  // TODO: 실제 API 연동 후 데이터로 교체
-  const requests = [
-    {
-      id: 1,
-      title: '프로젝트 일정 변경 요청',
-      status: '대기',
-      date: '2024-03-20'
-    },
-    {
-      id: 2,
-      title: '기능 추가 요청',
-      status: '진행중',
-      date: '2024-03-19'
-    }
-  ]
+  const navigate = useNavigate()
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography
-        variant="h5"
-        sx={{ mb: 3 }}>
-        요청사항 목록 (더미 데이터)
+    <div className="space-y-6">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Button
+          startIcon={<ArrowBackIosIcon />}
+          onClick={() => navigate('/user')}>
+          뒤로가기
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => navigate('/user/projects/requests/create')}>
+          새 요청
+        </Button>
+      </Box>
+
+      <Typography variant="h4" sx={{ mb: 4 }}>
+        요청사항 목록
       </Typography>
-      <Paper
-        elevation={0}
-        sx={{ p: 2, bgcolor: 'background.paper' }}>
-        <List>
-          {requests.map((request, index) => (
-            <React.Fragment key={request.id}>
-              <ListItem
-                button
-                //onClick={() => navigate(`/user/requests/${request.id}`)}
-                sx={{
-                  '&:hover': {
-                    backgroundColor: 'action.hover'
-                  }
-                }}>
-                <ListItemText
-                  primary={request.title}
-                  secondary={`상태: ${request.status} | 요청일: ${request.date}`}
-                  primaryTypographyProps={{
-                    fontWeight: 'medium'
-                  }}
-                  secondaryTypographyProps={{
-                    color: 'text.secondary'
-                  }}
-                />
-              </ListItem>
-              {index < requests.length - 1 && <Divider />}
-            </React.Fragment>
-          ))}
-        </List>
-      </Paper>
-    </Box>
+
+      <div className="grid gap-4">
+        {/* 예시 요청사항 카드 */}
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+              <Typography variant="h6">웹사이트 리뉴얼 요청</Typography>
+              <Chip label="진행중" color="primary" />
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              프로젝트: 웹사이트 리뉴얼
+            </Typography>
+            <Typography variant="body1">
+              기존 웹사이트의 디자인을 현대적으로 개선하고자 합니다. 메인 페이지와 서브 페이지의 레이아웃을 변경하고, 반응형 디자인을 적용하고 싶습니다.
+            </Typography>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+              <Typography variant="h6">로고 디자인 수정</Typography>
+              <Chip label="완료" color="success" />
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              프로젝트: 브랜드 아이덴티티
+            </Typography>
+            <Typography variant="body1">
+              기존 로고의 색상을 조금 더 밝게 수정하고, 심볼의 크기를 약간 키우고 싶습니다.
+            </Typography>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   )
 }
 
