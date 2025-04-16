@@ -161,7 +161,14 @@ const ReplyArticle: React.FC = () => {
       // 2. 파일이 있는 경우, 생성된 답글의 ID로 파일을 업로드합니다
       if (formData.files && formData.files.length > 0) {
         try {
-          await projectService.uploadArticleFiles(newArticleId, formData.files)
+          const fileObjects = await Promise.all(
+            formData.files.map(async file => {
+              const response = await fetch(file.url)
+              const blob = await response.blob()
+              return new File([blob], file.name, { type: file.type })
+            })
+          )
+          await projectService.uploadArticleFiles(newArticleId, fileObjects)
           console.log('Files uploaded successfully for reply:', newArticleId)
         } catch (uploadError) {
           console.error('Error uploading files:', uploadError)
