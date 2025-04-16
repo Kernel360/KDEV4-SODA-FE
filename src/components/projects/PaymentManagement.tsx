@@ -13,7 +13,12 @@ import {
   TextField,
   InputAdornment,
   Typography,
-  Pagination
+  Pagination,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  SelectChangeEvent
 } from '@mui/material'
 import { Search, Add } from '@mui/icons-material'
 import { client } from '../../api/client'
@@ -58,6 +63,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
   const [error, setError] = useState<string | null>(null)
   const [totalRequests, setTotalRequests] = useState(0)
   const [stageRequests, setStageRequests] = useState<{ [key: number]: number }>({})
+  const [selectedStatus, setSelectedStatus] = useState<string>('PENDING')
 
   const fetchRequests = async () => {
     try {
@@ -65,20 +71,34 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
       setError(null)
       
       const queryParams = new URLSearchParams({
-        status: 'PENDING',
         page: page.toString(),
         size: '5'
       });
+      
+      if (selectedStatus !== 'ALL') {
+        queryParams.append('status', selectedStatus);
+      }
       
       if (selectedStage) {
         queryParams.append('stageId', selectedStage.toString());
       }
 
-      const stagePromises = stages.map(stage => 
-        client.get(`/projects/${projectId}/requests?status=PENDING&stageId=${stage.id}&size=1`)
-      );
+      const stagePromises = stages.map(stage => {
+        const stageQueryParams = new URLSearchParams({
+          stageId: stage.id.toString(),
+          size: '1'
+        });
+        if (selectedStatus !== 'ALL') {
+          stageQueryParams.append('status', selectedStatus);
+        }
+        return client.get(`/projects/${projectId}/requests?${stageQueryParams.toString()}`);
+      });
 
-      const totalPromise = client.get(`/projects/${projectId}/requests?status=PENDING&size=1`);
+      const totalQueryParams = new URLSearchParams({ size: '1' });
+      if (selectedStatus !== 'ALL') {
+        totalQueryParams.append('status', selectedStatus);
+      }
+      const totalPromise = client.get(`/projects/${projectId}/requests?${totalQueryParams.toString()}`);
 
       const [pageResponse, totalResponse, ...stageResponses] = await Promise.all([
         client.get(`/projects/${projectId}/requests?${queryParams.toString()}`),
@@ -113,7 +133,12 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
 
   useEffect(() => {
     fetchRequests();
-  }, [projectId, selectedStage, page]);
+  }, [projectId, selectedStage, page, selectedStatus]);
+
+  const handleStatusChange = (event: SelectChangeEvent) => {
+    setSelectedStatus(event.target.value);
+    setPage(0); // 상태가 변경되면 첫 페이지로 이동
+  };
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
     setPage(value - 1);
@@ -241,6 +266,22 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
           sx={{ flex: 1 }}
         />
 
+        <FormControl sx={{ minWidth: 120 }}>
+          <InputLabel id="status-select-label">상태</InputLabel>
+          <Select
+            labelId="status-select-label"
+            value={selectedStatus}
+            label="상태"
+            onChange={handleStatusChange}
+            size="small"
+          >
+            <MenuItem value="ALL">전체</MenuItem>
+            <MenuItem value="PENDING">대기중</MenuItem>
+            <MenuItem value="APPROVED">승인됨</MenuItem>
+            <MenuItem value="REJECTED">거절됨</MenuItem>
+          </Select>
+        </FormControl>
+
         <Button
           variant="contained"
           startIcon={<Add />}
@@ -298,7 +339,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
                   <TableCell>
                     {dayjs(request.createdAt).format('YYYY-MM-DD HH:mm')}
                   </TableCell>
-                  <TableCell>승인 대기중</TableCell>
+                  <TableCell>{request.status}</TableCell>
                 </TableRow>
               ))
             )}
