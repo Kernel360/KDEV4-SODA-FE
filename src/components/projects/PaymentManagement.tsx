@@ -274,18 +274,18 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} align="center">로딩 중...</TableCell>
+                <TableCell colSpan={6} align="center">로딩 중...</TableCell>
               </TableRow>
             ) : requests.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center">승인 대기 중인 요청이 없습니다.</TableCell>
+                <TableCell colSpan={6} align="center">승인 대기 중인 요청이 없습니다.</TableCell>
               </TableRow>
             ) : (
               requests.map((request) => (
                 <TableRow 
                   key={request.requestId}
                   hover
-                  onClick={() => {/* TODO: 요청 상세 보기 */}}
+                  onClick={() => navigate(`/user/projects/${projectId}/requests/${request.requestId}`)}
                   sx={{ cursor: 'pointer' }}
                 >
                   <TableCell>{request.title}</TableCell>
