@@ -8,8 +8,7 @@ import {
   IconButton,
   Paper,
   Tabs,
-  Tab,
-  Divider
+  Tab
 } from '@mui/material'
 import { Stage } from '../../../types/project'
 import { client } from '../../../api/client'
