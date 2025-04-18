@@ -2,16 +2,19 @@ export interface Company {
   id: number
   name: string
   ceoName: string
-  ceoPhone: string
-  registrationNumber: string
+  phoneNumber: string
+  businessNumber: string
   address: string
-  addressDetail: string
+  isActive: boolean
+  ceoPhone?: string
+  registrationNumber?: string
+  addressDetail?: string
 }
 
 export interface CompanyMember {
   id: number
   name: string
-  email: string
-  role: string
-  isActive: boolean
+  position?: string
+  phoneNumber?: string
+  email?: string
 }
