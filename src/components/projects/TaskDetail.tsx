@@ -10,13 +10,27 @@ import {
   ListItem,
   ListItemText,
   IconButton,
-  Link
+  Link,
+  Grid,
+  Button,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  ListItemAvatar,
+  Avatar,
+  Tooltip
 } from '@mui/material'
 import { Edit2, Trash2, Link as LinkIcon, FileText } from 'lucide-react'
 import { useToast } from '../../contexts/ToastContext'
 import { getTaskDetail, deleteTask } from '../../api/task'
 import type { ProjectStageTask } from '../../types/api'
-import TaskResponseList from './TaskResponseList'
+import { format } from 'date-fns'
+import { ko } from 'date-fns/locale'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
+import { UserRole } from '../../types/user'
 
 interface TaskDetailProps {
   taskId: number
@@ -36,6 +50,8 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
   const [error, setError] = useState<string | null>(null)
   const [, setIsEditing] = useState(false)
   const { showToast } = useToast()
+  const { userRole } = useAuth()
+  const [showResponseDialog, setShowResponseDialog] = useState(false)
 
   useEffect(() => {
     fetchTaskDetail()
@@ -234,7 +250,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
                                   alignItems: 'center',
                                   gap: '4px'
                                 }}>
-                                <FileText size={14} />
+                                <LinkIcon size={14} />
                                 {file.name || '알 수 없는 파일'}
                               </Link>
                               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 2.5 }}>
@@ -253,12 +269,63 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
         )}
       </Paper>
 
-      <TaskResponseList
-        taskId={taskId}
-        onResponseAdded={fetchTaskDetail}
-        onResponseUpdated={fetchTaskDetail}
-        onResponseDeleted={fetchTaskDetail}
-      />
+      {/* Task Responses Section */}
+      <Box sx={{ mt: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6">응답 목록</Typography>
+          {userRole === UserRole.USER && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setShowResponseDialog(true)}
+            >
+              응답 작성
+            </Button>
+          )}
+        </Box>
+        
+        <List>
+          {task?.responses?.map((response) => (
+            <ListItem
+              key={response.id}
+              sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1,
+                mb: 1,
+                bgcolor: 'background.paper'
+              }}
+            >
+              <ListItemAvatar>
+                <Avatar>
+                  <PersonIcon />
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText
+                primary={response.content}
+                secondary={
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="body2" color="text.secondary">
+                      {response.userName}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {format(new Date(response.createdAt), 'yyyy-MM-dd HH:mm', { locale: ko })}
+                    </Typography>
+                  </Stack>
+                }
+              />
+              {userRole === UserRole.ADMIN && (
+                <IconButton
+                  edge="end"
+                  onClick={() => handleDeleteResponse(response.id)}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              )}
+            </ListItem>
+          ))}
+        </List>
+      </Box>
     </Box>
   )
 }
