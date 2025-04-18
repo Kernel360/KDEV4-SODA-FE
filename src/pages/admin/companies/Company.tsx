@@ -23,7 +23,10 @@ const CompanyPage: React.FC = () => {
           ceoPhone: '010-1234-5678',
           registrationNumber: '123-45-67890',
           address: '서울특별시 강남구 테헤란로 123',
-          addressDetail: '4층 401호'
+          addressDetail: '4층 401호',
+          phoneNumber: '',
+          businessNumber: '',
+          isActive: false
         }
         setCompany(dummyCompany)
       } catch (err) {
