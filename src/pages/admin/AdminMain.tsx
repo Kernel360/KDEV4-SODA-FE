@@ -70,6 +70,16 @@ export default function AdminMain() {
     )
   }
 
+  // projects가 배열인지 확인
+  if (!Array.isArray(projects)) {
+    return (
+      <ErrorMessage
+        message="프로젝트 데이터 형식이 올바르지 않습니다."
+        onRetry={fetchAllProjects}
+      />
+    )
+  }
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: 1400, mx: 'auto', py: 4 }}>
       {/* 프로젝트 섹션 */}
