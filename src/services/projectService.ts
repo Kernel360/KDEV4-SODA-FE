@@ -52,7 +52,13 @@ client.interceptors.response.use(
 export const fetchProjects = async (): Promise<Project[]> => {
   try {
     const response = await client.get('/projects')
-    return response.data.data
+    // API 응답 구조에 따라 data 접근 방식 수정
+    if (response.data && Array.isArray(response.data)) {
+      return response.data
+    } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data
+    }
+    throw new Error('프로젝트 데이터 형식이 올바르지 않습니다.')
   } catch (error) {
     if (axios.isAxiosError(error)) {
       throw new Error(
