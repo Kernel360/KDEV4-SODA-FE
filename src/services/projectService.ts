@@ -52,11 +52,8 @@ client.interceptors.response.use(
 export const fetchProjects = async (): Promise<Project[]> => {
   try {
     const response = await client.get('/projects')
-    // API 응답 구조에 따라 data 접근 방식 수정
-    if (response.data && Array.isArray(response.data)) {
-      return response.data
-    } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
-      return response.data.data
+    if (response.data && response.data.data && response.data.data.content) {
+      return response.data.data.content
     }
     throw new Error('프로젝트 데이터 형식이 올바르지 않습니다.')
   } catch (error) {
@@ -86,7 +83,7 @@ export const projectService = {
   // 프로젝트 목록 조회
   async getAllProjects(): Promise<Project[]> {
     const response = await client.get('/projects')
-    return response.data.data
+    return response.data.data.content
   },
 
   // 사용자의 프로젝트 목록 조회
@@ -105,8 +102,21 @@ export const projectService = {
 
   // 프로젝트 상세 조회
   async getProjectById(id: number): Promise<Project> {
-    const response = await client.get(`/projects/${id}`)
-    return response.data.data
+    try {
+      const response = await client.get(`/projects/${id}`)
+      if (response.data && response.data.data) {
+        return response.data.data
+      }
+      throw new Error('프로젝트 데이터 형식이 올바르지 않습니다.')
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.message ||
+            '프로젝트 상세 정보를 불러오는데 실패했습니다.'
+        )
+      }
+      throw error
+    }
   },
 
   // 프로젝트 단계 조회

@@ -1,4 +1,4 @@
-import { useEffect, useState, Fragment } from 'react'
+import { useEffect, useState, Fragment, JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Box,
@@ -18,8 +18,7 @@ import {
   CardContent,
   ListItemIcon,
   Collapse,
-  IconButton
-} from '@mui/material'
+  IconButton} from '@mui/material'
 import {
   ArrowLeft,
   Edit,
@@ -79,14 +78,25 @@ const Project = () => {
     return (
       <ErrorMessage
         message={error}
-        onRetry={() => window.location.reload()}
+        onRetry={() => setProject(null)}
       />
     )
   }
 
   if (!project) {
-    return <ErrorMessage message="프로젝트가 존재하지 않습니다." />
+    return (
+      <ErrorMessage
+        message="프로젝트 정보를 불러올 수 없습니다."
+        onRetry={() => setProject(null)}
+      />
+    )
   }
+
+  // 프로젝트 멤버가 없는 경우 빈 배열로 초기화
+  const devManagers = project.devManagers || []
+  const devMembers = project.devMembers || []
+  const clientManagers = project.clientManagers || []
+  const clientMembers = project.clientMembers || []
 
   const handleDelete = async () => {
     try {
@@ -101,7 +111,7 @@ const Project = () => {
   }
 
   return (
-    <Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: 1400, mx: 'auto', py: 4 }}>
       <Box sx={{ mb: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
           <Button
@@ -297,7 +307,7 @@ const Project = () => {
                 dense
                         disablePadding
                         sx={{ mt: 1 }}>
-                {project.clientCompanyManagers.map((manager, index) => (
+                {clientManagers.map((manager: { name: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined; role: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined }, index: Key | null | undefined) => (
                   <ListItem
                     key={index}
                             sx={{
@@ -311,8 +321,8 @@ const Project = () => {
                               />
                             </ListItemIcon>
                             <ListItemText
-                              primary={manager}
-                              secondary="담당자"
+                              primary={manager.name}
+                              secondary={manager.role}
                               sx={{
                                 '& .MuiListItemText-primary': {
                                   color: '#334155',
@@ -326,7 +336,7 @@ const Project = () => {
                             />
                           </ListItem>
                         ))}
-                        {project.clientCompanyMembers.map((member, index) => (
+                        {clientMembers.map((member: { name: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined; role: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined }, index: Key | null | undefined) => (
                           <ListItem
                             key={index}
                             sx={{
@@ -340,8 +350,8 @@ const Project = () => {
                               />
                             </ListItemIcon>
                             <ListItemText
-                              primary={member}
-                              secondary="일반"
+                              primary={member.name}
+                              secondary={member.role}
                               sx={{
                                 '& .MuiListItemText-primary': {
                                   color: '#334155',
@@ -421,7 +431,7 @@ const Project = () => {
                 dense
                         disablePadding
                         sx={{ mt: 1 }}>
-                {project.devCompanyManagers.map((manager, index) => (
+                {devManagers.map((manager: { name: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined; role: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined }, index: Key | null | undefined) => (
                   <ListItem
                     key={index}
                             sx={{
@@ -435,8 +445,8 @@ const Project = () => {
                               />
                             </ListItemIcon>
                             <ListItemText
-                              primary={manager}
-                              secondary="담당자"
+                              primary={manager.name}
+                              secondary={manager.role}
                               sx={{
                                 '& .MuiListItemText-primary': {
                                   color: '#334155',
@@ -450,7 +460,7 @@ const Project = () => {
                             />
                           </ListItem>
                         ))}
-                        {project.devCompanyMembers.map((member, index) => (
+                        {devMembers.map((member: { name: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined; role: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined }, index: Key | null | undefined) => (
                           <ListItem
                             key={index}
                             sx={{
@@ -464,8 +474,8 @@ const Project = () => {
                               />
                             </ListItemIcon>
                             <ListItemText
-                              primary={member}
-                              secondary="일반"
+                              primary={member.name}
+                              secondary={member.role}
                               sx={{
                                 '& .MuiListItemText-primary': {
                                   color: '#334155',

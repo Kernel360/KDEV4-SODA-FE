@@ -1,4 +1,8 @@
 export interface Project {
+  clientMembers: never[]
+  devManagers: never[]
+  devMembers: never[]
+  clientManagers: never[]
   id: number
   title: string
   description: string
