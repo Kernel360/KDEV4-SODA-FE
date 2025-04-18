@@ -57,6 +57,40 @@ export default function AdminMain() {
     navigate('/admin/projects')
   }
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'IN_PROGRESS':
+        return '진행 중'
+      case 'CONTRACT':
+        return '계약 전'
+      case 'COMPLETED':
+        return '완료'
+      case 'MAINTENANCE':
+        return '하자보수'
+      case 'STOPPED':
+        return '중단'
+      default:
+        return '대기'
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'IN_PROGRESS':
+        return theme.palette.success.main
+      case 'CONTRACT':
+        return theme.palette.warning.main
+      case 'COMPLETED':
+        return theme.palette.info.main
+      case 'MAINTENANCE':
+        return theme.palette.error.main
+      case 'STOPPED':
+        return theme.palette.error.dark
+      default:
+        return theme.palette.success.light
+    }
+  }
+
   if (isLoading) {
     return <LoadingSpinner />
   }
@@ -65,6 +99,16 @@ export default function AdminMain() {
     return (
       <ErrorMessage
         message={error}
+        onRetry={fetchAllProjects}
+      />
+    )
+  }
+
+  // projects가 배열인지 확인
+  if (!Array.isArray(projects)) {
+    return (
+      <ErrorMessage
+        message="프로젝트 데이터 형식이 올바르지 않습니다."
         onRetry={fetchAllProjects}
       />
     )
@@ -89,10 +133,10 @@ export default function AdminMain() {
             }}>
               <CardContent>
                 <Typography sx={{ fontSize: '0.875rem', color: '#64748b', mb: 1 }}>
-                  계약 전 프로젝트 (더미데이터)
+                  계약 전 프로젝트
                 </Typography>
                 <Typography sx={{ fontSize: '2.5rem', fontWeight: 700, color: theme.palette.primary.main }}>
-                  3
+                  {projects.filter(p => p.status === 'CONTRACT').length}
                 </Typography>
               </CardContent>
             </Card>
@@ -106,10 +150,10 @@ export default function AdminMain() {
             }}>
               <CardContent>
                 <Typography sx={{ fontSize: '0.875rem', color: '#64748b', mb: 1 }}>
-                  개발 중인 프로젝트 (더미데이터)
+                  개발 중인 프로젝트
                 </Typography>
                 <Typography sx={{ fontSize: '2.5rem', fontWeight: 700, color: theme.palette.primary.main }}>
-                  5
+                  {projects.filter(p => p.status === 'IN_PROGRESS').length}
                 </Typography>
               </CardContent>
             </Card>
@@ -123,10 +167,10 @@ export default function AdminMain() {
             }}>
               <CardContent>
                 <Typography sx={{ fontSize: '0.875rem', color: '#64748b', mb: 1 }}>
-                  하자보수 중인 프로젝트 (더미데이터)
+                  하자보수 중인 프로젝트
                 </Typography>
                 <Typography sx={{ fontSize: '2.5rem', fontWeight: 700, color: theme.palette.info.main }}>
-                  2
+                  {projects.filter(p => p.status === 'MAINTENANCE').length}
                 </Typography>
               </CardContent>
             </Card>
@@ -340,8 +384,8 @@ export default function AdminMain() {
                       {project.title}
                     </Typography>
                   </TableCell>
-                        <TableCell sx={{ fontSize: '0.875rem', color: '#4b5563' }}>{project.devCompanyName}</TableCell>
-                        <TableCell sx={{ fontSize: '0.875rem', color: '#4b5563' }}>{project.clientCompanyName}</TableCell>
+                        <TableCell sx={{ fontSize: '0.875rem', color: '#4b5563' }}>{project.devCompanyName || '-'}</TableCell>
+                        <TableCell sx={{ fontSize: '0.875rem', color: '#4b5563' }}>{project.clientCompanyName || '-'}</TableCell>
                         <TableCell>
                           <Box
                             sx={{
@@ -353,15 +397,9 @@ export default function AdminMain() {
                               sx={{
                                 fontSize: '0.813rem',
                                 fontWeight: 500,
-                                color: project.status === '진행 중' 
-                                  ? theme.palette.success.main 
-                                  : project.status === '완료' 
-                                    ? theme.palette.info.main
-                                    : project.status === '중단'
-                                      ? theme.palette.error.main
-                                      : theme.palette.success.light
+                                color: getStatusColor(project.status)
                               }}>
-                              {project.status || '대기'}
+                              {getStatusText(project.status)}
                             </Typography>
                           </Box>
                         </TableCell>
