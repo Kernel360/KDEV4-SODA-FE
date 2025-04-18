@@ -14,7 +14,7 @@ export interface CreateProjectRequest {
   description: string
   startDate: string
   endDate: string
-  clientCompanyId: number
+  clientCompanyIds: number[]
   devCompanyId: number
   devManagers: number[]
   devMembers: number[]
@@ -136,7 +136,7 @@ export const projectService = {
         'description',
         'startDate',
         'endDate',
-        'clientCompanyId',
+        'clientCompanyIds',
         'devCompanyId',
         'devManagers',
         'devMembers',
@@ -169,7 +169,7 @@ export const projectService = {
       }
 
       // 회사 ID 유효성 검증
-      if (project.clientCompanyId === project.devCompanyId) {
+      if (project.clientCompanyIds.includes(project.devCompanyId)) {
         throw new Error('고객사와 개발사는 서로 다른 회사여야 합니다.')
       }
 
