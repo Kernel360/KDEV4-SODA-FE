@@ -1,15 +1,15 @@
-import React, { useState } from 'react'
-import { Box, Button, TextField } from '@mui/material'
+import { useState } from 'react'
+import { Box, Paper, TextField, Button, Grid, FormControlLabel, Switch } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 //import { Company } from '../../types/company'
 
-interface CompanyFormData {
+export interface CompanyFormData {
   name: string
   ceoName: string
-  ceoPhone: string
-  registrationNumber: string
+  phoneNumber: string
+  businessNumber: string
   address: string
-  addressDetail: string
+  isActive: boolean
 }
 
 interface CompanyFormProps {
@@ -17,30 +17,30 @@ interface CompanyFormProps {
   onSubmit: (data: CompanyFormData) => Promise<void>
 }
 
-const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit }) => {
+const CompanyForm = ({ initialData, onSubmit }: CompanyFormProps) => {
   const navigate = useNavigate()
   const [formData, setFormData] = useState<CompanyFormData>(
     initialData || {
       name: '',
       ceoName: '',
-      ceoPhone: '',
-      registrationNumber: '',
+      phoneNumber: '',
+      businessNumber: '',
       address: '',
-      addressDetail: ''
+      isActive: true
     }
   )
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
+    const { name, value, checked } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === 'isActive' ? checked : value
     }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    await onSubmit(formData)
+    onSubmit(formData)
   }
 
   const handleCancel = () => {
@@ -48,78 +48,83 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit }) => {
   }
 
   return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit}
-      sx={{ mt: 2 }}>
-      <TextField
-        fullWidth
-        label="회사명"
-        name="name"
-        value={formData.name}
-        onChange={handleChange}
-        required
-        margin="normal"
-      />
-      <TextField
-        fullWidth
-        label="대표자명"
-        name="ceoName"
-        value={formData.ceoName}
-        onChange={handleChange}
-        required
-        margin="normal"
-      />
-      <TextField
-        fullWidth
-        label="대표자 연락처"
-        name="ceoPhone"
-        value={formData.ceoPhone}
-        onChange={handleChange}
-        required
-        margin="normal"
-      />
-      <TextField
-        fullWidth
-        label="사업자등록번호"
-        name="registrationNumber"
-        value={formData.registrationNumber}
-        onChange={handleChange}
-        required
-        margin="normal"
-      />
-      <TextField
-        fullWidth
-        label="주소"
-        name="address"
-        value={formData.address}
-        onChange={handleChange}
-        required
-        margin="normal"
-      />
-      <TextField
-        fullWidth
-        label="상세주소"
-        name="addressDetail"
-        value={formData.addressDetail}
-        onChange={handleChange}
-        required
-        margin="normal"
-      />
-      <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-        <Button
-          variant="outlined"
-          onClick={handleCancel}>
-          {initialData ? '수정 취소' : '생성 취소'}
-        </Button>
-        <Button
-          type="submit"
-          variant="contained"
-          color="primary">
-          {initialData ? '수정' : '생성'}
-        </Button>
-      </Box>
-    </Box>
+    <Paper sx={{ p: 3 }}>
+      <form onSubmit={handleSubmit}>
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              required
+              label="회사명"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              required
+              label="대표자명"
+              name="ceoName"
+              value={formData.ceoName}
+              onChange={handleChange}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="연락처"
+              name="phoneNumber"
+              value={formData.phoneNumber}
+              onChange={handleChange}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="사업자등록번호"
+              name="businessNumber"
+              value={formData.businessNumber}
+              onChange={handleChange}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              label="주소"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.isActive}
+                  onChange={handleChange}
+                  name="isActive"
+                />
+              }
+              label="활성화 상태"
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+              <Button
+                variant="outlined"
+                onClick={handleCancel}>
+                {initialData ? '수정 취소' : '생성 취소'}
+              </Button>
+              <Button type="submit" variant="contained" color="primary">
+                저장
+              </Button>
+            </Box>
+          </Grid>
+        </Grid>
+      </form>
+    </Paper>
   )
 }
 
