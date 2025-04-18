@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { Box, Typography, Button } from '@mui/material'
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { Plus, Edit } from 'lucide-react'
+import { Box, Typography, Button, IconButton, Stack } from '@mui/material'
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import { Plus, Edit, Delete } from 'lucide-react'
 import type { Stage, StageStatus, TaskStatus } from '../../types/project'
 import AddStageModal from './AddStageModal'
 import StageCard from './StageCard'
@@ -68,116 +68,38 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
     setTransformedStages(transformed)
   }, [stages])
 
-  const handleDragEnd = async (result: DropResult) => {
+  const handleDragEnd = async (result: any) => {
     if (!result.destination) return
 
-    const { source, destination, type } = result
-    let isMoved = false
+    const items = Array.from(transformedStages)
+    const [reorderedItem] = items.splice(result.source.index, 1)
+    items.splice(result.destination.index, 0, reorderedItem)
 
-    // Stage 이동
-    if (type === 'stage') {
-      const sourceIndex = source.index
-      const destinationIndex = destination.index
+    // Update stageOrder
+    const updatedStages = items.map((stage, index) => ({
+      ...stage,
+      stageOrder: index + 1
+    }))
 
-      if (sourceIndex === destinationIndex) return
-
-      try {
-        // Optimistic update: 먼저 UI 업데이트
-        const updatedStages = [...transformedStages]
-        const [removed] = updatedStages.splice(sourceIndex, 1)
-        updatedStages.splice(destinationIndex, 0, removed)
-
-        // stageOrder 업데이트
-        updatedStages.forEach((stage, index) => {
-          stage.stageOrder = index
-        })
-
-        setTransformedStages(updatedStages)
-        if (onStagesChange) {
-          onStagesChange(updatedStages)
-        }
-
-        // API 호출
-        const movedStage = updatedStages[destinationIndex]
-        const prevStage = destinationIndex > 0 ? updatedStages[destinationIndex - 1] : null
-        const nextStage = destinationIndex < updatedStages.length - 1 ? updatedStages[destinationIndex + 1] : null
-
-        await client.put(`/stages/${movedStage.id}/move`, {
-          prevStageId: prevStage?.id || null,
-          nextStageId: nextStage?.id || null
-        })
-        isMoved = true
-      } catch (error) {
-        console.error('Failed to move stage:', error)
-        // API 호출 실패 시에도 UI는 유지
-      }
-    } else {
-      // Task 이동
-      const sourceStageId = parseInt(source.droppableId.split('-')[1])
-      const destinationStageId = parseInt(destination.droppableId.split('-')[1])
-      
-      const sourceStage = transformedStages.find(s => s.id === sourceStageId)
-      const destinationStage = transformedStages.find(s => s.id === destinationStageId)
-      
-      if (!sourceStage || !destinationStage) return
-
-      try {
-        // Optimistic update: 먼저 UI 업데이트
-        const newStages = transformedStages.map(stage => ({...stage}))
-        const newSourceStage = newStages.find(s => s.id === sourceStageId)!
-        const newDestinationStage = newStages.find(s => s.id === destinationStageId)!
-
-        const [movedTask] = newSourceStage.tasks.splice(source.index, 1)
-        newDestinationStage.tasks.splice(destination.index, 0, movedTask)
-
-        // taskOrder 업데이트
-        newDestinationStage.tasks.forEach((task, index) => {
-          task.order = index
-        })
-
-        setTransformedStages(newStages)
-        if (onStagesChange) {
-          onStagesChange(newStages)
-        }
-
-        // API 호출
-        const destinationTasks = newDestinationStage.tasks
-        const movedTaskIndex = destination.index
-
-        // 이전 task와 다음 task 찾기
-        const prevTask = movedTaskIndex > 0 ? destinationTasks[movedTaskIndex - 1] : null
-        const nextTask = movedTaskIndex < destinationTasks.length - 1 ? destinationTasks[movedTaskIndex + 1] : null
-
-        // API 호출 시 prevTaskId와 nextTaskId 설정
-        await client.patch(`/tasks/${movedTask.id}/move`, {
-          prevTaskId: prevTask?.id || null,
-          nextTaskId: nextTask?.id || null
-        })
-        isMoved = true
-      } catch (error) {
-        console.error('Failed to move task:', error)
-        // API 호출 실패 시에도 UI는 유지
-      }
+    setTransformedStages(updatedStages)
+    if (onStagesChange) {
+      onStagesChange(updatedStages)
     }
 
-    // 이동이 성공적으로 완료된 경우에만 stage 목록 새로고침
-    if (isMoved) {
-      try {
-        const stagesResponse = await client.get(`/projects/${projectId}/stages`)
-        if (stagesResponse.data && stagesResponse.data.data && Array.isArray(stagesResponse.data.data)) {
-          const refreshedStages = stagesResponse.data.data.map((stage: ApiStage) => transformApiStageToStage(stage))
-          setTransformedStages(refreshedStages)
-          if (onStagesChange) {
-            onStagesChange(refreshedStages)
-          }
-        }
-      } catch (error) {
-        console.error('Failed to refresh stages:', error)
-      }
-    }
+    // API 호출
+    const movedStage = updatedStages[result.destination.index]
+    const prevStage = result.destination.index > 0 ? updatedStages[result.destination.index - 1] : null
+    const nextStage = result.destination.index < updatedStages.length - 1 ? updatedStages[result.destination.index + 1] : null
+
+    await client.put(`/stages/${movedStage.id}/move`, {
+      prevStageId: prevStage?.id || null,
+      nextStageId: nextStage?.id || null
+    })
   }
 
   const handleAddStage = async (title: string) => {
+    if (!title.trim()) return
+
     try {
       // 선택된 위치의 이전/다음 stage ID를 찾음
       const position = selectedPosition ?? transformedStages.length
@@ -190,7 +112,7 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
       // Optimistic update: 먼저 UI에 stage 추가
       const newStage: Stage = {
         id: Date.now(), // 임시 ID
-        title: title,
+        title: title.trim(),
         order: position,
         status: '대기' as StageStatus,
         tasks: [],
@@ -207,7 +129,7 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
       }
 
       // API 호출
-      const response = await createStage(projectId, title, prevStageId, nextStageId)
+      const response = await createStage(projectId, title.trim(), prevStageId, nextStageId)
       if (!response) {
         throw new Error('Invalid API response')
       }
@@ -262,75 +184,17 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
 
   const handleStageEdit = async (stageId: number, newTitle: string) => {
     try {
-      const response = await updateStage(stageId, newTitle) as ApiStage
-      const updatedStage = transformApiStageToStage(response)
-      
-      const updatedStages = transformedStages.map(stage => 
-        stage.id === stageId ? updatedStage : stage
-      )
-      
-      setTransformedStages(updatedStages)
-      if (onStagesChange) {
-        onStagesChange(updatedStages)
-      }
+      await updateStage(stageId, newTitle)
     } catch (error) {
       console.error('Failed to update stage:', error)
-      throw error
     }
   }
 
   const handleStageDelete = async (stageId: number) => {
     try {
-      // Optimistic update: 먼저 UI에서 stage 제거
-      const updatedStages = transformedStages.filter(stage => stage.id !== stageId)
-      setTransformedStages(updatedStages)
-      if (onStagesChange) {
-        onStagesChange(updatedStages)
-      }
-
-      // API 호출
       await deleteStage(stageId)
     } catch (error) {
       console.error('Failed to delete stage:', error)
-      // 실패 시 원래 상태로 복구
-      setTransformedStages(transformedStages)
-      if (onStagesChange) {
-        onStagesChange(transformedStages)
-      }
-      throw error
-    }
-  }
-
-
-  const handleTaskEdit = async (taskId: number, title: string, content: string) => {
-    try {
-      // Optimistic update: 먼저 UI 업데이트
-      const updatedStages = transformedStages.map(stage => ({
-        ...stage,
-        tasks: stage.tasks.map(task => 
-          task.id === taskId ? {
-            ...task,
-            title,
-            description: content,
-            updatedAt: new Date().toISOString()
-          } : task
-        )
-      }))
-
-      setTransformedStages(updatedStages)
-      if (onStagesChange) {
-        onStagesChange(updatedStages)
-      }
-
-      // API 호출
-      await updateTask(taskId, { title, content })
-    } catch (error) {
-      // 실패 시 원래 상태로 복구
-      setTransformedStages(transformedStages)
-      if (onStagesChange) {
-        onStagesChange(transformedStages)
-      }
-      throw error
     }
   }
 
@@ -349,107 +213,38 @@ export const ProjectStages = ({ projectId, stages = [], onStagesChange }: Projec
       </Box>
 
       <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="stages" direction="horizontal" type="stage">
+        <Droppable droppableId="stages">
           {(provided) => (
-            <Box
-              ref={provided.innerRef}
+            <Stack
+              direction="row"
+              spacing={2}
               {...provided.droppableProps}
-              sx={{
-                display: 'flex',
-                overflowX: 'auto',
-                pb: 2,
-                position: 'relative',
-                gap: 0
-              }}
+              ref={provided.innerRef}
             >
               {transformedStages.map((stage, index) => (
-                <React.Fragment key={`stage-${stage.id}-${index}`}>
-                  {isEditMode ? (
-                    <Box
-                      key={`add-button-${index}`}
-                      onMouseEnter={() => setHoveredIndex(index)}
-                      onMouseLeave={() => setHoveredIndex(null)}
-                      sx={{
-                        width: '24px',
-                        minWidth: '24px',
-                        height: '400px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative',
-                        zIndex: 1,
-                        transition: 'width 0.2s ease',
-                        '&:hover': {
-                          width: '40px',
-                          minWidth: '40px'
-                        }
-                      }}
+                <Draggable key={stage.id} draggableId={stage.id.toString()} index={index}>
+                  {(provided) => (
+                    <Paper
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      sx={{ p: 2, minWidth: 200 }}
                     >
-                      {hoveredIndex === index && (
-                      <Button
-                        sx={{
-                            minWidth: '32px',
-                            width: '32px',
-                            height: '32px',
-                            position: 'absolute',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            backgroundColor: 'background.paper',
-                          boxShadow: 1,
-                          borderRadius: '50%',
-                            p: 0,
-                          '&:hover': {
-                              backgroundColor: 'primary.main',
-                              color: 'primary.contrastText',
-                              transform: 'translateX(-50%) scale(1.1)',
-                            },
-                            transition: 'all 0.2s ease'
-                          }}
-                          onClick={() => handleAddStageClick(index)}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Typography variant="subtitle1">{stage.title}</Typography>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleStageDelete(stage.id)}
                         >
-                          <Plus size={20} />
-                      </Button>
-                      )}
-                    </Box>
-                  ) : (
-                    <Box key={`spacer-${index}`} sx={{ width: '16px', minWidth: '16px' }} />
+                          <Delete />
+                        </IconButton>
+                      </Box>
+                    </Paper>
                   )}
-                    <Draggable
-                    key={`draggable-${stage.id}`}
-                    draggableId={stage?.id?.toString() || `stage-${index}`} 
-                    index={index}
-                    isDragDisabled={!isEditMode}
-                  >
-                    {(provided) => (
-                        <Box
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                        sx={{
-                          cursor: isEditMode ? 'grab' : 'default',
-                          position: 'relative',
-                          zIndex: 0
-                        }}
-                      >
-                          <StageCard
-                          key={`stage-card-${stage.id}`}
-                            stage={stage}
-                          stages={transformedStages}
-                            projectId={projectId}
-                          isEditMode={isEditMode}
-                          isDragging={false}
-                          onStagesChange={onStagesChange}
-                          onStageEdit={handleStageEdit}
-                          onStageDelete={handleStageDelete}
-                          onTaskEdit={handleTaskEdit}
-                          />
-                        </Box>
-                      )}
-                    </Draggable>
-                </React.Fragment>
+                </Draggable>
               ))}
               {provided.placeholder}
-            </Box>
+            </Stack>
           )}
         </Droppable>
       </DragDropContext>
