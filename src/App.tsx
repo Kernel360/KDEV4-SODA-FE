@@ -4,28 +4,27 @@ import Layout from './components/layout/Layout'
 import {
   Login,
   FindId,
+  FindPassword,
   ResetPassword,
   UserInfo,
   AdminMain,
   ProjectList,
-  CreateProject,
-  Project,
+  ProjectDetail,
   EditProject,
+  CreateProject,
   AccountList,
   AccountDetail,
   CreateAccount,
   CompanyList,
   Company,
   EditCompany,
+  CreateCompany,
   UserProject,
   UserAccountDetail,
-  CreateCompany,
   Article,
   CreateArticle,
   EditArticle,
-  ReplyArticle,
-  FindPassword
-} from './pages'
+  ReplyArticle} from './pages'
 import { ThemeProvider } from '@mui/material/styles'
 import { LocalizationProvider } from '@mui/x-date-pickers'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
@@ -100,7 +99,7 @@ const App: React.FC = () => {
               />
               <Route
                 path="projects/:id"
-                element={<Project />}
+                element={<ProjectDetail />}
               />
               <Route
                 path="projects/:id/edit"

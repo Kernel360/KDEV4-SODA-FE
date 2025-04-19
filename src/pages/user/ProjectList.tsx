@@ -38,15 +38,15 @@ const ProjectList: React.FC = () => {
 
   const getStatusColor = (status: ProjectStatus) => {
     switch (status) {
-      case '계약':
+      case 'CONTRACT':
         return 'info'
-      case '진행중':
+      case 'IN_PROGRESS':
         return 'primary'
-      case '납품완료':
+      case 'DELIVERED':
         return 'success'
-      case '하자보수':
+      case 'MAINTENANCE':
         return 'warning'
-      case '일시중단':
+      case 'ON_HOLD':
         return 'error'
       default:
         return 'default'

@@ -8,7 +8,7 @@ export { default as UserInfo } from './auth/UserInfo'
 // Admin pages
 export { default as AdminMain } from './admin/AdminMain'
 export { default as ProjectList } from './admin/projects/ProjectList'
-export { default as Project } from './admin/projects/Project'
+export { default as ProjectDetail } from './admin/projects/Project'
 export { default as EditProject } from './admin/projects/EditProject'
 export { default as CreateProject } from './admin/projects/CreateProject'
 
