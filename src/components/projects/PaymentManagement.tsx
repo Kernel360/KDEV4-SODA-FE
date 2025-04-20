@@ -86,7 +86,8 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
       const stagePromises = stages.map(stage => {
         const stageQueryParams = new URLSearchParams({
           stageId: stage.id.toString(),
-          size: '1'
+          page: '0',
+          size: '100'
         });
         if (selectedStatus !== 'ALL') {
           stageQueryParams.append('status', selectedStatus);
@@ -94,7 +95,10 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
         return client.get(`/projects/${projectId}/requests?${stageQueryParams.toString()}`);
       });
 
-      const totalQueryParams = new URLSearchParams({ size: '1' });
+      const totalQueryParams = new URLSearchParams({
+        page: '0',
+        size: '100'
+      });
       if (selectedStatus !== 'ALL') {
         totalQueryParams.append('status', selectedStatus);
       }
@@ -108,17 +112,17 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
 
       if (pageResponse.data.status === 'success' && pageResponse.data.data) {
         setRequests(pageResponse.data.data.content);
-        setTotalPages(pageResponse.data.data.totalPages);
+        setTotalPages(pageResponse.data.data.page.totalPages);
       }
 
       if (totalResponse.data.status === 'success' && totalResponse.data.data) {
-        setTotalRequests(totalResponse.data.data.totalElements);
+        setTotalRequests(totalResponse.data.data.page.totalElements);
       }
 
       const stageCounts: { [key: number]: number } = {};
       stageResponses.forEach((response, index) => {
         if (response.data.status === 'success' && response.data.data) {
-          stageCounts[stages[index].id] = response.data.data.totalElements;
+          stageCounts[stages[index].id] = response.data.data.page.totalElements;
         }
       });
       setStageRequests(stageCounts);
@@ -141,7 +145,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
   };
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
-    setPage(value - 1);
+    setPage(value - 1); // UI는 1부터, 내부는 0부터 시작
   };
 
   return (
@@ -350,7 +354,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
         <Pagination
           count={totalPages}
-          page={page + 1}
+          page={page + 1} // UI는 1부터 시작
           onChange={handlePageChange}
           color="primary"
         />
