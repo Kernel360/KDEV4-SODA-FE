@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Box,
   Typography,
   Chip,
-  Link,
+  Link as MuiLink,
   Paper,
   IconButton,
   Container,
@@ -53,6 +53,7 @@ interface RequestDetail {
   createdAt: string;
   updatedAt: string;
   clientCompanyId: number;
+  parentId?: number;
 }
 
 interface Response {
@@ -83,7 +84,7 @@ const RequestDetail = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { user } = useUserStore();
-  const [requestDetail, setRequestDetail] = useState<RequestDetail | null>(null);
+  const [request, setRequest] = useState<RequestDetail | null>(null);
   const [responses, setResponses] = useState<Response[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isResponseBoxOpen, setIsResponseBoxOpen] = useState(false);
@@ -113,10 +114,19 @@ const RequestDetail = () => {
   const [newEditResponseLink, setNewEditResponseLink] = useState({ urlAddress: '', urlDescription: '' });
   const editResponseFileInputRef = React.useRef<HTMLInputElement>(null);
   const [approvers, setApprovers] = useState<ProjectMember[]>([]);
+  const [userProjectRole, setUserProjectRole] = useState<string | null>(null);
+  const [parentRequest, setParentRequest] = useState<RequestDetail | null>(null);
+
+  const canReapply = useMemo(() => {
+    if (!request || request.status !== 'REJECTED' || !user || !userProjectRole) return false;
+    
+    // 어드민이거나 개발사 role을 가진 경우 재승인 가능
+    return user.role === 'ADMIN' || userProjectRole.startsWith('DEV_');
+  }, [request, user, userProjectRole]);
 
   // 권한 체크 함수
   const canApproveOrReject = () => {
-    if (!user || !requestDetail) return false;
+    if (!user || !request) return false;
     
     // 이미 응답한 사용자인지 확인
     const hasAlreadyResponded = responses.some(response => response.memberId === user.memberId);
@@ -126,7 +136,7 @@ const RequestDetail = () => {
     if (user.role === 'ADMIN') return true;
     
     // 승인권자인 경우에만 승인/거절 가능
-    return requestDetail.approvers.some(approver => approver.memberId === user.memberId);
+    return request.approvers.some(approver => approver.memberId === user.memberId);
   };
 
   const getStatusText = (status: string) => {
@@ -191,7 +201,7 @@ const RequestDetail = () => {
   };
 
   useEffect(() => {
-    const fetchRequestDetail = async () => {
+    const fetchRequestDetails = async () => {
       if (!requestId) return;
       
       try {
@@ -202,7 +212,7 @@ const RequestDetail = () => {
 
         if (detailResponse.data.status === 'success') {
           const requestData = detailResponse.data.data;
-          setRequestDetail(requestData);
+          setRequest(requestData);
 
           // 승인권자 정보 가져오기
           if (requestData.approvers && requestData.approvers.length > 0) {
@@ -229,6 +239,14 @@ const RequestDetail = () => {
             console.log('Valid approvers:', validApprovers);
             setApprovers(validApprovers);
           }
+
+          // 부모 요청이 있는 경우 부모 요청 정보도 가져오기
+          if (requestData.parentId) {
+            const parentResponse = await client.get(`/requests/${requestData.parentId}`);
+            if (parentResponse.data.status === 'success') {
+              setParentRequest(parentResponse.data.data);
+            }
+          }
         }
 
         if (responsesResponse.data.status === 'success') {
@@ -252,8 +270,8 @@ const RequestDetail = () => {
           setResponses(responsesWithDetails);
         }
 
-        if (requestDetail) {
-          setEditLinks(requestDetail.links.map(l => ({
+        if (request) {
+          setEditLinks(request.links.map(l => ({
             urlAddress: l.urlAddress,
             urlDescription: l.urlDescription,
             isNew: false,
@@ -266,15 +284,36 @@ const RequestDetail = () => {
       }
     };
 
-    fetchRequestDetail();
+    fetchRequestDetails();
   }, [requestId, projectId, user]);
+
+  useEffect(() => {
+    const fetchUserProjectRole = async () => {
+      if (!projectId || !user?.memberId) return;
+      
+      try {
+        const response = await client.get(`/projects/${projectId}/members`, {
+          params: { memberId: user.memberId }
+        });
+        
+        if (response.data.status === 'success' && response.data.data.content.length > 0) {
+          const memberInfo = response.data.data.content[0];
+          setUserProjectRole(memberInfo.role);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user project role:', error);
+      }
+    };
+
+    fetchUserProjectRole();
+  }, [projectId, user?.memberId]);
 
   const handleEditClick = () => {
     setEditForm({
-      title: requestDetail?.title || '',
-      content: requestDetail?.content || ''
+      title: request?.title || '',
+      content: request?.content || ''
     });
-    setEditLinks(requestDetail?.links.map(link => ({
+    setEditLinks(request?.links.map(link => ({
       urlAddress: link.urlAddress,
       urlDescription: link.urlDescription,
       isNew: false,
@@ -372,10 +411,10 @@ const RequestDetail = () => {
       if (response.data.status === 'success') {
         showToast('파일이 성공적으로 삭제되었습니다.', 'success');
         // UI에서 파일 제거
-        if (requestDetail) {
-          setRequestDetail({
-            ...requestDetail,
-            files: requestDetail.files.filter(file => file.id !== fileId)
+        if (request) {
+          setRequest({
+            ...request,
+            files: request.files.filter(file => file.id !== fileId)
           });
         }
       }
@@ -557,7 +596,7 @@ const RequestDetail = () => {
     }
   };
 
-  if (!requestDetail) return null;
+  if (!request) return null;
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
@@ -579,6 +618,55 @@ const RequestDetail = () => {
           <Typography variant="body2">프로젝트 대시보드로 돌아가기</Typography>
         </Box>
       </Box>
+
+      {/* 부모 요청 정보 */}
+      {parentRequest && (
+        <Paper 
+          sx={{ 
+            p: 2, 
+            mb: 3, 
+            bgcolor: '#FFF9E6',
+            border: '1px solid #FFE7BA'
+          }}
+        >
+          <Typography variant="subtitle1" sx={{ color: '#FFB800', fontWeight: 'bold', mb: 1 }}>
+            재승인 요청
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#666' }}>
+            이 요청은 다음 요청의 재승인 요청입니다:
+          </Typography>
+          <Link 
+            to={`/user/projects/${projectId}/requests/${parentRequest.requestId}`}
+            style={{ textDecoration: 'none' }}
+          >
+            <Box
+              sx={{ 
+                display: 'block',
+                mt: 1,
+                p: 1.5,
+                bgcolor: 'white',
+                borderRadius: 1,
+                border: '1px solid #E5E7EB',
+                '&:hover': {
+                  bgcolor: '#F9FAFB',
+                  cursor: 'pointer'
+                }
+              }}
+              onClick={() => {
+                setParentRequest(null);
+                navigate(`/user/projects/${projectId}/requests/${parentRequest.requestId}`);
+              }}
+            >
+              <Typography variant="subtitle2" sx={{ color: '#333', fontWeight: 'bold' }}>
+                {parentRequest.title}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#666', mt: 0.5 }}>
+                {dayjs(parentRequest.createdAt).format('YYYY-MM-DD HH:mm')}
+              </Typography>
+            </Box>
+          </Link>
+        </Paper>
+      )}
 
       {/* 요청 상세 정보 */}
       <Paper 
@@ -643,7 +731,7 @@ const RequestDetail = () => {
                     }>
                       <ListItemText 
                         primary={
-                          <Link
+                          <MuiLink
                             href={link.urlAddress.startsWith('http') ? link.urlAddress : `https://${link.urlAddress}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -656,7 +744,7 @@ const RequestDetail = () => {
                             }}
                           >
                             {link.urlDescription || link.urlAddress}
-                          </Link>
+                          </MuiLink>
                         }
                       />
                     </ListItem>
@@ -694,9 +782,9 @@ const RequestDetail = () => {
                   ))}
                 </List>
                 {/* 기존 첨부파일 표시 */}
-                {requestDetail.files.length > 0 && (
+                {request.files.length > 0 && (
                   <List>
-                    {requestDetail.files.map((file) => (
+                    {request.files.map((file) => (
                       <ListItem 
                         key={file.id}
                         secondaryAction={
@@ -710,7 +798,7 @@ const RequestDetail = () => {
                       >
                         <ListItemText 
                           primary={
-                            <Link
+                            <MuiLink
                               component="button"
                               onClick={() => window.open(file.url, '_blank')}
                               sx={{ 
@@ -723,7 +811,7 @@ const RequestDetail = () => {
                               }}
                             >
                               {file.name}
-                            </Link>
+                            </MuiLink>
                           }
                         />
                       </ListItem>
@@ -771,15 +859,15 @@ const RequestDetail = () => {
                 </Box>
                 {/* 작성자명과 작성일 */}
                 <Box>
-                  <Typography fontWeight="medium">{requestDetail.memberName}</Typography>
+                  <Typography fontWeight="medium">{request.memberName}</Typography>
                   <Typography variant="body2" sx={{ color: 'grey.500' }}>
-                    {dayjs(requestDetail.createdAt).format('YYYY-MM-DD HH:mm')}
+                    {dayjs(request.createdAt).format('YYYY-MM-DD HH:mm')}
                   </Typography>
                 </Box>
                 <Chip
-                  label={getStatusText(requestDetail.status)}
+                  label={getStatusText(request.status)}
                   sx={{
-                    ...getStatusColor(requestDetail.status),
+                    ...getStatusColor(request.status),
                     fontWeight: 600,
                     px: 2,
                     height: 32,
@@ -790,7 +878,7 @@ const RequestDetail = () => {
 
               {/* 수정/삭제 버튼 */}
               <Box sx={{ display: 'flex', gap: 1 }}>
-                {user?.memberId === requestDetail.memberId && (
+                {user?.memberId === request.memberId && (
                   <Button
                     variant="outlined"
                     startIcon={<EditIcon />}
@@ -811,7 +899,7 @@ const RequestDetail = () => {
                 color: 'text.primary'
               }}
             >
-              {requestDetail.title}
+              {request.title}
             </Typography>
 
             {/* 내용 */}
@@ -823,7 +911,7 @@ const RequestDetail = () => {
                 color: 'text.primary'
               }}
             >
-              {requestDetail.content}
+              {request.content}
             </Typography>
 
             {/* 구분선 */}
@@ -839,7 +927,7 @@ const RequestDetail = () => {
             <Box sx={{ display: 'flex', gap: 4 }}>
               {/* 첨부 링크 */}
               <Box sx={{ flex: 1 }}>
-                {requestDetail.links.length > 0 && (
+                {request.links.length > 0 && (
                   <Box>
                     <Typography 
                       variant="subtitle2" 
@@ -851,7 +939,7 @@ const RequestDetail = () => {
                     >
                       첨부 링크
                     </Typography>
-                    {requestDetail.links.map((link) => (
+                    {request.links.map((link) => (
                       <Box
                         key={link.id}
                         sx={{
@@ -861,7 +949,7 @@ const RequestDetail = () => {
                           mb: 1
                         }}
                       >
-                        <Link
+                        <MuiLink
                           href={link.urlAddress.startsWith('http') ? link.urlAddress : `https://${link.urlAddress}`}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -874,7 +962,7 @@ const RequestDetail = () => {
                           }}
                         >
                           {link.urlDescription || link.urlAddress}
-                        </Link>
+                        </MuiLink>
                       </Box>
                     ))}
                   </Box>
@@ -883,7 +971,7 @@ const RequestDetail = () => {
 
               {/* 첨부 파일 */}
               <Box sx={{ flex: 1 }}>
-                {requestDetail.files.length > 0 && (
+                {request.files.length > 0 && (
                   <Box>
                     <Typography 
                       variant="subtitle2" 
@@ -896,7 +984,7 @@ const RequestDetail = () => {
                       첨부 파일
                     </Typography>
                     <List sx={{ p: 0 }}>
-                      {requestDetail.files.map((file) => (
+                      {request.files.map((file) => (
                         <ListItem 
                           key={file.id}
                           sx={{
@@ -908,7 +996,7 @@ const RequestDetail = () => {
                         >
                           <ListItemText 
                             primary={
-                              <Link
+                              <MuiLink
                                 component="button"
                                 onClick={() => window.open(file.url, '_blank')}
                                 sx={{ 
@@ -921,7 +1009,7 @@ const RequestDetail = () => {
                                 }}
                               >
                                 {file.name}
-                              </Link>
+                              </MuiLink>
                             }
                           />
                         </ListItem>
@@ -982,7 +1070,7 @@ const RequestDetail = () => {
           >
             저장
           </Button>
-          {user?.memberId === requestDetail.memberId && (
+          {user?.memberId === request.memberId && (
             <Button
               variant="outlined"
               color="error"
@@ -1273,7 +1361,7 @@ const RequestDetail = () => {
                           >
                             <ListItemText 
                               primary={
-                                <Link
+                                <MuiLink
                                   component="button"
                                   onClick={() => window.open(file.url, '_blank')}
                                   sx={{ 
@@ -1286,7 +1374,7 @@ const RequestDetail = () => {
                                   }}
                                 >
                                   {file.name}
-                                </Link>
+                                </MuiLink>
                               }
                             />
                             {editingResponseId === response.responseId && user?.memberId === response.memberId && (
@@ -1364,7 +1452,7 @@ const RequestDetail = () => {
                                   mb: 1
                                 }}
                               >
-                                <Link
+                                <MuiLink
                                   href={link.urlAddress.startsWith('http') ? link.urlAddress : `https://${link.urlAddress}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
@@ -1377,7 +1465,7 @@ const RequestDetail = () => {
                                   }}
                                 >
                                   {link.urlDescription || link.urlAddress}
-                                </Link>
+                                </MuiLink>
                                 {editingResponseId === response.responseId && user?.memberId === response.memberId && (
                                   <IconButton
                                     size="small"
@@ -1419,7 +1507,7 @@ const RequestDetail = () => {
                                 >
                                   <ListItemText 
                                     primary={
-                                      <Link
+                                      <MuiLink
                                         component="button"
                                         onClick={() => window.open(file.url, '_blank')}
                                         sx={{ 
@@ -1432,7 +1520,7 @@ const RequestDetail = () => {
                                         }}
                                       >
                                         {file.name}
-                                      </Link>
+                                      </MuiLink>
                                     }
                                   />
                                   {editingResponseId === response.responseId && user?.memberId === response.memberId && (
@@ -1458,7 +1546,7 @@ const RequestDetail = () => {
         )}
 
         {/* 응답 박스 */}
-        {(requestDetail?.status === 'PENDING' || requestDetail?.status === 'APPROVING') && canApproveOrReject() && (
+        {(request?.status === 'PENDING' || request?.status === 'APPROVING') && canApproveOrReject() && (
           <Box sx={{ mt: 4 }}>
             {!isResponseBoxOpen ? (
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
@@ -1638,6 +1726,23 @@ const RequestDetail = () => {
           <Button onClick={handleDelete} color="error" variant="contained">삭제</Button>
         </DialogActions>
       </Dialog>
+
+      <Box sx={{ display: 'flex', gap: 2, mt: 3, justifyContent: 'flex-end' }}>
+        {canReapply && (
+          <Button
+            variant="contained"
+            onClick={() => navigate(`/user/projects/${projectId}/requests/${requestId}/reapply`)}
+            sx={{ 
+              bgcolor: '#FFB800',
+              '&:hover': {
+                bgcolor: '#FFB800',
+                opacity: 0.9
+              }
+            }}>
+            재승인 요청
+          </Button>
+        )}
+      </Box>
     </Container>
   );
 };
