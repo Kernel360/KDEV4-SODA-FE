@@ -42,14 +42,12 @@ const EditProject: React.FC = () => {
         description: formData.description,
         startDate: formData.startDate,
         endDate: formData.endDate,
-        clientCompanyIds: project?.clientCompanyIds,
-        devCompanyId: project?.devCompanyId,
-        clientCompanyName: project?.clientCompanyName,
-        devCompanyName: project?.devCompanyName,
-        clientCompanyManagers: project?.clientCompanyManagers || [],
-        clientCompanyMembers: project?.clientCompanyMembers || [],
-        devCompanyManagers: project?.devCompanyManagers || [],
-        devCompanyMembers: project?.devCompanyMembers || []
+        clientCompanyNames: project?.clientCompanyNames || [],
+        devCompanyNames: project?.devCompanyNames || [],
+        clientManagerNames: project?.clientManagerNames || [],
+        clientMemberNames: project?.clientMemberNames || [],
+        devManagerNames: project?.devManagerNames || [],
+        devMemberNames: project?.devMemberNames || []
       }
 
       // API를 호출하여 프로젝트를 업데이트
