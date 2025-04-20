@@ -130,7 +130,7 @@ export interface CompanyMember {
   name: string
   position: string | null
   phoneNumber: string | null
-  role: 'USER' | 'ADMIN'
+  role: 'USER' | 'ADMIN' | '담당자' | '일반'
 }
 
 export interface CompanyMemberListResponse {

@@ -1,8 +1,8 @@
 import { client } from '../api/client'
-import axios from 'axios'
+import type { Company } from '../types/company'
+import type { CompanyMember } from '../types/api'
 
-interface Company {
-  id: number
+interface CreateCompanyRequest {
   name: string
   ceoName: string
   phoneNumber: string
@@ -11,62 +11,33 @@ interface Company {
   isActive: boolean
 }
 
-interface CompanyMember {
-  // Define the structure of a company member
-}
-
 export const companyService = {
   async getAllCompanies(): Promise<Company[]> {
-    try {
-      const response = await client.get('/companies')
-      return response.data.data
-    } catch (error) {
-      console.error('Error fetching companies:', error)
-      throw error
-    }
+    const response = await client.get('/companies')
+    return response.data.data
   },
 
-  async updateCompanyStatus(
-    companyId: number,
-    isActive: boolean
-  ): Promise<void> {
-    try {
-      await client.patch(`/companies/${companyId}/status`, { isActive })
-    } catch (error) {
-      console.error('Error updating company status:', error)
-      throw error
-    }
+  async createCompany(data: CreateCompanyRequest): Promise<Company> {
+    const response = await client.post('/companies', data)
+    return response.data.data
+  },
+
+  async updateCompany(id: number, data: Partial<CreateCompanyRequest>): Promise<Company> {
+    const response = await client.put(`/companies/${id}`, data)
+    return response.data.data
+  },
+
+  async getCompanyById(id: number): Promise<Company> {
+    const response = await client.get(`/companies/${id}`)
+    return response.data.data
+  },
+
+  async updateCompanyStatus(companyId: number, isActive: boolean): Promise<void> {
+    await client.patch(`/companies/${companyId}/status`, { isActive })
   },
 
   async getCompanyMembers(companyId: number): Promise<CompanyMember[]> {
-    try {
-      const response = await client.get(`/companies/${companyId}/members`)
-      return response.data.data
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw new Error(
-          error.response?.data?.message ||
-            '회사 멤버 목록을 불러오는데 실패했습니다.'
-        )
-      }
-      throw error
-    }
-  }
-}
-
-export const getCompanyMembers = async (
-  companyId: number
-): Promise<CompanyMember[]> => {
-  try {
     const response = await client.get(`/companies/${companyId}/members`)
     return response.data.data
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(
-        error.response?.data?.message ||
-          '회사 멤버 목록을 불러오는데 실패했습니다.'
-      )
-    }
-    throw error
   }
 }

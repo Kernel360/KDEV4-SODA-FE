@@ -1,48 +1,38 @@
 import React from 'react'
-import { Box, Paper, Typography } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import CompanyForm from '../../../components/common/CompanyForm'
+import CompanyForm, { CompanyFormData } from '../../../components/common/CompanyForm'
 import { useToast } from '../../../contexts/ToastContext'
-import { createCompany } from '../../../api/company'
-import type { Company } from '../../../types/company'
+import { companyService } from '../../../services/companyService'
 
 const CreateCompany: React.FC = () => {
   const navigate = useNavigate()
   const { showToast } = useToast()
 
-  const handleSubmit = async (data: Omit<Company, 'id'>) => {
+  const handleSubmit = async (formData: CompanyFormData) => {
     try {
-      const response = await createCompany({
-        name: data.name,
-        phoneNumber: data.ceoPhone,
-        ownerName: data.ceoName,
-        companyNumber: data.registrationNumber,
-        address: data.address,
-        detailaddress: data.addressDetail,
+      await companyService.createCompany({
+        name: formData.name,
+        ceoName: formData.ceoName,
+        phoneNumber: formData.phoneNumber,
+        businessNumber: formData.businessNumber,
+        address: formData.address,
+        isActive: formData.isActive
       })
-
-      if (response.status === 'success') {
-        showToast('회사가 생성되었습니다.', 'success')
-        navigate('/admin/companies')
-      } else {
-        showToast(response.message || '회사 생성에 실패했습니다.', 'error')
-      }
-    } catch (err) {
-      console.error('회사 생성 중 오류:', err)
-      showToast('회사 생성에 실패했습니다.', 'error')
+      showToast('회사가 성공적으로 생성되었습니다.', 'success')
+      navigate('/admin/companies')
+    } catch (error) {
+      console.error('회사 생성 중 오류:', error)
+      showToast('회사 생성 중 오류가 발생했습니다.', 'error')
     }
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Paper sx={{ p: 3 }}>
-        <Typography
-          variant="h5"
-          gutterBottom>
-          회사 생성
-        </Typography>
-        <CompanyForm onSubmit={handleSubmit} />
-      </Paper>
+    <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        회사 생성
+      </Typography>
+      <CompanyForm onSubmit={handleSubmit} />
     </Box>
   )
 }
