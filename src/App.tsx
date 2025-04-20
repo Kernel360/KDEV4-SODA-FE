@@ -40,6 +40,7 @@ import RecentPosts from './pages/user/RecentPosts'
 import Projects from './pages/user/Projects'
 import RequestDetail from './pages/user/projects/RequestDetail'
 import DataManagement from './pages/admin/DataManagement'
+import ReapplyRequest from './pages/user/projects/ReapplyRequest'
 
 const App: React.FC = () => {
   return (
@@ -203,6 +204,10 @@ const App: React.FC = () => {
               <Route
                 path="projects/:projectId/requests/:requestId"
                 element={<RequestDetail />}
+              />
+              <Route
+                path="projects/:projectId/requests/:requestId/reapply"
+                element={<ReapplyRequest />}
               />
             </Route>
 

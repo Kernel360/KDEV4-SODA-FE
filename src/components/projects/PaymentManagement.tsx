@@ -40,6 +40,12 @@ interface Request {
   status: string;
   createdAt: string;
   updatedAt: string;
+  parentId?: number;
+}
+
+interface RequestGroup {
+  parent: Request;
+  children: Request[];
 }
 
 interface Stage {
@@ -56,7 +62,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
   const navigate = useNavigate()
   const [selectedStage, setSelectedStage] = useState<number | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [requests, setRequests] = useState<Request[]>([])
+  const [requestGroups, setRequestGroups] = useState<RequestGroup[]>([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -111,7 +117,58 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
       ]);
 
       if (pageResponse.data.status === 'success' && pageResponse.data.data) {
-        setRequests(pageResponse.data.data.content);
+        const currentPageRequests = pageResponse.data.data.content;
+
+        // 현재 페이지의 요청들 중 parentId가 있는 요청들의 부모 요청 ID 수집
+        const parentIds = currentPageRequests
+          .filter((req: Request) => req.parentId)
+          .map((req: Request) => req.parentId)
+          .filter((id: number, index: number, self: number[]) => self.indexOf(id) === index);
+
+        // 부모 요청들이 있다면 추가로 가져오기
+        if (parentIds.length > 0) {
+          const parentPromises = parentIds.map((id: number) => 
+            client.get(`/requests/${id}`)
+          );
+          const parentResponses = await Promise.all(parentPromises);
+          const parentRequests = parentResponses
+            .filter(res => res.data.status === 'success')
+            .map(res => res.data.data);
+
+          // 부모-자식 요청 그룹화
+          const groups: RequestGroup[] = [];
+          currentPageRequests.forEach((request: Request) => {
+            if (request.parentId) {
+              const parentRequest = parentRequests.find(p => p.requestId === request.parentId);
+              if (parentRequest) {
+                const existingGroup = groups.find(g => g.parent.requestId === parentRequest.requestId);
+                if (existingGroup) {
+                  existingGroup.children.push(request);
+                } else {
+                  groups.push({
+                    parent: parentRequest,
+                    children: [request]
+                  });
+                }
+              }
+            } else {
+              // 부모가 없는 요청은 단독 그룹으로 처리
+              groups.push({
+                parent: request,
+                children: []
+              });
+            }
+          });
+
+          setRequestGroups(groups);
+        } else {
+          // 부모 요청이 없는 경우 각 요청을 단독 그룹으로 처리
+          setRequestGroups(currentPageRequests.map((request: Request) => ({
+            parent: request,
+            children: []
+          })));
+        }
+
         setTotalPages(pageResponse.data.data.page.totalPages);
       }
 
@@ -146,6 +203,36 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
     setPage(value - 1); // UI는 1부터, 내부는 0부터 시작
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return { color: '#16a34a', bgColor: '#dcfce7' };
+      case 'REJECTED':
+        return { color: '#dc2626', bgColor: '#fee2e2' };
+      case 'PENDING':
+        return { color: '#4b5563', bgColor: '#f3f4f6' };
+      case 'APPROVING':
+        return { color: '#2563eb', bgColor: '#dbeafe' };
+      default:
+        return { color: '#4b5563', bgColor: '#f3f4f6' };
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return '승인';
+      case 'REJECTED':
+        return '거절';
+      case 'PENDING':
+        return '대기';
+      case 'APPROVING':
+        return '승인중';
+      default:
+        return status;
+    }
   };
 
   return (
@@ -214,42 +301,42 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
             </Typography>
           </Paper>
           {stages.map(stage => (
-            <Paper
-              key={stage.id}
-              onClick={() => setSelectedStage(stage.id)}
-              sx={{
-                p: 2,
-                width: 150,
-                cursor: 'pointer',
-                bgcolor: 'white',
-                color: '#666',
-                border: '1px solid',
-                borderColor:
-                  selectedStage === stage.id ? '#FFB800' : '#E0E0E0',
-                boxShadow: 'none',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  borderColor: '#FFB800'
-                }
-              }}>
-              <Typography
-                variant="h6"
+              <Paper
+                key={stage.id}
+                onClick={() => setSelectedStage(stage.id)}
                 sx={{
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  mb: 1,
-                  color: selectedStage === stage.id ? '#FFB800' : '#666'
+                  p: 2,
+                  width: 150,
+                  cursor: 'pointer',
+                  bgcolor: 'white',
+                  color: '#666',
+                  border: '1px solid',
+                  borderColor:
+                    selectedStage === stage.id ? '#FFB800' : '#E0E0E0',
+                  boxShadow: 'none',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    borderColor: '#FFB800'
+                  }
                 }}>
-                {stage.name}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: '#666'
-                }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontSize: '1rem',
+                    fontWeight: 'bold',
+                    mb: 1,
+                    color: selectedStage === stage.id ? '#FFB800' : '#666'
+                  }}>
+                  {stage.name}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#666'
+                  }}>
                 {stageRequests[stage.id] || 0}건
-              </Typography>
-            </Paper>
+                </Typography>
+              </Paper>
           ))}
         </Box>
       </Box>
@@ -307,15 +394,15 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
         </Typography>
       )}
 
-      <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '1px solid #E0E0E0' }}>
+      <TableContainer component={Paper}>
         <Table>
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#F5F5F5' }}>
-              <TableCell>제목</TableCell>
-              <TableCell>작성자</TableCell>
+            <TableRow>
               <TableCell>단계</TableCell>
-              <TableCell>작성일</TableCell>
+              <TableCell>제목</TableCell>
               <TableCell>상태</TableCell>
+              <TableCell>작성자</TableCell>
+              <TableCell>작성일</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -323,28 +410,80 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
               <TableRow>
                 <TableCell colSpan={6} align="center">로딩 중...</TableCell>
               </TableRow>
-            ) : requests.length === 0 ? (
+            ) : requestGroups.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} align="center">승인 대기 중인 요청이 없습니다.</TableCell>
               </TableRow>
             ) : (
-              requests.map((request) => (
-                <TableRow 
-                  key={request.requestId}
-                  hover
-                  onClick={() => navigate(`/user/projects/${projectId}/requests/${request.requestId}`)}
-                  sx={{ cursor: 'pointer' }}
-                >
-                  <TableCell>{request.title}</TableCell>
-                  <TableCell>{request.memberName}</TableCell>
-                  <TableCell>
-                    {stages.find(stage => stage.id === request.stageId)?.name || '-'}
-                  </TableCell>
-                  <TableCell>
-                    {dayjs(request.createdAt).format('YYYY-MM-DD HH:mm')}
-                  </TableCell>
-                  <TableCell>{request.status}</TableCell>
-                </TableRow>
+              requestGroups.map((group) => (
+                <React.Fragment key={group.parent.requestId}>
+                  {/* 부모 요청 */}
+                  <TableRow 
+                    hover 
+                    onClick={() => navigate(`/user/projects/${projectId}/requests/${group.parent.requestId}`)}
+                    sx={{ cursor: 'pointer' }}
+                  >
+                    <TableCell>
+                      {stages.find(s => s.id === group.parent.stageId)?.name}
+                    </TableCell>
+                    <TableCell>{group.parent.title}</TableCell>
+                    <TableCell>
+                      <Box
+                        sx={{
+                          display: 'inline-block',
+                          px: 1.5,
+                          py: 0.5,
+                          borderRadius: 1,
+                          color: getStatusColor(group.parent.status).color,
+                          bgcolor: getStatusColor(group.parent.status).bgColor,
+                          fontWeight: 600
+                        }}
+                      >
+                        {getStatusText(group.parent.status)}
+                      </Box>
+                    </TableCell>
+                    <TableCell>{group.parent.memberName}</TableCell>
+                    <TableCell>
+                      {dayjs(group.parent.createdAt).format('YYYY-MM-DD HH:mm')}
+                    </TableCell>
+                  </TableRow>
+                  
+                  {/* 자식 요청들 */}
+                  {group.children.map((child) => (
+                    <TableRow 
+                      key={child.requestId}
+                      hover 
+                      onClick={() => navigate(`/user/projects/${projectId}/requests/${child.requestId}`)}
+                      sx={{ cursor: 'pointer' }}
+                    >
+                      <TableCell>
+                        <Typography variant="body2" sx={{ color: '#666', pl: 2 }}>
+                          └
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{child.title}</TableCell>
+                      <TableCell>
+                        <Box
+                          sx={{
+                            display: 'inline-block',
+                            px: 1.5,
+                            py: 0.5,
+                            borderRadius: 1,
+                            color: getStatusColor(child.status).color,
+                            bgcolor: getStatusColor(child.status).bgColor,
+                            fontWeight: 600
+                          }}
+                        >
+                          {getStatusText(child.status)}
+                        </Box>
+                      </TableCell>
+                      <TableCell>{child.memberName}</TableCell>
+                      <TableCell>
+                        {dayjs(child.createdAt).format('YYYY-MM-DD HH:mm')}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </React.Fragment>
               ))
             )}
           </TableBody>
