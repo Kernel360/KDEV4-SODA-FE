@@ -20,11 +20,12 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  IconButton
 } from '@mui/material'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { DatePicker } from '@mui/x-date-pickers'
-import { Search } from '@mui/icons-material'
+import { Search, Close } from '@mui/icons-material'
 import type { CompanyMember } from '../../types/api'
 import { getCompanyMembers } from '../../api/company'
 import { projectService } from '../../services/projectService'
@@ -634,13 +635,6 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                   <Typography variant="subtitle1" gutterBottom>
                     회사 멤버 선택
                   </Typography>
-                  <Button
-                    variant="contained"
-                    color="success"
-                    size="small"
-                    onClick={handleMemberSelectionComplete}>
-                    완료
-                  </Button>
                 </Box>
                 <TextField
                   fullWidth
@@ -722,22 +716,20 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
 
     try {
       setIsLoading(true)
-      const requestData: CreateProjectRequest = {
+      const requestData = {
         title: formData.title,
         description: formData.description,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        clientCompanyIds: formData.clientCompanies.map(company => company.id),
-        devCompanyId: formData.devCompanyId,
-        devManagers: formData.devMembers.map(member => member.id),
-        devMembers: formData.devMembers.map(member => member.id),
-        clientManagers: formData.clientCompanies.flatMap(company => 
-          company.responsibles.map(member => member.id)
-        ),
-        clientMembers: formData.clientCompanies.flatMap(company => 
-          company.members.map(member => member.id)
-        )
+        startDate: new Date(formData.startDate).toISOString(),
+        endDate: new Date(formData.endDate).toISOString(),
+        stageNames: formData.stages.map(stage => stage.name),
+        clientAssignments: formData.clientCompanies.map(company => ({
+          companyId: company.id,
+          managerIds: company.responsibles.map(member => member.id),
+          memberIds: company.members.map(member => member.id)
+        }))
       }
+
+      console.log('Sending request data:', requestData) // 디버깅용 로그
 
       const response = await projectService.createProject(requestData)
 
@@ -803,15 +795,27 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
           onClose={() => setIsModalOpen(false)}
           maxWidth="md"
           fullWidth>
-          <DialogTitle>
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             {modalStep === 0 ? '고객사 선택' : '멤버 선택'}
+            <IconButton
+              onClick={() => setIsModalOpen(false)}
+              sx={{ color: 'text.secondary' }}>
+              <Close />
+            </IconButton>
           </DialogTitle>
           <DialogContent>
             {renderModalContent()}
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setIsModalOpen(false)}>취소</Button>
-          </DialogActions>
+          {modalStep === 1 && (
+            <DialogActions>
+              <Button 
+                variant="contained" 
+                color="success"
+                onClick={handleMemberSelectionComplete}>
+                완료
+              </Button>
+            </DialogActions>
+          )}
         </Dialog>
       </CardContent>
     </Card>

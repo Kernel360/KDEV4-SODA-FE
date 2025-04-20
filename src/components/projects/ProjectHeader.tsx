@@ -96,7 +96,7 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
           <Typography
             variant="body1"
             sx={{ fontWeight: 500, color: 'text.primary' }}>
-            {project.clientCompanyName}
+            {project.clientCompanyNames.join(', ')}
           </Typography>
         </Box>
         <Box>
@@ -109,7 +109,7 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
           <Typography
             variant="body1"
             sx={{ fontWeight: 500, color: 'text.primary' }}>
-            {project.devCompanyName}
+            {project.devCompanyNames.join(', ')}
           </Typography>
         </Box>
         <Box>
