@@ -1,21 +1,45 @@
-import { ReactNode } from 'react'
-
 export interface Project {
-  projectName: string
-  id: number
-  title: string
-  description: string
-  clientCompanyName: ReactNode
-  devCompanyName: ReactNode
   status: ProjectStatus
+  projectName: string
+  title: string
+  id: number
+  name: string
+  description: string
   startDate: string
   endDate: string
-  clientCompanyIds: number[]
-  devCompanyId: number
-  clientCompanyManagers: number[]
-  clientCompanyMembers: number[]
-  devCompanyManagers: number[]
-  devCompanyMembers: number[]
+  currentUserProjectRole: string
+  currentUserCompanyRole: string
+  clientCompanyNames: string[]
+  devCompanyNames: string[]
+  clientManagerNames: string[]
+  devManagerNames: string[]
+  clientMemberNames: string[]
+  devMemberNames: string[]
+  // For backward compatibility
+  clientManagers?: Array<{
+    id: number
+    name: string
+    companyName: string
+  }>
+  clientMembers?: Array<{
+    id: number
+    name: string
+    companyName: string
+  }>
+  devManagers?: Array<{
+    id: number
+    name: string
+    companyName: string
+  }>
+  devMembers?: Array<{
+    id: number
+    name: string
+    companyName: string
+  }>
+  clientCompanyIds?: number[]
+  devCompanyId?: number
+  createdAt: string
+  updatedAt: string
 }
 
 export type ProjectStatus = 
@@ -24,6 +48,7 @@ export type ProjectStatus =
   | 'DELIVERED'     // 납품완료
   | 'MAINTENANCE'   // 하자보수
   | 'ON_HOLD'       // 일시중단
+  | '진행중'        // For backward compatibility
 
 export interface ProjectMember {
   id: number
@@ -63,4 +88,17 @@ export interface Stage {
 export interface ProjectWithProgress extends Project {
   progress: number
   stages: Stage[]
+}
+
+export interface ProjectMemberResponse {
+  id: number
+  companyId: number
+  companyName: string
+  memberId: number
+  memberName: string
+  name?: string // For backward compatibility
+  position: string
+  phoneNumber: string
+  email: string
+  role: 'CLI_MANAGER' | 'CLI_PARTICIPANT' | 'DEV_MANAGER' | 'DEV_PARTICIPANT'
 }
