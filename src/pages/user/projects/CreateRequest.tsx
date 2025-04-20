@@ -76,7 +76,7 @@ const CreateRequest: React.FC = () => {
 
     const fetchApprovers = async () => {
       try {
-        const response = await projectService.getProjectMembers(Number(projectId), 'CLIENT_COMPANY')
+        const response = await projectService.getProjectMembers(Number(projectId), { companyRole: 'CLIENT_COMPANY' })
         if (response && Array.isArray(response)) {
           setApprovers(response)
         } else {

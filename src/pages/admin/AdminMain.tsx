@@ -384,8 +384,8 @@ export default function AdminMain() {
                       {project.title}
                     </Typography>
                   </TableCell>
-                        <TableCell sx={{ fontSize: '0.875rem', color: '#4b5563' }}>{project.devCompanyName || '-'}</TableCell>
-                        <TableCell sx={{ fontSize: '0.875rem', color: '#4b5563' }}>{project.clientCompanyName || '-'}</TableCell>
+                        <TableCell sx={{ fontSize: '0.875rem', color: '#4b5563' }}>{project.devCompanyNames || '-'}</TableCell>
+                        <TableCell sx={{ fontSize: '0.875rem', color: '#4b5563' }}>{project.clientCompanyNames || '-'}</TableCell>
                         <TableCell>
                           <Box
                             sx={{

@@ -57,7 +57,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
             <Typography
               variant="caption"
               sx={{ fontWeight: 500 }}>
-              {project.devCompanyName}
+              {project.devCompanyNames.join(', ')}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -69,7 +69,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
             <Typography
               variant="caption"
               sx={{ fontWeight: 500 }}>
-              {project.clientCompanyName}
+              {project.clientCompanyNames.join(', ')}
             </Typography>
           </Box>
           <Box

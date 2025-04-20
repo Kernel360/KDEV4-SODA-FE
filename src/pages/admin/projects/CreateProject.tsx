@@ -32,19 +32,17 @@ const CreateProject: React.FC = () => {
       const request = {
         title: formData.title,
         description: formData.description,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        clientCompanyIds: formData.clientCompanies.map(cc => cc.id),
-        devCompanyId: formData.devCompanyId,
-        devManagers: formData.devMembers.filter(m => m.role === '담당자').map(m => m.id),
-        devMembers: formData.devMembers.filter(m => m.role === '일반').map(m => m.id),
-        clientManagers: formData.clientCompanies.flatMap(cc => 
-          cc.responsibles.map(m => m.id)
-        ),
-        clientMembers: formData.clientCompanies.flatMap(cc => 
-          cc.members.map(m => m.id)
-        )
+        startDate: new Date(formData.startDate).toISOString(),
+        endDate: new Date(formData.endDate).toISOString(),
+        stageNames: formData.stages.map(stage => stage.name),
+        clientAssignments: formData.clientCompanies.map(company => ({
+          companyId: company.id,
+          managerIds: company.responsibles.map(member => member.id),
+          memberIds: company.members.map(member => member.id)
+        }))
       }
+
+      console.log('Sending request data:', request) // 디버깅용 로그
 
       await projectService.createProject(request)
       showToast('프로젝트가 성공적으로 생성되었습니다.', 'success')

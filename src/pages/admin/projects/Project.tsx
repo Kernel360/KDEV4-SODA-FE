@@ -23,28 +23,28 @@ import {
   Tabs,
   Tab,
   TextField,
-  InputAdornment} from '@mui/material'
+  InputAdornment,
+  Chip,
+  CircularProgress,
+  Checkbox} from '@mui/material'
 import { ArrowLeft, Edit, LayoutDashboard, Calendar, Building2, MessageCircle, Reply, FileText, ClipboardCheck, User, ChevronDown, ChevronUp, Search, X } from 'lucide-react'
 import { projectService } from '../../../services/projectService'
 import { formatDate } from '../../../utils/dateUtils'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
 import { useToast } from '../../../contexts/ToastContext'
-import type { ProjectStatus } from '../../../types/project'
+import { Project, ProjectMemberResponse, ProjectStatus } from '../../../types/project'
 import { useTheme } from '@mui/material/styles'
 import { companyService } from '../../../services/companyService'
 import useProjectStore from '../../../stores/projectStore'
-import type { Project } from '../../../types/project'
 
 interface Company {
   id: number
   name: string
-  ceoName: string
-  phoneNumber: string | null
-  businessNumber: string | null
-  address: string | null
-  isActive: boolean
   type: 'client' | 'dev'
+  phoneNumber?: string
+  businessNumber?: string
+  address?: string
 }
 
 interface SelectedCompany {
@@ -52,17 +52,6 @@ interface SelectedCompany {
   id: number
   name: string
 }
-
-interface TempProject extends Omit<Project, 'clientCompanyManagers' | 'devCompanyManagers' | 'devCompanyMembers' | 'clientCompanyMembers' | 'clientCompanyIds' | 'devCompanyId'> {
-  clientCompanyManagers: number[]
-  devCompanyManagers: number[]
-  devCompanyMembers: number[]
-  clientCompanyMembers: number[]
-  clientCompanyIds: number[]
-  devCompanyId: number
-  projectName: string
-}
-
 
 interface CompanyMember {
   id: number
@@ -110,36 +99,52 @@ const getStatusValue = (status: string): ProjectStatus => {
 
 
 const ProjectDetail = () => {
+  // 1. Router and context hooks
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const theme = useTheme()
+  const { showToast } = useToast()
+  const { } = useProjectStore()
+
+  // 2. State hooks
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
   const [project, setProject] = useState<Project>({
     id: 0,
-    projectName: '',
     title: '',
+    projectName: '',
+    name: '',
     description: '',
-    clientCompanyName: '',
-    devCompanyName: '',
     status: 'CONTRACT',
     startDate: '',
     endDate: '',
-    clientCompanyIds: [],
-    devCompanyId: 0,
-    clientCompanyManagers: [],
-    clientCompanyMembers: [],
-    devCompanyManagers: [],
-    devCompanyMembers: []
+    currentUserProjectRole: '',
+    currentUserCompanyRole: '',
+    clientCompanyNames: [],
+    devCompanyNames: [],
+    clientManagerNames: [],
+    devManagerNames: [],
+    clientMemberNames: [],
+    devMemberNames: [],
+    clientManagers: [],
+    clientMembers: [],
+    devManagers: [],
+    devMembers: [],
+    createdAt: '',
+    updatedAt: ''
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { showToast } = useToast()
   const [tabValue, setTabValue] = useState(0)
   const [openMemberDialog, setOpenMemberDialog] = useState(false)
   const [selectedMembers, setSelectedMembers] = useState<number[]>([])
-  const [selectedCompany, setSelectedCompany] = useState<SelectedCompany | null>(null)
+  const [selectedCompany, setSelectedCompany] = useState<{
+    id: number;
+    name: string;
+    type: 'client' | 'dev';
+  } | null>(null)
   const [expandedClientManagers, setExpandedClientManagers] = useState<{ [key: number]: boolean }>({})
   const [expandedDevManagers, setExpandedDevManagers] = useState<{ [key: number]: boolean }>({})
+  const [expandedClientMembers, setExpandedClientMembers] = useState<{ [key: number]: boolean }>({})
   const [expandedDevMembers, setExpandedDevMembers] = useState<{ [key: number]: boolean }>({})
   const [memberSearch, setMemberSearch] = useState('')
   const [showAddManagerDialog, setShowAddManagerDialog] = useState(false)
@@ -148,188 +153,212 @@ const ProjectDetail = () => {
   const [showAddCompanyDialog, setShowAddCompanyDialog] = useState(false)
   const [showAddCompanyMemberDialog, setShowAddCompanyMemberDialog] = useState(false)
   const [selectedNewCompany, setSelectedNewCompany] = useState<{
-    id: number
-    name: string
+    id: number;
+    name: string;
   } | null>(null)
   const [companySearch, setCompanySearch] = useState('')
   const [companies, setCompanies] = useState<Company[]>([])
+  const [availableCompanies, setAvailableCompanies] = useState<Company[]>([])
   const [companyMembers, setCompanyMembers] = useState<CompanyMember[]>([])
   const [companyType, setCompanyType] = useState<'client' | 'dev'>('client')
-  const [selectedCompanyMembers, setSelectedCompanyMembers] = useState<number[]>([])
+  const [selectedCompanyMembers, setSelectedCompanyMembers] = useState<{
+    companyId: number;
+    companyName: string;
+    companyType: 'client' | 'dev';
+    members: ProjectMemberResponse[];
+  }>({
+    companyId: 0,
+    companyName: '',
+    companyType: 'client',
+    members: []
+  })
   const [selectedCompanyManagers, setSelectedCompanyManagers] = useState<number[]>([])
+  const [selectedRegularMembers, setSelectedRegularMembers] = useState<number[]>([])
+  const [clientMembers, setClientMembers] = useState<ProjectMemberResponse[]>([])
+  const [devMembers, setDevMembers] = useState<ProjectMemberResponse[]>([])
+  const [loadingMembers, setLoadingMembers] = useState(false)
+  const [loadingCompanies, setLoadingCompanies] = useState(false)
+  const [expandedMemberSections, setExpandedMemberSections] = useState<{ [key: number]: { managers: boolean; members: boolean } }>({})
 
-  const TEMP_PROJECTS: TempProject[] = [
-    {
-      id: 1,
-      projectName: '프로젝트 1',
-      title: '프로젝트 1',
-      description: '프로젝트 1 설명',
-      clientCompanyName: '고객사 1',
-      devCompanyName: '개발사 1',
-      status: 'IN_PROGRESS',
-      startDate: '2024-01-01',
-      endDate: '2024-12-31',
-      clientCompanyIds: [1],
-      devCompanyId: 1,
-      clientCompanyManagers: [],
-      devCompanyManagers: [],
-      devCompanyMembers: [],
-      clientCompanyMembers: []
-    },
-    {
-      id: 2,
-      projectName: '프로젝트 2',
-      title: '프로젝트 2',
-      description: '프로젝트 2 설명',
-      clientCompanyName: '고객사 2',
-      devCompanyName: '개발사 2',
-      status: 'CONTRACT',
-      startDate: '2024-02-01',
-      endDate: '2024-11-30',
-      clientCompanyIds: [2],
-      devCompanyId: 2,
-      clientCompanyManagers: [],
-      devCompanyManagers: [],
-      devCompanyMembers: [],
-      clientCompanyMembers: []
-    },
-    {
-      id: 3,
-      projectName: '프로젝트 3',
-      title: '프로젝트 3',
-      description: '프로젝트 3 설명',
-      clientCompanyName: '고객사 3',
-      devCompanyName: '개발사 3',
-      status: 'DELIVERED',
-      startDate: '2024-03-01',
-      endDate: '2024-10-31',
-      clientCompanyIds: [3],
-      devCompanyId: 3,
-      clientCompanyManagers: [],
-      devCompanyManagers: [],
-      devCompanyMembers: [],
-      clientCompanyMembers: []
-    },
-    {
-      id: 4,
-      projectName: '프로젝트 4',
-      title: '프로젝트 4',
-      description: '프로젝트 4 설명',
-      clientCompanyName: '고객사 4',
-      devCompanyName: '개발사 4',
-      status: 'MAINTENANCE',
-      startDate: '2024-04-01',
-      endDate: '2024-09-30',
-      clientCompanyIds: [4],
-      devCompanyId: 4,
-      clientCompanyManagers: [],
-      devCompanyManagers: [],
-      devCompanyMembers: [],
-      clientCompanyMembers: []
-    },
-    {
-      id: 5,
-      projectName: '프로젝트 5',
-      title: '프로젝트 5',
-      description: '프로젝트 5 설명',
-      clientCompanyName: '고객사 5',
-      devCompanyName: '개발사 5',
-      status: 'ON_HOLD',
-      startDate: '2024-05-01',
-      endDate: '2024-08-31',
-      clientCompanyIds: [5],
-      devCompanyId: 5,
-      clientCompanyManagers: [],
-      devCompanyManagers: [],
-      devCompanyMembers: [],
-      clientCompanyMembers: []
-    }
-  ]
-
-  const { } = useProjectStore()
-
-  const convertTempProjectToProject = (tempProject: TempProject): Project => {
-    return {
-      ...tempProject,
-      clientCompanyIds: tempProject.clientCompanyIds || [],
-      devCompanyId: tempProject.devCompanyId,
-      clientCompanyManagers: tempProject.clientCompanyManagers.map(id => Number(id)),
-      devCompanyManagers: tempProject.devCompanyManagers.map(id => Number(id)),
-      devCompanyMembers: tempProject.devCompanyMembers.map(id => Number(id)),
-      clientCompanyMembers: tempProject.clientCompanyMembers.map(id => Number(id))
-    }
-  }
-
+  // 3. Effect hooks
   useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        // 임시 데이터 먼저 사용
-        const tempProject = TEMP_PROJECTS.find(p => p.id === Number(id))
-        if (tempProject) {
-          setProject(convertTempProjectToProject(tempProject))
-          setLoading(false)
-          return
-        }
-
-        // 임시 데이터가 없으면 API 호출
-        const data = await projectService.getProjectById(Number(id))
-        setProject(data as Project)
-      } catch (error) {
-        console.error('프로젝트 데이터를 불러오는데 실패했습니다:', error)
-        // API 호출 실패 시에도 임시 데이터 사용
-        const tempProject = TEMP_PROJECTS.find(p => p.id === Number(id))
-        if (tempProject) {
-          setProject(convertTempProjectToProject(tempProject))
-        } else {
-          setError('프로젝트를 찾을 수 없습니다.')
-        }
-      } finally {
-        setLoading(false)
-      }
+    if (id) {
+      fetchProjectDetail()
+      fetchCompanies()
     }
-
-    fetchProject()
   }, [id])
 
   useEffect(() => {
-    const fetchCompanyMembers = async () => {
-      if (!selectedCompany) return
-      try {
-        const response = await companyService.getCompanyMembers(selectedCompany.id)
-        const members: CompanyMember[] = response.map((member: any) => ({
-          id: member.id,
-          name: member.name,
-          position: member.position,
-          phoneNumber: member.phoneNumber,
-          email: member.email,
-          role: (member.position?.includes('팀장') || member.position?.includes('과장') ? '담당자' : '일반') as '담당자' | '일반'
-        }))
-        setCompanyMembers(members)
-      } catch (error) {
-        console.error('Failed to fetch company members:', error)
-        setCompanyMembers([])
-      }
+    if (showAddCompanyDialog) {
+      fetchCompanies()
     }
-    fetchCompanyMembers()
+  }, [showAddCompanyDialog])
+
+  useEffect(() => {
+    if (selectedCompany) {
+      fetchCompanyMembers()
+    }
   }, [selectedCompany])
 
   useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        const response = await companyService.getAllCompanies()
-        // API 응답을 필요한 형식으로 변환
-        const formattedCompanies = response.map(company => ({
-          ...company,
-          type: (company.name.includes('고객사') ? 'client' : 'dev') as 'client' | 'dev'
-        }))
-        setCompanies(formattedCompanies)
-      } catch (error) {
-        console.error('Failed to fetch companies:', error)
-        setCompanies([])
-      }
+    if (id && tabValue !== 0) {
+      fetchMembers()
     }
-    fetchCompanies()
-  }, [])
+  }, [id, tabValue, openMemberDialog])
+
+  useEffect(() => {
+    if (selectedNewCompany) {
+      fetchNewCompanyMembers()
+    }
+  }, [selectedNewCompany])
+
+  // 4. Helper functions
+  const fetchProjectDetail = async () => {
+    try {
+      setLoading(true)
+      const projectData = await projectService.getProjectById(Number(id))
+      setProject(projectData)
+      setLoading(false)
+    } catch (error) {
+      console.error('프로젝트 상세 정보 조회 실패:', error)
+      setError('프로젝트 상세 정보를 불러오는데 실패했습니다.')
+      setLoading(false)
+    }
+  }
+
+  const fetchCompanies = async () => {
+    try {
+      setLoadingCompanies(true)
+      const response = await companyService.getAllCompanies()
+      console.log('회사 목록 API 응답:', response)
+      
+      // 모든 회사 정보 저장
+      const allCompanies = response.map(company => ({
+        id: company.id,
+        name: company.name,
+        address: company.address,
+        type: companyType
+      }))
+      setCompanies(allCompanies)
+      
+      // 추가 가능한 회사만 필터링
+      const filteredCompanies = response.filter(company => {
+        if (companyType === 'client') {
+          return !project.clientCompanyNames.some(name => {
+            const existingCompany = allCompanies.find(c => c.name === name)
+            return existingCompany?.id === company.id
+          })
+        } else {
+          return !project.devCompanyNames.some(name => {
+            const existingCompany = allCompanies.find(c => c.name === name)
+            return existingCompany?.id === company.id
+          })
+        }
+      })
+      
+      const formattedCompanies = filteredCompanies.map(company => ({
+        id: company.id,
+        name: company.name,
+        address: company.address,
+        type: companyType
+      }))
+      
+      setAvailableCompanies(formattedCompanies)
+    } catch (error) {
+      console.error('Failed to fetch companies:', error)
+      showToast('회사 목록을 불러오는데 실패했습니다.', 'error')
+      setAvailableCompanies([])
+      } finally {
+      setLoadingCompanies(false)
+    }
+  }
+
+  const fetchCompanyMembers = async () => {
+    if (!selectedCompany) return
+    try {
+      setLoadingMembers(true)
+      const response = await companyService.getCompanyMembers(selectedCompany.id)
+      const members: CompanyMember[] = response.map((member: any) => ({
+        id: member.id,
+        name: member.name,
+        position: member.position,
+        phoneNumber: member.phoneNumber,
+        email: member.email,
+        role: (member.position?.includes('팀장') || member.position?.includes('과장') ? '담당자' : '일반') as '담당자' | '일반'
+      }))
+      setCompanyMembers(members)
+    } catch (error) {
+      console.error('Failed to fetch company members:', error)
+      showToast('회사 멤버 정보를 불러오는데 실패했습니다.', 'error')
+      setCompanyMembers([])
+    } finally {
+      setLoadingMembers(false)
+    }
+  }
+
+  const fetchMembers = async () => {
+    try {
+      setLoadingMembers(true)
+      const [clientResponse, devResponse] = await Promise.all([
+        projectService.getProjectMembers(Number(id), { companyRole: 'CLIENT_COMPANY' }),
+        projectService.getProjectMembers(Number(id), { companyRole: 'DEV_COMPANY' })
+      ])
+      setClientMembers(clientResponse.content)
+      setDevMembers(devResponse.content)
+    } catch (error) {
+      console.error('멤버 조회 실패:', error)
+      showToast('멤버 정보를 불러오는데 실패했습니다.', 'error')
+    } finally {
+      setLoadingMembers(false)
+    }
+  }
+
+  const fetchNewCompanyMembers = async () => {
+    if (!selectedNewCompany) return
+    try {
+      setLoadingMembers(true)
+      
+      // 1. 회사의 전체 멤버 목록 가져오기
+      const companyMembersResponse = await companyService.getCompanyMembers(selectedNewCompany.id)
+      setCompanyMembers(companyMembersResponse.map((member: any) => ({
+        id: member.id,
+        name: member.name,
+        position: member.position,
+        phoneNumber: member.phoneNumber,
+        email: member.email,
+        role: (member.position?.includes('팀장') || member.position?.includes('과장') ? '담당자' : '일반') as '담당자' | '일반'
+      })))
+
+      // 2. 현재 프로젝트의 해당 회사 멤버 목록 가져오기
+      const projectMembersResponse = await projectService.getProjectMembers(Number(id), {
+        companyRole: companyType === 'client' ? 'CLIENT_COMPANY' : 'DEV_COMPANY',
+        companyId: selectedNewCompany.id
+      })
+
+      // 3. 프로젝트 멤버들을 담당자/일반멤버로 분류
+      const projectMembers = projectMembersResponse.content
+      const existingManagers = projectMembers
+        .filter(member => member.role.includes('MANAGER'))
+        .map(member => member.memberId)
+      const existingRegularMembers = projectMembers
+        .filter(member => !member.role.includes('MANAGER'))
+        .map(member => member.memberId)
+
+      // 4. 선택 상태 설정
+      setSelectedCompanyMembers({
+        companyId: selectedNewCompany.id,
+        companyName: selectedNewCompany.name,
+        companyType: companyType,
+        members: projectMembers
+      })
+
+    } catch (error) {
+      console.error('멤버 정보 조회 실패:', error)
+      showToast('멤버 정보를 불러오는데 실패했습니다.', 'error')
+    } finally {
+      setLoadingMembers(false)
+    }
+  }
 
   if (loading) {
     return <LoadingSpinner />
@@ -369,15 +398,11 @@ const ProjectDetail = () => {
 
     const updatedProject = { ...project }
     if (isClient) {
-      updatedProject.clientCompanyManagers = updatedProject.clientCompanyManagers
-        .filter(id => id !== memberId)
-      updatedProject.clientCompanyMembers = updatedProject.clientCompanyMembers
-        .filter(id => id !== memberId)
+      updatedProject.clientManagers = updatedProject.clientManagers.filter(m => m.id !== memberId)
+      updatedProject.clientMembers = updatedProject.clientMembers.filter(m => m.id !== memberId)
     } else {
-      updatedProject.devCompanyManagers = updatedProject.devCompanyManagers
-        .filter(id => id !== memberId)
-      updatedProject.devCompanyMembers = updatedProject.devCompanyMembers
-        .filter(id => id !== memberId)
+      updatedProject.devManagers = updatedProject.devManagers.filter(m => m.id !== memberId)
+      updatedProject.devMembers = updatedProject.devMembers.filter(m => m.id !== memberId)
     }
     setProject(updatedProject)
   }
@@ -387,8 +412,8 @@ const ProjectDetail = () => {
     if (!selectedCompany) return []
     return companyMembers.filter(member =>
       member.role === '담당자' &&
-      !project?.clientCompanyManagers.includes(member.id) &&
-      !project?.devCompanyManagers.includes(member.id)
+      !project?.clientManagers.some(m => m.id === member.id) &&
+      !project?.devManagers.some(m => m.id === member.id)
     )
   }
 
@@ -396,8 +421,8 @@ const ProjectDetail = () => {
     if (!selectedCompany) return []
     return companyMembers.filter(member =>
       member.role === '일반' &&
-      !project?.clientCompanyMembers.includes(member.id) &&
-      !project?.devCompanyMembers.includes(member.id)
+      !project?.clientMembers.some(m => m.id === member.id) &&
+      !project?.devMembers.some(m => m.id === member.id)
     )
   }
 
@@ -414,16 +439,25 @@ const ProjectDetail = () => {
       if (!project || !selectedCompany) return
       
       const updatedProject = { ...project }
+      const newMembers = selectedMembers.map(id => {
+        const member = companyMembers.find(m => m.id === id)
+        return {
+          id: member?.id || 0,
+          name: member?.name || '',
+          companyName: selectedCompany.name
+        }
+      })
+
       if (selectedCompany.type === 'client') {
-        updatedProject.clientCompanyManagers = [...updatedProject.clientCompanyManagers, ...selectedMembers.map(Number)]
+        updatedProject.clientManagers = [...updatedProject.clientManagers, ...newMembers]
       } else {
-        updatedProject.devCompanyManagers = [...updatedProject.devCompanyManagers, ...selectedMembers.map(Number)]
+        updatedProject.devManagers = [...updatedProject.devManagers, ...newMembers]
       }
 
       await projectService.updateProject(project.id, updatedProject)
       setProject(updatedProject)
       showToast('멤버가 성공적으로 추가되었습니다.', 'success')
-      setOpenMemberDialog(false)
+      setShowAddMemberDialog(false)
       setSelectedCompany(null)
       setSelectedMembers([])
     } catch (error) {
@@ -436,53 +470,168 @@ const ProjectDetail = () => {
     if (!project) return
 
     try {
-      const updatedProject: Project = {
+      await projectService.updateProjectStatus(project.id, newStatus)
+      const updatedProject = {
         ...project,
-        status: getStatusValue(newStatus)
+        status: newStatus
       }
       setProject(updatedProject)
       setExpandedStatus(false)
+      showToast('프로젝트 상태가 성공적으로 변경되었습니다.', 'success')
     } catch (error) {
       console.error('프로젝트 상태 업데이트 실패:', error)
+      showToast('프로젝트 상태 변경 중 오류가 발생했습니다.', 'error')
     }
-  }
-
-  const handleAddNewCompany = () => {
-    if (!selectedNewCompany) return
-
-    const company: Company = {
-      id: selectedNewCompany.id,
-      name: selectedNewCompany.name,
-      ceoName: '',
-      phoneNumber: null,
-      businessNumber: null,
-      address: null,
-      isActive: true,
-      type: companyType
-    }
-
-    setCompanies(prev => [...prev, company])
-    setShowAddCompanyDialog(false)
-    setSelectedNewCompany(null)
   }
 
   const handleCompanySelect = (company: Company) => {
-    if (!project) return
-
-    const selectedCompany: SelectedCompany = {
-      type: company.type,
+    setSelectedNewCompany({
       id: company.id,
       name: company.name
-    }
+    })
+    setCompanyType(company.type)
+    setShowAddCompanyDialog(false)
+    setShowAddCompanyMemberDialog(true)
+  }
 
-    const updatedProject = { ...project }
-    if (selectedCompany.type === 'client') {
-      updatedProject.clientCompanyIds = [company.id]
-    } else {
-      updatedProject.devCompanyId = company.id
+  const handleAddNewCompany = async () => {
+    if (!selectedNewCompany) return
+
+    try {
+      const response = await projectService.addProjectCompany(Number(id), {
+        companyId: selectedNewCompany.id,
+        role: companyType === 'client' ? 'CLIENT_COMPANY' : 'DEV_COMPANY',
+        managerIds: selectedCompanyManagers,
+        memberIds: selectedRegularMembers
+      })
+
+      showToast('회사가 추가되었습니다', 'success')
+      fetchMembers()
+      setShowAddCompanyMemberDialog(false)
+      setSelectedNewCompany(null)
+      setSelectedCompanyManagers([])
+      setSelectedRegularMembers([])
+      setMemberSearch('')
+    } catch (error) {
+      console.error('회사 추가 실패:', error)
+      showToast('회사 추가에 실패했습니다', 'error')
     }
-    setSelectedCompany(selectedCompany)
-    setProject(updatedProject)
+  }
+
+  const handleMemberDialogOpen = async (companyId: number, companyName: string, companyType: 'client' | 'dev') => {
+    try {
+      console.log('멤버 관리 버튼 클릭됨:', { companyId, companyName, companyType })
+      setLoadingMembers(true)
+      const response = await projectService.getProjectMembers(Number(id), {
+        companyRole: companyType === 'client' ? 'CLIENT_COMPANY' : 'DEV_COMPANY',
+        companyId: companyId
+      })
+      console.log('멤버 조회 응답:', response)
+      
+      setSelectedCompanyMembers({
+        companyId,
+        companyName,
+        companyType,
+        members: response.content
+      })
+      console.log('selectedCompanyMembers 상태 업데이트됨')
+
+      const managers = response.content.filter(member => member.role.includes('MANAGER'))
+      setSelectedCompanyManagers(managers.map(member => member.memberId))
+      console.log('selectedCompanyManagers 상태 업데이트됨')
+
+      setOpenMemberDialog(true)
+      console.log('모달 열기 시도')
+    } catch (error) {
+      console.error('멤버 조회 실패:', error)
+      showToast('멤버 정보를 불러오는데 실패했습니다.', 'error')
+    } finally {
+      setLoadingMembers(false)
+    }
+  }
+
+  const handleMemberDelete = async (memberId: number) => {
+    try {
+      // 현재 선택된 회사의 멤버 중 담당자 수 확인
+      const managers = selectedCompanyMembers.members.filter(member => member.role.includes('MANAGER'))
+      
+      // 삭제하려는 멤버가 담당자인 경우, 담당자가 한 명이면 삭제 불가
+      const memberToDelete = selectedCompanyMembers.members.find(member => member.memberId === memberId)
+      if (memberToDelete?.role.includes('MANAGER') && managers.length === 1) {
+        showToast('담당자는 최소 한 명 이상이어야 합니다.', 'error')
+        return
+      }
+
+      await projectService.deleteProjectMember(Number(id), memberId)
+      showToast('멤버가 성공적으로 삭제되었습니다.', 'success')
+      
+      // 멤버 목록 새로고침
+      const response = await projectService.getProjectMembers(Number(id), {
+        companyRole: tabValue === 1 ? 'CLIENT_COMPANY' : 'DEV_COMPANY',
+        companyId: selectedCompanyMembers.companyId
+      })
+      
+      setSelectedCompanyMembers(prev => ({
+        ...prev,
+        members: response.content
+      }))
+    } catch (error) {
+      console.error('멤버 삭제 실패:', error)
+      showToast('멤버 삭제 중 오류가 발생했습니다.', 'error')
+    }
+  }
+
+  const handleAddCompanyMemberDialogOpen = async () => {
+    try {
+      setLoadingMembers(true)
+      
+      // 1. 회사의 전체 멤버 목록 가져오기
+      const companyMembersResponse = await companyService.getCompanyMembers(selectedCompanyMembers.companyId)
+      setCompanyMembers(companyMembersResponse.map((member: any) => ({
+        id: member.id,
+        name: member.name,
+        position: member.position,
+        phoneNumber: member.phoneNumber,
+        email: member.email,
+        role: (member.position?.includes('팀장') || member.position?.includes('과장') ? '담당자' : '일반') as '담당자' | '일반'
+      })))
+
+      // 2. 현재 프로젝트의 해당 회사 멤버 목록 가져오기
+      const projectMembersResponse = await projectService.getProjectMembers(Number(id), {
+        companyRole: selectedCompanyMembers.companyType === 'client' ? 'CLIENT_COMPANY' : 'DEV_COMPANY',
+        companyId: selectedCompanyMembers.companyId
+      })
+
+      // 3. 프로젝트 멤버들을 담당자/일반멤버로 분류
+      const projectMembers = projectMembersResponse.content
+      const selectedManagers = projectMembers
+        .filter(member => member.role.includes('MANAGER'))
+        .map(member => member.memberId)
+      const selectedRegularMembers = projectMembers
+        .filter(member => !member.role.includes('MANAGER'))
+        .map(member => member.memberId)
+
+      // 4. 선택 상태 설정
+      setSelectedCompanyManagers(selectedManagers)
+      setSelectedRegularMembers(selectedRegularMembers)
+
+      setOpenMemberDialog(false)
+      setShowAddCompanyMemberDialog(true)
+    } catch (error) {
+      console.error('멤버 정보 조회 실패:', error)
+      showToast('멤버 정보를 불러오는데 실패했습니다.', 'error')
+    } finally {
+      setLoadingMembers(false)
+    }
+  }
+
+  // 멤버 선택 모달에서 일반 멤버 선택 처리
+  const handleRegularMemberToggle = (memberId: number) => {
+    setSelectedRegularMembers(prev =>
+      prev.includes(memberId)
+        ? prev.filter(id => id !== memberId)
+        : [...prev, memberId]
+    )
   }
 
   return (
@@ -498,7 +647,7 @@ const ProjectDetail = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
             <Typography variant="h4" sx={{ fontWeight: 600 }}>
             {project.title}
-          </Typography>
+            </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography variant="body1" color="text.secondary">
                 상태:
@@ -543,7 +692,7 @@ const ProjectDetail = () => {
                           key={status}
                           button
                           onClick={() => {
-                            handleStatusChange(getStatusValue(status))
+                            handleStatusChange(status as ProjectStatus)
                             setExpandedStatus(false)
                           }}
                           sx={{
@@ -553,20 +702,25 @@ const ProjectDetail = () => {
                           }}
                         >
                           <ListItemText
-                            primary={getStatusText(getStatusValue(status))}
-                            sx={{
-                              '& .MuiListItemText-primary': {
+                            primary={
+                              <Typography sx={{ 
                 fontSize: '0.875rem',
-                                color: status === project.status ? 'primary.main' : 'text.primary'
-                              }
-                            }}
+                                  color: theme.palette.primary.main,
+                                  cursor: 'pointer',
+                                  '&:hover': {
+                                    textDecoration: 'underline'
+                                  }
+                                }}>
+                                {getStatusText(status as ProjectStatus)}
+                              </Typography>
+                            }
                           />
                         </ListItem>
                       ))}
                     </List>
                   </Paper>
                 )}
-        </Box>
+              </Box>
             </Box>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -651,7 +805,36 @@ const ProjectDetail = () => {
                     <Building2 size={36} color="#64748b" />
                     <Stack>
                       <Typography color="text.secondary" variant="caption">고객사</Typography>
-                          <Typography variant="body1" sx={{ fontSize: '1rem', fontWeight: 500 }}>ABC 주식회사</Typography>
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        {project.clientCompanyNames.length > 0 ? (
+                          project.clientCompanyNames.map((companyName, index) => (
+                            <Chip
+                              key={index}
+                              label={companyName}
+                        size="small"
+                        sx={{
+                                backgroundColor: '#F3F4F6',
+                                color: '#1F2937',
+                                '& .MuiChip-label': {
+                                  px: 1
+                                }
+                              }}
+                            />
+                          ))
+                        ) : (
+                          <Chip
+                            label="고객사 없음"
+                            size="small"
+                            sx={{
+                              backgroundColor: '#F3F4F6',
+                              color: '#6B7280',
+                              '& .MuiChip-label': {
+                                px: 1
+                                }
+                              }}
+                            />
+                        )}
+                      </Stack>
                     </Stack>
                   </Stack>
                 </Stack>
@@ -663,7 +846,36 @@ const ProjectDetail = () => {
                     <Building2 size={36} color="#64748b" />
                     <Stack>
                       <Typography color="text.secondary" variant="caption">개발사</Typography>
-                          <Typography variant="body1" sx={{ fontSize: '1rem', fontWeight: 500 }}>XYZ 주식회사</Typography>
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        {project.devCompanyNames.length > 0 ? (
+                          project.devCompanyNames.map((companyName, index) => (
+                            <Chip
+                              key={index}
+                              label={companyName}
+                        size="small"
+                        sx={{
+                                backgroundColor: '#F3F4F6',
+                                color: '#1F2937',
+                                '& .MuiChip-label': {
+                                  px: 1
+                                }
+                              }}
+                            />
+                          ))
+                        ) : (
+                          <Chip
+                            label="개발사 없음"
+                            size="small"
+                            sx={{
+                              backgroundColor: '#F3F4F6',
+                              color: '#6B7280',
+                              '& .MuiChip-label': {
+                                px: 1
+                                }
+                              }}
+                            />
+                        )}
+                      </Stack>
                     </Stack>
                   </Stack>
                 </Stack>
@@ -731,24 +943,24 @@ const ProjectDetail = () => {
                               }
                             }}>
                             {item.title}
-              </Typography>
+                          </Typography>
                         }
                         secondary={
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                             <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.4 }}>
                               {item.content}
-              </Typography>
+                            </Typography>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                                 <Typography variant="caption" color="text.secondary">
                                   {item.author}
-              </Typography>
+                                </Typography>
                                 <Typography variant="caption" color="text.secondary" sx={{ opacity: 0.5 }}>
                                   |
-              </Typography>
+                                </Typography>
                                 <Typography variant="caption" color="text.secondary">
                                   {item.date}
-              </Typography>
+                                </Typography>
                                 </Box>
                               <Typography variant="caption" sx={{ 
                                       px: 1,
@@ -829,24 +1041,24 @@ const ProjectDetail = () => {
                               }
                             }}>
                             {item.title}
-              </Typography>
+                          </Typography>
                         }
                         secondary={
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                             <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.4 }}>
                               {item.content}
-              </Typography>
+                            </Typography>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                                 <Typography variant="caption" color="text.secondary">
                                   {item.author}
-              </Typography>
+                                </Typography>
                                 <Typography variant="caption" color="text.secondary" sx={{ opacity: 0.5 }}>
                                   |
-              </Typography>
+                                </Typography>
                                 <Typography variant="caption" color="text.secondary">
                                   {item.date}
-              </Typography>
+                                </Typography>
                                 </Box>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 {item.hasReply && (
@@ -908,180 +1120,277 @@ const ProjectDetail = () => {
 
         {tabValue === 1 && (
           <Box sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              고객사 멤버 관리
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">
+                고객사 멤버 관리
               </Typography>
+              <Button
+                variant="contained"
+                startIcon={<Building2 size={20} />}
+                onClick={() => {
+                  setCompanyType('client')
+                  setShowAddCompanyDialog(true)
+                }}
+                sx={{
+                  backgroundColor: '#F59E0B',
+                  '&:hover': {
+                    backgroundColor: '#FCD34D'
+                  }
+                }}>
+                회사 추가
+              </Button>
+            </Box>
             <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="subtitle1">
-                    고객사 목록
+              {loadingMembers ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <CircularProgress />
+                </Box>
+              ) : clientMembers.length === 0 ? (
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  p: 4,
+                  gap: 2
+                }}>
+                  <Typography variant="body1" color="text.secondary">
+                    등록된 고객사가 없습니다.
                   </Typography>
                   <Button
                     variant="contained"
-                    color="primary"
-                    size="small"
-                    onClick={() => {
-                      setCompanyType('client')
-                      setShowAddCompanyDialog(true)
-                      setCompanySearch('')
-                    }}
-                  >
-                    회사 추가
+                    startIcon={<Building2 size={20} />}
+                    onClick={() => setShowAddCompanyDialog(true)}
+                    sx={{
+                      backgroundColor: '#F59E0B',
+                      '&:hover': {
+                        backgroundColor: '#FCD34D'
+                      }
+                    }}>
+                    고객사 추가
                   </Button>
                 </Box>
+              ) : (
                 <List>
-                  {companies.map((company) => (
-                    <Box key={company.id}>
-                      <ListItem>
-                        <ListItemText
-                          primary={company.name}
-                          secondary={`담당자: ${company.ceoName}`}
-                        />
-                        <Button
-                          variant="outlined"
-                          color="primary"
-                          size="small"
-                          onClick={() => {
-                            handleCompanySelect(company)
-                            setOpenMemberDialog(true)
-                          }}
-                        >
-                          멤버 관리
-                        </Button>
-                  </ListItem>
-                      <Box sx={{ pl: 4, pr: 2 }}>
-                        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1, mt: 2 }}>
-                          <Typography variant="subtitle1">
-                            담당자 목록
-                          </Typography>
-                          <IconButton 
-                            size="small" 
-                            onClick={() => setExpandedClientManagers(prev => ({ ...prev, [company.id]: !prev[company.id] }))}
-                            sx={{ 
-                              color: '#64748b',
-                              '&:hover': { backgroundColor: 'transparent' }
-                            }}>
-                            {expandedClientManagers[company.id] ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                          </IconButton>
-                        </Stack>
-                        <Collapse in={expandedClientManagers[company.id]}>
-                          <List>
-                            {company.ceoName && (
-                              <ListItem>
-                                <ListItemIcon sx={{ minWidth: 32 }}>
-                                  <User size={20} color={theme.palette.primary.main} />
-                                </ListItemIcon>
-                                <ListItemText 
-                                  primary={company.ceoName}
-                                  sx={{
-                                    '& .MuiListItemText-primary': {
-                                      color: '#334155',
-                                      fontSize: '1rem'
+                  {Array.from(new Set(clientMembers.map(member => member.companyName))).map(companyName => {
+                    const company = companies.find(c => c.name === companyName)
+                    console.log('회사 정보:', { companyName, company })
+                    return (
+                      <Box key={companyName}>
+                        <ListItem>
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Typography variant="subtitle1" component="span" sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>
+                                  {companyName}
+                                </Typography>
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  startIcon={<User size={16} />}
+                                  onClick={() => {
+                                    console.log('멤버 관리 버튼 클릭:', { companyName, company })
+                                    if (company) {
+                                      handleMemberDialogOpen(company.id, company.name, 'client')
+                                    } else {
+                                      console.error('회사 정보를 찾을 수 없음:', companyName)
                                     }
                                   }}
-                                />
-                              </ListItem>
-                            )}
-                          </List>
-                        </Collapse>
+                                  sx={{
+                                    borderColor: '#E2E8F0',
+                                    color: '#64748B',
+                                    '&:hover': {
+                                      borderColor: '#94A3B8',
+                                      backgroundColor: 'rgba(226, 232, 240, 0.1)'
+                                    }
+                                  }}>
+                                  멤버 관리
+                                </Button>
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                        <Divider />
+                        {clientMembers
+                          .filter(member => member.companyName === companyName)
+                          .map(member => (
+                            <ListItem key={member.memberId}>
+                              <ListItemIcon>
+                                <User size={20} color={theme.palette.primary.main} />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography variant="body1" component="span" sx={{ color: '#1F2937' }}>
+                                      {member.memberName}
+                                    </Typography>
+                                    <Chip
+                                      label={member.role.includes('MANAGER') ? "담당자" : "일반멤버"}
+                                      size="small"
+                                      sx={{
+                                        backgroundColor: member.role.includes('MANAGER') 
+                                          ? 'rgba(59, 130, 246, 0.1)' 
+                                          : 'rgba(107, 114, 128, 0.1)',
+                                        color: member.role.includes('MANAGER') 
+                                          ? theme.palette.primary.main 
+                                          : '#64748b',
+                                        fontWeight: 500,
+                                        '& .MuiChip-label': {
+                                          px: 1.5,
+                                          py: 0.5
+                                        }
+                                      }}
+                                    />
+                                  </Box>
+                                }
+                              />
+                            </ListItem>
+                          ))}
+                        <Box sx={{ height: 16 }} />
                       </Box>
-                      <Divider sx={{ my: 2 }} />
-                    </Box>
-                ))}
-              </List>
-              </CardContent>
+                    )
+                  })}
+                </List>
+              )}
             </Card>
-            </Box>
+          </Box>
         )}
 
         {tabValue === 2 && (
           <Box sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              개발사 멤버 관리
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">
+                개발사 멤버 관리
               </Typography>
+              <Button
+                variant="contained"
+                startIcon={<Building2 size={20} />}
+                onClick={() => {
+                  setCompanyType('dev')
+                  setShowAddCompanyDialog(true)
+                }}
+                sx={{
+                  backgroundColor: '#F59E0B',
+                  '&:hover': {
+                    backgroundColor: '#FCD34D'
+                  }
+                }}>
+                회사 추가
+              </Button>
+            </Box>
             <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="subtitle1">
-                    개발사 목록
+              {loadingMembers ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <CircularProgress />
+                </Box>
+              ) : devMembers.length === 0 ? (
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  p: 4,
+                  gap: 2
+                }}>
+                  <Typography variant="body1" color="text.secondary">
+                    등록된 개발사가 없습니다.
                   </Typography>
                   <Button
                     variant="contained"
-                    color="primary"
-                    size="small"
-                    onClick={() => {
-                      setCompanyType('dev')
-                      setShowAddCompanyDialog(true)
-                      setCompanySearch('')
-                    }}
-                  >
-                    회사 추가
+                    startIcon={<Building2 size={20} />}
+                    onClick={() => setShowAddCompanyDialog(true)}
+                    sx={{
+                      backgroundColor: '#F59E0B',
+                      '&:hover': {
+                        backgroundColor: '#FCD34D'
+                      }
+                    }}>
+                    개발사 추가
                   </Button>
                 </Box>
+              ) : (
                 <List>
-                  {companies.map((company) => (
-                    <Box key={company.id}>
-                      <ListItem>
-                        <ListItemText
-                          primary={company.name}
-                          secondary={`담당자: ${company.ceoName}`}
-                        />
-                        <Button
-                          variant="outlined"
-                          color="primary"
-                          size="small"
-                          onClick={() => {
-                            handleCompanySelect(company)
-                            setOpenMemberDialog(true)
-                          }}
-                        >
-                          멤버 관리
-                        </Button>
-                  </ListItem>
-                      <Box sx={{ pl: 4, pr: 2 }}>
-                        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1, mt: 2 }}>
-                          <Typography variant="subtitle1">
-                            담당자 목록
-                          </Typography>
-                          <IconButton 
-                            size="small" 
-                            onClick={() => setExpandedDevManagers(prev => ({ ...prev, [company.id]: !prev[company.id] }))}
-                            sx={{ 
-                              color: '#64748b',
-                              '&:hover': { backgroundColor: 'transparent' }
-                            }}>
-                            {expandedDevManagers[company.id] ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                          </IconButton>
-                        </Stack>
-                        <Collapse in={expandedDevManagers[company.id]}>
-                          <List>
-                            {company.ceoName && (
-                              <ListItem>
-                                <ListItemIcon sx={{ minWidth: 32 }}>
-                                  <User size={20} color={theme.palette.primary.main} />
-                                </ListItemIcon>
-                                <ListItemText 
-                                  primary={company.ceoName}
-                                  sx={{
-                                    '& .MuiListItemText-primary': {
-                                      color: '#334155',
-                                      fontSize: '1rem'
+                  {Array.from(new Set(devMembers.map(member => member.companyName))).map(companyName => {
+                    const company = companies.find(c => c.name === companyName)
+                    return (
+                      <Box key={companyName}>
+                        <ListItem>
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Typography variant="subtitle1" component="span" sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>
+                                  {companyName}
+                                </Typography>
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  startIcon={<User size={16} />}
+                                  onClick={() => {
+                                    console.log('멤버 관리 버튼 클릭:', { companyName, company })
+                                    if (company) {
+                                      handleMemberDialogOpen(company.id, company.name, 'dev')
+                                    } else {
+                                      console.error('회사 정보를 찾을 수 없음:', companyName)
                                     }
                                   }}
-                                />
-                              </ListItem>
-                            )}
-                          </List>
-                        </Collapse>
+                                  sx={{
+                                    borderColor: '#E2E8F0',
+                                    color: '#64748B',
+                                    '&:hover': {
+                                      borderColor: '#94A3B8',
+                                      backgroundColor: 'rgba(226, 232, 240, 0.1)'
+                                    }
+                                  }}>
+                                  멤버 관리
+                                </Button>
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                        <Divider />
+                        {devMembers
+                          .filter(member => member.companyName === companyName)
+                          .map(member => (
+                            <ListItem key={member.memberId}>
+                              <ListItemIcon>
+                                <User size={20} color={theme.palette.primary.main} />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography variant="body1" component="span" sx={{ color: '#1F2937' }}>
+                                      {member.memberName}
+                                    </Typography>
+                                    <Chip
+                                      label={member.role.includes('MANAGER') ? "담당자" : "일반멤버"}
+                                      size="small"
+                                      sx={{
+                                        backgroundColor: member.role.includes('MANAGER') 
+                                          ? 'rgba(59, 130, 246, 0.1)' 
+                                          : 'rgba(107, 114, 128, 0.1)',
+                                        color: member.role.includes('MANAGER') 
+                                          ? theme.palette.primary.main 
+                                          : '#64748b',
+                                        fontWeight: 500,
+                                        '& .MuiChip-label': {
+                                          px: 1.5,
+                                          py: 0.5
+                                        }
+                                      }}
+                                    />
+                                  </Box>
+                                }
+                              />
+                            </ListItem>
+                          ))}
+                        <Box sx={{ height: 16 }} />
                       </Box>
-                      <Divider sx={{ my: 2 }} />
-                    </Box>
-                ))}
-              </List>
-              </CardContent>
+                    )
+                  })}
+                </List>
+              )}
             </Card>
-            </Box>
+          </Box>
         )}
       </Box>
 
@@ -1106,302 +1415,210 @@ const ProjectDetail = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Member Management Dialog */}
       <Dialog
         open={openMemberDialog}
         onClose={() => {
           setOpenMemberDialog(false)
-          setSelectedCompany(null)
-          setSelectedMembers([])
+          setSelectedCompanyMembers({ companyId: 0, companyName: '', companyType: 'client', members: [] })
         }}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {selectedCompany?.name} 멤버 관리
-          <IconButton
-            onClick={() => {
-              setOpenMemberDialog(false)
-              setSelectedCompany(null)
-              setSelectedMembers([])
-            }}
-            sx={{ 
-              '&:hover': {
-                backgroundColor: 'rgba(0, 0, 0, 0.04)'
-              }
-            }}
-          >
-            <X size={20} />
-          </IconButton>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography>{selectedCompanyMembers.companyName} 멤버 관리</Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleAddCompanyMemberDialogOpen}
+              sx={{
+                borderColor: '#E2E8F0',
+                color: '#64748B',
+                '&:hover': {
+                  borderColor: '#94A3B8',
+                  backgroundColor: 'rgba(226, 232, 240, 0.1)'
+                }
+              }}>
+              수정
+            </Button>
+    </Box>
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ mt: 2 }}>
-            <List>
-              {selectedCompany && (
-                <>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="subtitle2" sx={{ color: theme.palette.primary.main }}>
-                      담당자
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => setShowAddManagerDialog(true)}
-                    >
-                      담당자 추가
-                    </Button>
-    </Box>
-                  {companyMembers
-                    .filter(member => member.role === '담당자')
-                    .map((member) => (
-                      <ListItem key={member.id}>
-                        <ListItemIcon>
-                          <User size={20} color={theme.palette.primary.main} />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={member.name}
-                          secondary={member.position}
-                        />
-                        <IconButton
-                          edge="end"
-                          onClick={() => handleMemberRemove(Number(member.id), selectedCompany.type === 'client')}
-                          color="error"
-                          sx={{ 
-                            '&:hover': {
-                              backgroundColor: 'rgba(239, 68, 68, 0.1)'
-                            }
-                          }}
+          {loadingMembers ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Box>
+              {/* Managers Section */}
+              <Box sx={{ mb: 3 }}>
+                <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
+                  <Typography variant="subtitle2" sx={{ color: theme.palette.primary.main }}>
+                    담당자
+                  </Typography>
+                  <IconButton 
+                    size="small" 
+                    onClick={() => setExpandedMemberSections(prev => ({ 
+                      ...prev, 
+                      [selectedCompanyMembers.companyId]: { 
+                        ...prev[selectedCompanyMembers.companyId], 
+                        managers: !prev[selectedCompanyMembers.companyId]?.managers 
+                      } 
+                    }))}
+                    sx={{ 
+                      color: '#64748b',
+                      '&:hover': { backgroundColor: 'transparent' }
+                    }}>
+                    {expandedMemberSections[selectedCompanyMembers.companyId]?.managers ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                  </IconButton>
+                </Stack>
+                <Collapse in={expandedMemberSections[selectedCompanyMembers.companyId]?.managers ?? true}>
+                  <List>
+                    {selectedCompanyMembers.members
+                      .filter(member => member.role.includes('MANAGER'))
+                      .map(member => (
+                        <ListItem 
+                          key={member.memberId}
+                          secondaryAction={
+                            <IconButton
+                              edge="end"
+                              onClick={() => handleMemberDelete(member.memberId)}
+                              sx={{
+                                color: '#ef4444',
+                                '&:hover': {
+                                  backgroundColor: 'rgba(239, 68, 68, 0.1)'
+                                }
+                              }}
+                            >
+                              <X size={20} />
+                            </IconButton>
+                          }
                         >
-                          <X size={20} />
-                        </IconButton>
-                      </ListItem>
-                    ))}
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, mt: 2 }}>
-                    <Typography variant="subtitle2" sx={{ color: '#64748b' }}>
-                      일반 멤버
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => setShowAddMemberDialog(true)}
-                    >
-                      일반 멤버 추가
-                    </Button>
-                  </Box>
-                  {companyMembers
-                    .filter(member => member.role === '일반')
-                    .map((member) => (
-                      <ListItem key={member.id}>
-                        <ListItemIcon>
-                          <User size={20} color="#64748b" />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={member.name}
-                          secondary={member.position}
-                        />
-                        <IconButton
-                          edge="end"
-                          onClick={() => handleMemberRemove(Number(member.id), selectedCompany.type === 'client')}
-                          color="error"
-                          sx={{ 
-                            '&:hover': {
-                              backgroundColor: 'rgba(239, 68, 68, 0.1)'
+                          <ListItemIcon>
+                            <User size={20} color={theme.palette.primary.main} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography variant="body1" component="span" sx={{ color: '#1F2937' }}>
+                                  {member.memberName}
+                                </Typography>
+                                <Chip
+                                  label={member.role.includes('MANAGER') ? "담당자" : "일반멤버"}
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: member.role.includes('MANAGER') 
+                                      ? 'rgba(59, 130, 246, 0.1)' 
+                                      : 'rgba(107, 114, 128, 0.1)',
+                                    color: member.role.includes('MANAGER') 
+                                      ? theme.palette.primary.main 
+                                      : '#64748b',
+                                    fontWeight: 500,
+                                    '& .MuiChip-label': {
+                                      px: 1.5,
+                                      py: 0.5
+                                    }
+                                  }}
+                                />
+                              </Box>
                             }
-                          }}
+                          />
+                        </ListItem>
+                      ))}
+                  </List>
+                </Collapse>
+              </Box>
+
+              {/* Regular Members Section */}
+              <Box>
+                <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
+                  <Typography variant="subtitle2" sx={{ color: '#64748b' }}>
+                    일반 멤버
+                  </Typography>
+                  <IconButton 
+                    size="small" 
+                    onClick={() => setExpandedMemberSections(prev => ({ 
+                      ...prev, 
+                      [selectedCompanyMembers.companyId]: { 
+                        ...prev[selectedCompanyMembers.companyId], 
+                        members: !prev[selectedCompanyMembers.companyId]?.members 
+                      } 
+                    }))}
+                    sx={{ 
+                      color: '#64748b',
+                      '&:hover': { backgroundColor: 'transparent' }
+                    }}>
+                    {expandedMemberSections[selectedCompanyMembers.companyId]?.members ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                  </IconButton>
+                </Stack>
+                <Collapse in={expandedMemberSections[selectedCompanyMembers.companyId]?.members ?? true}>
+                  <List>
+                    {selectedCompanyMembers.members
+                      .filter(member => !member.role.includes('MANAGER'))
+                      .map(member => (
+                        <ListItem 
+                          key={member.memberId}
+                          secondaryAction={
+                            <IconButton
+                              edge="end"
+                              onClick={() => handleMemberDelete(member.memberId)}
+                              sx={{
+                                color: '#ef4444',
+                                '&:hover': {
+                                  backgroundColor: 'rgba(239, 68, 68, 0.1)'
+                                }
+                              }}
+                            >
+                              <X size={20} />
+                            </IconButton>
+                          }
                         >
-                          <X size={20} />
-                        </IconButton>
-                      </ListItem>
-                    ))}
-                </>
-              )}
-            </List>
-          </Box>
+                          <ListItemIcon>
+                            <User size={20} color={theme.palette.primary.main} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography variant="body1" component="span" sx={{ color: '#1F2937' }}>
+                                  {member.memberName}
+                                </Typography>
+                                <Chip
+                                  label={member.role.includes('MANAGER') ? "담당자" : "일반멤버"}
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: member.role.includes('MANAGER') 
+                                      ? 'rgba(59, 130, 246, 0.1)' 
+                                      : 'rgba(107, 114, 128, 0.1)',
+                                    color: member.role.includes('MANAGER') 
+                                      ? theme.palette.primary.main 
+                                      : '#64748b',
+                                    fontWeight: 500,
+                                    '& .MuiChip-label': {
+                                      px: 1.5,
+                                      py: 0.5
+                                    }
+                                  }}
+                                />
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                      ))}
+                  </List>
+                </Collapse>
+              </Box>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button 
-            variant="contained"
-            color="primary"
-            onClick={() => {
-              setOpenMemberDialog(false)
-              setSelectedCompany(null)
-              setSelectedMembers([])
-            }}
-          >
-            확인
+          <Button onClick={() => {
+            setOpenMemberDialog(false)
+            setSelectedCompanyMembers({ companyId: 0, companyName: '', companyType: 'client', members: [] })
+          }}>
+            닫기
           </Button>
         </DialogActions>
-
-        {/* Add Manager Dialog */}
-        <Dialog
-          open={showAddManagerDialog}
-          onClose={() => {
-            setShowAddManagerDialog(false)
-            setSelectedMembers([])
-          }}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>
-            담당자 추가
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ mt: 2 }}>
-              <TextField
-                fullWidth
-                label="담당자 검색"
-                value={memberSearch}
-                onChange={e => setMemberSearch(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search />
-                    </InputAdornment>
-                  )
-                }}
-                sx={{ mb: 2 }}
-              />
-              <List>
-                {getAvailableManagers()
-                  .filter(member => 
-                    member.name.toLowerCase().includes(memberSearch.toLowerCase())
-                  )
-                  .map((member) => (
-                    <ListItem
-                      key={member.id}
-                      button
-                      onClick={() => handleMemberToggle(Number(member.id))}
-                      selected={selectedMembers.includes(Number(member.id))}
-                    >
-                      <ListItemIcon>
-                        <User size={20} color={selectedMembers.includes(Number(member.id)) ? theme.palette.primary.main : '#64748b'} />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={member.name}
-                        secondary={member.position}
-                        sx={{
-                          '& .MuiListItemText-primary': {
-                            color: '#334155',
-                            fontSize: '1rem'
-                          },
-                          '& .MuiListItemText-secondary': {
-                            fontSize: '0.75rem',
-                            color: '#64748b'
-                          }
-                        }}
-                      />
-                    </ListItem>
-                  ))}
-              </List>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button 
-              onClick={() => {
-                setShowAddManagerDialog(false)
-                setSelectedMembers([])
-              }}
-            >
-              취소
-            </Button>
-            <Button 
-              variant="contained" 
-              color="primary"
-              onClick={() => {
-                handleMemberAddition()
-                setShowAddManagerDialog(false)
-              }}
-              disabled={selectedMembers.length === 0}
-            >
-              추가
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Add Member Dialog */}
-        <Dialog
-          open={showAddMemberDialog}
-          onClose={() => {
-            setShowAddMemberDialog(false)
-            setSelectedMembers([])
-          }}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>
-            일반 멤버 추가
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ mt: 2 }}>
-              <TextField
-                fullWidth
-                label="일반 멤버 검색"
-                value={memberSearch}
-                onChange={e => setMemberSearch(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search />
-                    </InputAdornment>
-                  )
-                }}
-                sx={{ mb: 2 }}
-              />
-              <List>
-                {getAvailableRegularMembers()
-                  .filter(member => 
-                    member.name.toLowerCase().includes(memberSearch.toLowerCase())
-                  )
-                  .map((member) => (
-                    <ListItem
-                      key={member.id}
-                      button
-                      onClick={() => handleMemberToggle(Number(member.id))}
-                      selected={selectedMembers.includes(Number(member.id))}
-                    >
-                      <ListItemIcon>
-                        <User size={20} color={selectedMembers.includes(Number(member.id)) ? theme.palette.primary.main : '#64748b'} />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={member.name}
-                        secondary={member.position}
-                        sx={{
-                          '& .MuiListItemText-primary': {
-                            color: '#334155',
-                            fontSize: '1rem'
-                          },
-                          '& .MuiListItemText-secondary': {
-                            fontSize: '0.75rem',
-                            color: '#64748b'
-                          }
-                        }}
-                      />
-                    </ListItem>
-                  ))}
-              </List>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button 
-              onClick={() => {
-                setShowAddMemberDialog(false)
-                setSelectedMembers([])
-              }}
-            >
-              취소
-            </Button>
-            <Button 
-              variant="contained" 
-              color="primary"
-              onClick={() => {
-                handleMemberAddition()
-                setShowAddMemberDialog(false)
-              }}
-              disabled={selectedMembers.length === 0}
-            >
-              추가
-            </Button>
-          </DialogActions>
-        </Dialog>
       </Dialog>
 
       {/* Add Company Dialog */}
@@ -1409,14 +1626,12 @@ const ProjectDetail = () => {
         open={showAddCompanyDialog}
         onClose={() => {
           setShowAddCompanyDialog(false)
-          setCompanySearch('')
+          setSelectedCompany(null)
+          setSelectedMembers([])
         }}
         maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          회사 추가
-        </DialogTitle>
+        fullWidth>
+        <DialogTitle>{companyType === 'client' ? '고객사' : '개발사'} 추가</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
             <TextField
@@ -1433,42 +1648,68 @@ const ProjectDetail = () => {
               }}
               sx={{ mb: 2 }}
             />
-            <List>
-              {companies
-                .filter(company => 
-                  company.name.toLowerCase().includes(companySearch.toLowerCase())
-                )
-                .map((company) => (
-                  <ListItem
-                    key={company.id}
-                    button
-                    onClick={() => {
-                      setSelectedNewCompany(company)
-                      setShowAddCompanyDialog(false)
-                      setShowAddCompanyMemberDialog(true)
-                    }}
-                  >
-                    <ListItemText
-                      primary={company.name}
-                      sx={{
-                        '& .MuiListItemText-primary': {
-                          color: '#334155',
-                          fontSize: '1rem'
-                        }
-                      }}
-                    />
-                  </ListItem>
-                ))}
-            </List>
+            {loadingCompanies ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <CircularProgress />
+              </Box>
+            ) : availableCompanies.length === 0 ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <Typography color="text.secondary">추가 가능한 회사가 없습니다.</Typography>
+              </Box>
+            ) : (
+              <Box sx={{ maxHeight: '300px', overflow: 'auto' }}>
+                <List sx={{ 
+                  '& .MuiListItem-root': { 
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    '&:last-child': {
+                      borderBottom: 'none'
+                    }
+                  }
+                }}>
+                  {availableCompanies
+                    .filter(company => 
+                      company.name.toLowerCase().includes(companySearch.toLowerCase())
+                    )
+                    .map(company => (
+                      <ListItem
+                        key={company.id}
+                        button
+                        onClick={() => {
+                          handleCompanySelect(company)
+                        }}
+                        sx={{
+                          py: 2,
+                          '&:hover': {
+                            backgroundColor: 'action.hover'
+                          }
+                        }}>
+                        <ListItemText
+                          primary={
+                            <Typography variant="subtitle1" sx={{ fontWeight: 500, color: 'primary.main' }}>
+                              {company.name}
+                            </Typography>
+                          }
+                          secondary={
+                            <Typography variant="body2" color="text.secondary" component="span">
+                              {company.address || '주소 정보 없음'}
+                            </Typography>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                </List>
+              </Box>
+            )}
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button 
+          <Button
             onClick={() => {
               setShowAddCompanyDialog(false)
-              setCompanySearch('')
-            }}
-          >
+              setSelectedCompany(null)
+              setSelectedMembers([])
+            }}>
             취소
           </Button>
         </DialogActions>
@@ -1480,7 +1721,7 @@ const ProjectDetail = () => {
         onClose={() => {
           setShowAddCompanyMemberDialog(false)
           setSelectedNewCompany(null)
-          setSelectedCompanyMembers([])
+          setSelectedCompanyMembers({ companyId: 0, companyName: '', companyType: 'client', members: [] })
           setSelectedCompanyManagers([])
           setMemberSearch('')
         }}
@@ -1512,91 +1753,103 @@ const ProjectDetail = () => {
                   .filter(member => 
                     member.name.toLowerCase().includes(memberSearch.toLowerCase())
                   )
-                  .map((member) => (
-                    <ListItem
-                      key={member.id}
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        py: 1
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                        <ListItemIcon sx={{ minWidth: 32 }}>
-                          <User size={20} color="#64748b" />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={member.name}
-                          secondary={member.position}
-                          sx={{
-                            '& .MuiListItemText-primary': {
-                              color: '#334155',
-                              fontSize: '1rem'
-                            },
-                            '& .MuiListItemText-secondary': {
-                              fontSize: '0.75rem',
-                              color: '#64748b'
-                            }
-                          }}
-                        />
-                      </Box>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          color={selectedCompanyManagers.includes(Number(member.id)) ? "primary" : "inherit"}
-                          onClick={() => {
-                            if (selectedCompanyMembers.includes(Number(member.id))) {
-                              setSelectedCompanyMembers(prev => prev.filter(id => id !== Number(member.id)))
-                            }
-                            setSelectedCompanyManagers(prev => 
-                              prev.includes(Number(member.id))
-                                ? prev.filter(id => id !== Number(member.id))
-                                : [...prev, Number(member.id)]
-                            )
-                          }}
-                          sx={{
-                            minWidth: 80,
-                            borderColor: selectedCompanyManagers.includes(Number(member.id)) ? theme.palette.primary.main : '#e2e8f0',
-                            color: selectedCompanyManagers.includes(Number(member.id)) ? theme.palette.primary.main : '#64748b',
-                            '&:hover': {
-                              borderColor: theme.palette.primary.main,
-                              backgroundColor: 'rgba(59, 130, 246, 0.04)'
-                            }
-                          }}
-                        >
-                          담당자
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          color={selectedCompanyMembers.includes(Number(member.id)) ? "primary" : "inherit"}
-                          onClick={() => {
-                            if (selectedCompanyManagers.includes(Number(member.id))) {
-                              setSelectedCompanyManagers(prev => prev.filter(id => id !== Number(member.id)))
-                            }
-                            setSelectedCompanyMembers(prev => 
-                              prev.includes(Number(member.id))
-                                ? prev.filter(id => id !== Number(member.id))
-                                : [...prev, Number(member.id)]
-                            )
-                          }}
-                          sx={{
-                            minWidth: 80,
-                            borderColor: selectedCompanyMembers.includes(Number(member.id)) ? theme.palette.primary.main : '#e2e8f0',
-                            color: selectedCompanyMembers.includes(Number(member.id)) ? theme.palette.primary.main : '#64748b',
-                            '&:hover': {
-                              borderColor: theme.palette.primary.main,
-                              backgroundColor: 'rgba(59, 130, 246, 0.04)'
-                            }
-                          }}
-                        >
-                          일반멤버
-                        </Button>
-                      </Box>
-                    </ListItem>
-                  ))}
+                  .map((member) => {
+                    // 이미 프로젝트에 속해있는 멤버인지 확인
+                    const isExistingMember = selectedCompanyMembers.members.some(
+                      existingMember => existingMember.memberId === member.id
+                    );
+
+                    return (
+                      <ListItem
+                        key={member.id}
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          py: 1
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                          <ListItemIcon sx={{ minWidth: 32 }}>
+                            <User size={20} color={theme.palette.primary.main} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={member.name}
+                            secondary={member.position}
+                            sx={{
+                              '& .MuiListItemText-primary': {
+                                color: '#334155',
+                                fontSize: '1rem'
+                              },
+                              '& .MuiListItemText-secondary': {
+                                fontSize: '0.75rem',
+                                color: '#64748b'
+                              }
+                            }}
+                          />
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            color={selectedCompanyManagers.includes(Number(member.id)) ? "primary" : "inherit"}
+                            onClick={() => {
+                              if (selectedRegularMembers.includes(member.id)) {
+                                setSelectedRegularMembers(prev => prev.filter(id => id !== member.id))
+                              }
+                              setSelectedCompanyManagers(prev => 
+                                prev.includes(Number(member.id))
+                                  ? isExistingMember 
+                                    ? prev // 이미 프로젝트에 속한 멤버는 선택 해제 불가
+                                    : prev.filter(id => id !== Number(member.id))
+                                  : [...prev, Number(member.id)]
+                              )
+                            }}
+                            sx={{
+                              minWidth: 80,
+                              borderColor: selectedCompanyManagers.includes(Number(member.id)) ? theme.palette.primary.main : '#e2e8f0',
+                              color: selectedCompanyManagers.includes(Number(member.id)) ? theme.palette.primary.main : '#64748b',
+                              '&:hover': {
+                                borderColor: theme.palette.primary.main,
+                                backgroundColor: 'rgba(59, 130, 246, 0.04)'
+                              }
+                            }}
+                          >
+                            담당자
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            color={selectedRegularMembers.includes(member.id) ? "primary" : "inherit"}
+                            onClick={() => {
+                              if (selectedCompanyManagers.includes(Number(member.id))) {
+                                setSelectedCompanyManagers(prev => prev.filter(id => id !== Number(member.id)))
+                              }
+                              if (isExistingMember) {
+                                // 이미 프로젝트에 속한 멤버는 선택 해제 불가
+                                if (!selectedRegularMembers.includes(member.id)) {
+                                  handleRegularMemberToggle(member.id)
+                                }
+                              } else {
+                                handleRegularMemberToggle(member.id)
+                              }
+                            }}
+                            sx={{
+                              minWidth: 80,
+                              borderColor: selectedRegularMembers.includes(member.id) ? theme.palette.primary.main : '#e2e8f0',
+                              color: selectedRegularMembers.includes(member.id) ? theme.palette.primary.main : '#64748b',
+                              '&:hover': {
+                                borderColor: theme.palette.primary.main,
+                                backgroundColor: 'rgba(59, 130, 246, 0.04)'
+                              }
+                            }}
+                          >
+                            일반멤버
+                          </Button>
+                        </Box>
+                      </ListItem>
+                    );
+                  })}
               </List>
             </Box>
 
@@ -1608,48 +1861,65 @@ const ProjectDetail = () => {
                 </Typography>
                 <IconButton 
                   size="small" 
-                  onClick={() => setExpandedDevManagers(prev => ({ ...prev, [selectedNewCompany?.id || 0]: !prev[selectedNewCompany?.id || 0] }))}
+                  onClick={() => setExpandedMemberSections(prev => ({ 
+                    ...prev, 
+                    [selectedNewCompany?.id || 0]: { 
+                      ...prev[selectedNewCompany?.id || 0], 
+                      managers: !prev[selectedNewCompany?.id || 0]?.managers 
+                    } 
+                  }))}
                   sx={{ 
                     color: '#64748b',
                     '&:hover': { backgroundColor: 'transparent' }
                   }}>
-                  {expandedDevManagers[selectedNewCompany?.id || 0] ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                  {expandedMemberSections[selectedNewCompany?.id || 0]?.managers ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                 </IconButton>
               </Stack>
-              <Collapse in={expandedDevManagers[selectedNewCompany?.id || 0]}>
+              <Collapse in={expandedMemberSections[selectedNewCompany?.id || 0]?.managers ?? true}>
                 <List>
                   {selectedCompanyManagers.map(managerId => {
                     const manager = companyMembers.find(m => m.id === managerId)
+                    const isExistingMember = selectedCompanyMembers.members.some(
+                      existingMember => existingMember.memberId === managerId
+                    )
                     return manager ? (
                       <ListItem key={managerId}>
                         <ListItemIcon sx={{ minWidth: 32 }}>
                           <User size={20} color={theme.palette.primary.main} />
                         </ListItemIcon>
                         <ListItemText
-                          primary={manager.name}
-                          secondary={manager.position}
-                          sx={{
-                            '& .MuiListItemText-primary': {
-                              color: '#334155',
-                              fontSize: '1rem'
-                            },
-                            '& .MuiListItemText-secondary': {
-                              fontSize: '0.75rem',
-                              color: theme.palette.primary.main
-                            }
-                          }}
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="body1" component="span">
+                                {manager.name}
+                              </Typography>
+                              <Chip
+                                label="담당자"
+                                size="small"
+                                sx={{
+                                  backgroundColor: '#F3F4F6',
+                                  color: theme.palette.primary.main,
+                                  '& .MuiChip-label': {
+                                    px: 1
+                                  }
+                                }}
+                              />
+                            </Box>
+                          }
                         />
-                        <IconButton
-                          edge="end"
-                          onClick={() => setSelectedCompanyManagers(prev => prev.filter(id => id !== managerId))}
-                          sx={{ 
-                            '&:hover': {
-                              backgroundColor: 'rgba(239, 68, 68, 0.1)'
-                            }
-                          }}
-                        >
-                          <X size={20} />
-                        </IconButton>
+                        {!isExistingMember && (
+                          <IconButton
+                            edge="end"
+                            onClick={() => setSelectedCompanyManagers(prev => prev.filter(id => id !== managerId))}
+                            sx={{ 
+                              '&:hover': {
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)'
+                              }
+                            }}
+                          >
+                            <X size={20} />
+                          </IconButton>
+                        )}
                       </ListItem>
                     ) : null
                   })}
@@ -1662,51 +1932,68 @@ const ProjectDetail = () => {
                 </Typography>
                 <IconButton 
                   size="small" 
-                  onClick={() => setExpandedDevMembers(prev => ({ ...prev, [selectedNewCompany?.id || 0]: !prev[selectedNewCompany?.id || 0] }))}
+                  onClick={() => setExpandedMemberSections(prev => ({ 
+                    ...prev, 
+                    [selectedNewCompany?.id || 0]: { 
+                      ...prev[selectedNewCompany?.id || 0], 
+                      members: !prev[selectedNewCompany?.id || 0]?.members 
+                    } 
+                  }))}
                   sx={{ 
                     color: '#64748b',
                     '&:hover': { backgroundColor: 'transparent' }
                   }}>
-                  {expandedDevMembers[selectedNewCompany?.id || 0] ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                  {expandedMemberSections[selectedNewCompany?.id || 0]?.members ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                 </IconButton>
               </Stack>
-              <Collapse in={expandedDevMembers[selectedNewCompany?.id || 0]}>
+              <Collapse in={expandedMemberSections[selectedNewCompany?.id || 0]?.members ?? true}>
                 <List>
-                  {selectedCompanyMembers.map(memberId => {
-                    const member = companyMembers.find(m => m.id === memberId)
-                    return member ? (
-                      <ListItem key={memberId}>
-                        <ListItemIcon sx={{ minWidth: 32 }}>
-                          <User size={20} color="#64748b" />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={member.name}
-                          secondary={member.position}
-                          sx={{
-                            '& .MuiListItemText-primary': {
-                              color: '#334155',
-                              fontSize: '1rem'
-                            },
-                            '& .MuiListItemText-secondary': {
-                              fontSize: '0.75rem',
-                              color: '#64748b'
+                  {companyMembers
+                    .filter(member => selectedRegularMembers.includes(member.id))
+                    .map(member => {
+                      const isExistingMember = selectedCompanyMembers.members.some(
+                        existingMember => existingMember.memberId === member.id
+                      )
+                      return (
+                        <ListItem key={member.id}>
+                          <ListItemIcon sx={{ minWidth: 32 }}>
+                            <User size={20} color={theme.palette.primary.main} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography variant="body1" component="span">
+                                  {member.name}
+                                </Typography>
+                                <Chip
+                                  label="일반멤버"
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: '#F3F4F6',
+                                    color: theme.palette.primary.main,
+                                    '& .MuiChip-label': {
+                                      px: 1
+                                    }
+                                  }}
+                                />
+                              </Box>
                             }
-                          }}
-                        />
-                        <IconButton
-                          edge="end"
-                          onClick={() => setSelectedCompanyMembers(prev => prev.filter(id => id !== memberId))}
-                          sx={{ 
-                            '&:hover': {
-                              backgroundColor: 'rgba(239, 68, 68, 0.1)'
-                            }
-                          }}
-                        >
-                          <X size={20} />
-                        </IconButton>
-                      </ListItem>
-                    ) : null
-                  })}
+                          />
+                          {!isExistingMember && (
+                            <IconButton
+                              edge="end"
+                              onClick={() => handleRegularMemberToggle(member.id)}
+                              sx={{ 
+                                '&:hover': {
+                                  backgroundColor: 'rgba(239, 68, 68, 0.1)'
+                                }
+                              }}>
+                              <X size={20} />
+                            </IconButton>
+                          )}
+                        </ListItem>
+                      )
+                    })}
                 </List>
               </Collapse>
             </Box>
@@ -1717,7 +2004,7 @@ const ProjectDetail = () => {
             onClick={() => {
               setShowAddCompanyMemberDialog(false)
               setSelectedNewCompany(null)
-              setSelectedCompanyMembers([])
+              setSelectedCompanyMembers({ companyId: 0, companyName: '', companyType: 'client', members: [] })
               setSelectedCompanyManagers([])
               setMemberSearch('')
             }}
@@ -1728,7 +2015,7 @@ const ProjectDetail = () => {
             variant="contained" 
             color="primary"
             onClick={handleAddNewCompany}
-            disabled={selectedCompanyManagers.length === 0 && selectedCompanyMembers.length === 0}
+            disabled={selectedCompanyManagers.length === 0 && selectedCompanyMembers.members.length === 0}
           >
             추가
           </Button>

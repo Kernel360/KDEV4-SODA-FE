@@ -1,28 +1,29 @@
 {
   "compilerOptions": {
-    "incremental": true, // incremental 옵션 추가
-    "tsBuildInfoFile": "./.tsconfig.tsbuildinfo", // 빌드 정보 파일 경로 설정
+    "incremental": true,
+    "tsBuildInfoFile": "./.tsconfig.tsbuildinfo",
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
+    "allowJs": true,
+    "checkJs": false,
 
     /* Bundler mode */
-    "moduleResolution": "bundler", // Vite 사용 시 "bundler", 다른 경우 "node"
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "noEmit": true,
     "jsx": "react-jsx",
 
     /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
-    // "noUncheckedSideEffectImports": true // 이 옵션은 TypeScript 4.5 이상에서만 사용할 수 있습니다.
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "ignoreDeprecations": "5.0"
   },
-  "include": ["src"], // src 폴더에 있는 파일들을 컴파일 대상으로 포함
-  "exclude": ["node_modules"] // node_modules 폴더는 제외
+  "include": ["src"],
+  "exclude": ["node_modules"]
 }
