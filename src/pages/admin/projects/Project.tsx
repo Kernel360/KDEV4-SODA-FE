@@ -268,7 +268,7 @@ const ProjectDetail = () => {
       console.error('Failed to fetch companies:', error)
       showToast('회사 목록을 불러오는데 실패했습니다.', 'error')
       setAvailableCompanies([])
-    } finally {
+      } finally {
       setLoadingCompanies(false)
     }
   }
