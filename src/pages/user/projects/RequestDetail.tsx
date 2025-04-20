@@ -74,6 +74,8 @@ interface Response {
   status: string;
   createdAt: string;
   updatedAt: string;
+  companyName?: string;
+  role?: string;
 }
 
 const RequestDetail = () => {
@@ -116,6 +118,10 @@ const RequestDetail = () => {
   const canApproveOrReject = () => {
     if (!user || !requestDetail) return false;
     
+    // 이미 응답한 사용자인지 확인
+    const hasAlreadyResponded = responses.some(response => response.memberId === user.memberId);
+    if (hasAlreadyResponded) return false;
+    
     // Admin은 항상 승인/거절 가능
     if (user.role === 'ADMIN') return true;
     
@@ -123,16 +129,62 @@ const RequestDetail = () => {
     return requestDetail.approvers.some(approver => approver.memberId === user.memberId);
   };
 
-  const getRoleText = (role: string) => {
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return '승인';
+      case 'REJECTED':
+        return '거절';
+      case 'PENDING':
+        return '대기';
+      case 'APPROVING':
+        return '승인중';
+      default:
+        return status;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return {
+          color: '#16a34a',
+          backgroundColor: '#dcfce7'
+        };
+      case 'REJECTED':
+        return {
+          color: '#dc2626',
+          backgroundColor: '#fee2e2'
+        };
+      case 'PENDING':
+        return {
+          color: '#4b5563',
+          backgroundColor: '#f3f4f6'
+        };
+      default:
+        return {
+          color: '#4b5563',
+          backgroundColor: '#f3f4f6'
+        };
+    }
+  };
+
+  const getRoleText = (role: string | undefined) => {
+    if (!role) return '';
+    
     switch (role) {
       case 'CLI_MANAGER':
         return '관리자';
       case 'CLI_MEMBER':
         return '일반';
+      case 'CLI_PARTICIPANT':
+        return '일반참여자';
       case 'DEV_MANAGER':
         return '관리자';
       case 'DEV_MEMBER':
         return '일반';
+      case 'DEV_PARTICIPANT':
+        return '일반참여자';
       default:
         return role;
     }
@@ -180,7 +232,24 @@ const RequestDetail = () => {
         }
 
         if (responsesResponse.data.status === 'success') {
-          setResponses(responsesResponse.data.data);
+          // 각 응답에 대한 멤버 정보 가져오기
+          const responsesWithDetails = await Promise.all(
+            responsesResponse.data.data.map(async (response: Response) => {
+              const memberResponse = await client.get(`/projects/${projectId}/members`, {
+                params: { memberId: response.memberId }
+              });
+              if (memberResponse.data.status === 'success' && memberResponse.data.data.content.length > 0) {
+                const memberInfo = memberResponse.data.data.content[0];
+                return {
+                  ...response,
+                  companyName: memberInfo.companyName,
+                  role: memberInfo.role
+                };
+              }
+              return response;
+            })
+          );
+          setResponses(responsesWithDetails);
         }
 
         if (requestDetail) {
@@ -199,44 +268,6 @@ const RequestDetail = () => {
 
     fetchRequestDetail();
   }, [requestId, projectId, user]);
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'APPROVED':
-        return '승인';
-      case 'REJECTED':
-        return '거절';
-      case 'PENDING':
-        return '대기';
-      default:
-        return status;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'APPROVED':
-        return {
-          color: '#16a34a',
-          backgroundColor: '#dcfce7'
-        };
-      case 'REJECTED':
-        return {
-          color: '#dc2626',
-          backgroundColor: '#fee2e2'
-        };
-      case 'PENDING':
-        return {
-          color: '#4b5563',
-          backgroundColor: '#f3f4f6'
-        };
-      default:
-        return {
-          color: '#4b5563',
-          backgroundColor: '#f3f4f6'
-        };
-    }
-  };
 
   const handleEditClick = () => {
     setEditForm({
@@ -1025,32 +1056,51 @@ const RequestDetail = () => {
                 }}>
                   {/* 왼쪽: 작성자 정보 */}
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography 
-                      variant="subtitle1" 
-                      sx={{ 
-                        fontWeight: 600,
-                        color: 'text.primary'
+                    {/* 프로필 이미지 */}
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        bgcolor: '#e5e7eb',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                       }}
                     >
-                      {response.memberName}
-                    </Typography>
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"
+                          fill="#9CA3AF"
+                        />
+                      </svg>
+                    </Box>
+                    {/* 작성자명과 작성일 */}
+                    <Box>
+                      <Typography fontWeight="medium">
+                        {response.memberName} ({response.companyName} {response.role ? getRoleText(response.role) : ''})
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'grey.500' }}>
+                        {dayjs(response.createdAt).format('YYYY-MM-DD HH:mm')}
+                      </Typography>
+                    </Box>
                     <Chip
                       label={getStatusText(response.status)}
                       size="small"
                       sx={{
                         ...getStatusColor(response.status),
-                        fontWeight: 600
+                        fontWeight: 600,
+                        px: 2,
+                        height: 32,
+                        ml: 1
                       }}
                     />
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: 'text.secondary',
-                        fontWeight: 500
-                      }}
-                    >
-                      {dayjs(response.createdAt).format('YYYY-MM-DD HH:mm')}
-                    </Typography>
                   </Box>
 
                   {/* 오른쪽: 수정/삭제 버튼 */}
@@ -1408,7 +1458,7 @@ const RequestDetail = () => {
         )}
 
         {/* 응답 박스 */}
-        {requestDetail?.status === 'PENDING' && canApproveOrReject() && (
+        {(requestDetail?.status === 'PENDING' || requestDetail?.status === 'APPROVING') && canApproveOrReject() && (
           <Box sx={{ mt: 4 }}>
             {!isResponseBoxOpen ? (
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
