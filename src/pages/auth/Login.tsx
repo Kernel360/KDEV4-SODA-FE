@@ -165,7 +165,9 @@ const Login: React.FC = () => {
                     로그인
                   </h2>
                   <p className="text-muted-foreground text-sm sm:text-base">
-                    소다 서비스를 이용하시려면 로그인해 주세요.
+                    소다 서비스를 이용하시려면 로그인해 주세요.<br></br><br></br>
+                    어드민 ID,PW: admin01 / admin01!<br></br>
+                    사용자 ID,PW: seoyeon1234 / password1234
                   </p>
                 </div>
                 {error && (

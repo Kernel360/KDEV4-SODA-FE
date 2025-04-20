@@ -23,6 +23,13 @@ import dayjs from 'dayjs';
 import { client } from '../../../api/client';
 import { useToast } from '../../../contexts/ToastContext';
 import { useUserStore } from '../../../stores/userStore';
+import type { ProjectMember } from '../../../types/project';
+
+interface Approver {
+  id: number;
+  requestId: number;
+  memberId: number;
+}
 
 interface RequestDetail {
   requestId: number;
@@ -41,6 +48,7 @@ interface RequestDetail {
     name: string;
     url: string;
   }>;
+  approvers: Approver[];
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -102,18 +110,35 @@ const RequestDetail = () => {
   });
   const [newEditResponseLink, setNewEditResponseLink] = useState({ urlAddress: '', urlDescription: '' });
   const editResponseFileInputRef = React.useRef<HTMLInputElement>(null);
+  const [approvers, setApprovers] = useState<ProjectMember[]>([]);
 
   // 권한 체크 함수
   const canApproveOrReject = () => {
     if (!user || !requestDetail) return false;
-    return user.role === 'ADMIN' || 
-           (user.company?.id === requestDetail.clientCompanyId);
+    
+    // Admin은 항상 승인/거절 가능
+    if (user.role === 'ADMIN') return true;
+    
+    // 승인권자인 경우에만 승인/거절 가능
+    return requestDetail.approvers.some(approver => approver.memberId === user.memberId);
+  };
+
+  const getRoleText = (role: string) => {
+    switch (role) {
+      case 'CLI_MANAGER':
+        return '관리자';
+      case 'CLI_MEMBER':
+        return '일반';
+      case 'DEV_MANAGER':
+        return '관리자';
+      case 'DEV_MEMBER':
+        return '일반';
+      default:
+        return role;
+    }
   };
 
   useEffect(() => {
-    console.log('Current user:', user);
-    console.log('User memberId:', user?.memberId);
-    console.log('User memberId type:', typeof user?.memberId);
     const fetchRequestDetail = async () => {
       if (!requestId) return;
       
@@ -124,7 +149,34 @@ const RequestDetail = () => {
         ]);
 
         if (detailResponse.data.status === 'success') {
-          setRequestDetail(detailResponse.data.data);
+          const requestData = detailResponse.data.data;
+          setRequestDetail(requestData);
+
+          // 승인권자 정보 가져오기
+          if (requestData.approvers && requestData.approvers.length > 0) {
+            console.log('Fetching approver details for:', requestData.approvers);
+            const approverDetails = await Promise.all(
+              requestData.approvers.map(async (approver: Approver) => {
+                console.log('Fetching member details for memberId:', approver.memberId);
+                const response = await client.get(`/projects/${projectId}/members`, {
+                  params: { memberId: approver.memberId }
+                });
+                if (response.data.status === 'success' && response.data.data.content.length > 0) {
+                  const member = response.data.data.content[0];
+                  return {
+                    id: member.memberId,
+                    name: member.memberName,
+                    companyName: member.companyName,
+                    role: member.role
+                  };
+                }
+                return null;
+              })
+            );
+            const validApprovers = approverDetails.filter(Boolean);
+            console.log('Valid approvers:', validApprovers);
+            setApprovers(validApprovers);
+          }
         }
 
         if (responsesResponse.data.status === 'success') {
@@ -141,11 +193,25 @@ const RequestDetail = () => {
         }
       } catch (error) {
         console.error('Failed to fetch request details:', error);
+        showToast('승인요청 상세 정보를 불러오는데 실패했습니다', 'error');
       }
     };
 
     fetchRequestDetail();
-  }, [requestId, user]);
+  }, [requestId, projectId, user]);
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return '승인';
+      case 'REJECTED':
+        return '거절';
+      case 'PENDING':
+        return '대기';
+      default:
+        return status;
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -169,19 +235,6 @@ const RequestDetail = () => {
           color: '#4b5563',
           backgroundColor: '#f3f4f6'
         };
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'APPROVED':
-        return '승인';
-      case 'REJECTED':
-        return '거절';
-      case 'PENDING':
-        return '대기';
-      default:
-        return status;
     }
   };
 
@@ -845,6 +898,32 @@ const RequestDetail = () => {
                     </List>
                   </Box>
                 )}
+              </Box>
+            </Box>
+
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>승인권자</Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {approvers.map((approver) => {
+                  const response = responses.find(res => res.memberId === approver.id);
+                  const status = response ? response.status : 'PENDING';
+                  const statusStyle = getStatusColor(status);
+                  
+                  return (
+                    <Chip
+                      key={approver.id}
+                      label={`${approver.name} (${approver.companyName} ${getRoleText(approver.role)}) - ${getStatusText(status)}`}
+                      sx={{ 
+                        bgcolor: statusStyle.backgroundColor,
+                        color: statusStyle.color,
+                        border: `1px solid ${statusStyle.color}`,
+                        '& .MuiChip-label': {
+                          fontWeight: 600
+                        }
+                      }}
+                    />
+                  );
+                })}
               </Box>
             </Box>
           </>

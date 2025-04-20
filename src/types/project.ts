@@ -53,9 +53,10 @@ export type ProjectStatus =
 export interface ProjectMember {
   id: number
   name: string
-  position?: string
-  phoneNumber?: string
-  email?: string
+  email: string
+  companyRole: string
+  companyName: string
+  role: string
 }
 
 export type StageStatus = '대기' | '진행중' | '완료'
