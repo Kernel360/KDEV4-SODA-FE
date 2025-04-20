@@ -498,7 +498,7 @@ const ProjectDetail = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
             <Typography variant="h4" sx={{ fontWeight: 600 }}>
             {project.title}
-            </Typography>
+          </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography variant="body1" color="text.secondary">
                 상태:
@@ -566,7 +566,7 @@ const ProjectDetail = () => {
                     </List>
                   </Paper>
                 )}
-              </Box>
+        </Box>
             </Box>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -731,24 +731,24 @@ const ProjectDetail = () => {
                               }
                             }}>
                             {item.title}
-                          </Typography>
+              </Typography>
                         }
                         secondary={
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                             <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.4 }}>
                               {item.content}
-                            </Typography>
+              </Typography>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                                 <Typography variant="caption" color="text.secondary">
                                   {item.author}
-                                </Typography>
+              </Typography>
                                 <Typography variant="caption" color="text.secondary" sx={{ opacity: 0.5 }}>
                                   |
-                                </Typography>
+              </Typography>
                                 <Typography variant="caption" color="text.secondary">
                                   {item.date}
-                                </Typography>
+              </Typography>
                                 </Box>
                               <Typography variant="caption" sx={{ 
                                       px: 1,
@@ -829,24 +829,24 @@ const ProjectDetail = () => {
                               }
                             }}>
                             {item.title}
-                          </Typography>
+              </Typography>
                         }
                         secondary={
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                             <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.4 }}>
                               {item.content}
-                            </Typography>
+              </Typography>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                                 <Typography variant="caption" color="text.secondary">
                                   {item.author}
-                                </Typography>
+              </Typography>
                                 <Typography variant="caption" color="text.secondary" sx={{ opacity: 0.5 }}>
                                   |
-                                </Typography>
+              </Typography>
                                 <Typography variant="caption" color="text.secondary">
                                   {item.date}
-                                </Typography>
+              </Typography>
                                 </Box>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 {item.hasReply && (
@@ -910,7 +910,7 @@ const ProjectDetail = () => {
           <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               고객사 멤버 관리
-            </Typography>
+              </Typography>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
@@ -949,7 +949,7 @@ const ProjectDetail = () => {
                         >
                           멤버 관리
                         </Button>
-                      </ListItem>
+                  </ListItem>
                       <Box sx={{ pl: 4, pr: 2 }}>
                         <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1, mt: 2 }}>
                           <Typography variant="subtitle1">
@@ -988,18 +988,18 @@ const ProjectDetail = () => {
                       </Box>
                       <Divider sx={{ my: 2 }} />
                     </Box>
-                  ))}
-                </List>
+                ))}
+              </List>
               </CardContent>
             </Card>
-          </Box>
+            </Box>
         )}
 
         {tabValue === 2 && (
           <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               개발사 멤버 관리
-            </Typography>
+              </Typography>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
@@ -1038,7 +1038,7 @@ const ProjectDetail = () => {
                         >
                           멤버 관리
                         </Button>
-                      </ListItem>
+                  </ListItem>
                       <Box sx={{ pl: 4, pr: 2 }}>
                         <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1, mt: 2 }}>
                           <Typography variant="subtitle1">
@@ -1077,11 +1077,11 @@ const ProjectDetail = () => {
                       </Box>
                       <Divider sx={{ my: 2 }} />
                     </Box>
-                  ))}
-                </List>
+                ))}
+              </List>
               </CardContent>
             </Card>
-          </Box>
+            </Box>
         )}
       </Box>
 
