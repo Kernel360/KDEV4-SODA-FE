@@ -122,7 +122,7 @@ export const projectService = {
   // 프로젝트 단계 조회
   async getProjectStages(projectId: number): Promise<ApiStage[]> {
     const response = await client.get(
-      `https://api.s0da.co.kr/projects/${projectId}/stages`
+      `http://localhost:8080/projects/${projectId}/stages`
     )
     return response.data.data
   },
@@ -367,5 +367,36 @@ export const projectService = {
       console.error('Error deleting article file:', error)
       throw error
     }
+  },
+
+  getProjectMembers: async (projectId: number, companyRole: string) => {
+    const response = await client.get(`/projects/${projectId}/members`, {
+      params: { companyRole }
+    })
+    if (response.data && response.data.data && response.data.data.content) {
+      return response.data.data.content.map((member: any) => ({
+        id: member.memberId,
+        name: member.memberName,
+        email: '', // 이메일 정보가 없으므로 빈 문자열
+        companyRole: member.role
+      }))
+    }
+    return []
+  },
+
+  getProjectMember: async (projectId: number, memberId: number) => {
+    const response = await client.get(`/projects/${projectId}/members`, {
+      params: { memberId }
+    })
+    if (response.data && response.data.data && response.data.data.content && response.data.data.content.length > 0) {
+      const member = response.data.data.content[0]
+      return {
+        id: member.memberId,
+        name: member.memberName,
+        email: '',
+        companyRole: member.role
+      }
+    }
+    return null
   }
 }
