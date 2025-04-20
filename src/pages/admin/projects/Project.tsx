@@ -137,7 +137,11 @@ const ProjectDetail = () => {
   const [tabValue, setTabValue] = useState(0)
   const [openMemberDialog, setOpenMemberDialog] = useState(false)
   const [selectedMembers, setSelectedMembers] = useState<number[]>([])
-  const [selectedCompany, setSelectedCompany] = useState<SelectedCompany | null>(null)
+  const [selectedCompany, setSelectedCompany] = useState<{
+    id: number;
+    name: string;
+    type: 'client' | 'dev';
+  } | null>(null)
   const [expandedClientManagers, setExpandedClientManagers] = useState<{ [key: number]: boolean }>({})
   const [expandedDevManagers, setExpandedDevManagers] = useState<{ [key: number]: boolean }>({})
   const [expandedClientMembers, setExpandedClientMembers] = useState<{ [key: number]: boolean }>({})
@@ -149,11 +153,12 @@ const ProjectDetail = () => {
   const [showAddCompanyDialog, setShowAddCompanyDialog] = useState(false)
   const [showAddCompanyMemberDialog, setShowAddCompanyMemberDialog] = useState(false)
   const [selectedNewCompany, setSelectedNewCompany] = useState<{
-    id: number
-    name: string
+    id: number;
+    name: string;
   } | null>(null)
   const [companySearch, setCompanySearch] = useState('')
   const [companies, setCompanies] = useState<Company[]>([])
+  const [availableCompanies, setAvailableCompanies] = useState<Company[]>([])
   const [companyMembers, setCompanyMembers] = useState<CompanyMember[]>([])
   const [companyType, setCompanyType] = useState<'client' | 'dev'>('client')
   const [selectedCompanyMembers, setSelectedCompanyMembers] = useState<{
@@ -201,6 +206,12 @@ const ProjectDetail = () => {
     }
   }, [id, tabValue, openMemberDialog])
 
+  useEffect(() => {
+    if (selectedNewCompany) {
+      fetchNewCompanyMembers()
+    }
+  }, [selectedNewCompany])
+
   // 4. Helper functions
   const fetchProjectDetail = async () => {
     try {
@@ -221,22 +232,29 @@ const ProjectDetail = () => {
       const response = await companyService.getAllCompanies()
       console.log('회사 목록 API 응답:', response)
       
-      // 이미 프로젝트에 포함된 회사 필터링
+      // 모든 회사 정보 저장
+      const allCompanies = response.map(company => ({
+        id: company.id,
+        name: company.name,
+        address: company.address,
+        type: companyType
+      }))
+      setCompanies(allCompanies)
+      
+      // 추가 가능한 회사만 필터링
       const filteredCompanies = response.filter(company => {
         if (companyType === 'client') {
           return !project.clientCompanyNames.some(name => {
-            const existingCompany = companies.find(c => c.name === name)
+            const existingCompany = allCompanies.find(c => c.name === name)
             return existingCompany?.id === company.id
           })
         } else {
           return !project.devCompanyNames.some(name => {
-            const existingCompany = companies.find(c => c.name === name)
+            const existingCompany = allCompanies.find(c => c.name === name)
             return existingCompany?.id === company.id
           })
         }
       })
-      
-      console.log('필터링된 회사 목록:', filteredCompanies)
       
       const formattedCompanies = filteredCompanies.map(company => ({
         id: company.id,
@@ -245,12 +263,11 @@ const ProjectDetail = () => {
         type: companyType
       }))
       
-      console.log('포맷팅된 회사 목록:', formattedCompanies)
-      setCompanies(formattedCompanies)
+      setAvailableCompanies(formattedCompanies)
     } catch (error) {
       console.error('Failed to fetch companies:', error)
       showToast('회사 목록을 불러오는데 실패했습니다.', 'error')
-      setCompanies([])
+      setAvailableCompanies([])
     } finally {
       setLoadingCompanies(false)
     }
@@ -467,52 +484,38 @@ const ProjectDetail = () => {
     }
   }
 
-  const handleAddNewCompany = async () => {
-    if (!selectedNewCompany) return
-
-    try {
-      // API 호출 전에 상태 업데이트
-      setShowAddCompanyMemberDialog(false)
-      setSelectedNewCompany(null)
-      setSelectedCompanyMembers({ companyId: 0, companyName: '', companyType: 'client', members: [] })
-      setSelectedCompanyManagers([])
-      setSelectedRegularMembers([])
-      setMemberSearch('')
-
-      // API 호출
-      await projectService.addProjectCompany(Number(id), {
-        companyId: selectedNewCompany.id,
-        role: companyType === 'dev' ? 'DEV_COMPANY' : 'CLIENT_COMPANY',
-        managerIds: selectedCompanyManagers,
-        memberIds: selectedRegularMembers
-      })
-
-      showToast('회사와 멤버가 성공적으로 추가되었습니다.', 'success')
-      
-      // 멤버 목록 새로고침
-      await fetchMembers()
-    } catch (error) {
-      console.error('회사 및 멤버 추가 실패:', error)
-      showToast('회사 및 멤버 추가 중 오류가 발생했습니다.', 'error')
-    }
-  }
-
-  const handleCompanySelect = async (company: Company) => {
-    if (!project) return
-
-    setSelectedCompanyManagers([])
-    setSelectedRegularMembers([])
-    
+  const handleCompanySelect = (company: Company) => {
     setSelectedNewCompany({
       id: company.id,
       name: company.name
     })
-
-    // 회사 선택 시 바로 멤버 목록을 가져옴
-    await fetchNewCompanyMembers()
-
+    setCompanyType(company.type)
     setShowAddCompanyDialog(false)
     setShowAddCompanyMemberDialog(true)
+  }
+
+  const handleAddNewCompany = async () => {
+    if (!selectedNewCompany) return
+
+    try {
+      const response = await projectService.addProjectCompany(Number(id), {
+        companyId: selectedNewCompany.id,
+        role: companyType === 'client' ? 'CLIENT_COMPANY' : 'DEV_COMPANY',
+        managerIds: selectedCompanyManagers,
+        memberIds: selectedRegularMembers
+      })
+
+      showToast('회사가 추가되었습니다', 'success')
+      fetchMembers()
+      setShowAddCompanyMemberDialog(false)
+      setSelectedNewCompany(null)
+      setSelectedCompanyManagers([])
+      setSelectedRegularMembers([])
+      setMemberSearch('')
+    } catch (error) {
+      console.error('회사 추가 실패:', error)
+      showToast('회사 추가에 실패했습니다', 'error')
+    }
   }
 
   const handleMemberDialogOpen = async (companyId: number, companyName: string, companyType: 'client' | 'dev') => {
@@ -1649,7 +1652,7 @@ const ProjectDetail = () => {
               <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                 <CircularProgress />
               </Box>
-            ) : companies.length === 0 ? (
+            ) : availableCompanies.length === 0 ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                 <Typography color="text.secondary">추가 가능한 회사가 없습니다.</Typography>
               </Box>
@@ -1664,7 +1667,7 @@ const ProjectDetail = () => {
                     }
                   }
                 }}>
-                  {companies
+                  {availableCompanies
                     .filter(company => 
                       company.name.toLowerCase().includes(companySearch.toLowerCase())
                     )
