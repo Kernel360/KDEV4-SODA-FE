@@ -63,7 +63,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ projectId, stages
   const [error, setError] = useState<string | null>(null)
   const [totalRequests, setTotalRequests] = useState(0)
   const [stageRequests, setStageRequests] = useState<{ [key: number]: number }>({})
-  const [selectedStatus, setSelectedStatus] = useState<string>('PENDING')
+  const [selectedStatus, setSelectedStatus] = useState<string>('ALL')
 
   const fetchRequests = async () => {
     try {

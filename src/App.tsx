@@ -39,6 +39,7 @@ import RequestList from './pages/user/RequestList'
 import RecentPosts from './pages/user/RecentPosts'
 import Projects from './pages/user/Projects'
 import RequestDetail from './pages/user/projects/RequestDetail'
+import DataManagement from './pages/admin/DataManagement'
 
 const App: React.FC = () => {
   return (
@@ -132,6 +133,10 @@ const App: React.FC = () => {
               <Route
                 path="companies/:id/edit"
                 element={<EditCompany />}
+              />
+              <Route
+                path="data"
+                element={<DataManagement />}
               />
             </Route>
 

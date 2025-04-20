@@ -9,7 +9,7 @@ import {
   Box,
   Divider
 } from '@mui/material'
-import { LayoutDashboard, Users, Building2, ClipboardList } from 'lucide-react'
+import { LayoutDashboard, Users, Building2, ClipboardList, Database } from 'lucide-react'
 
 interface SidebarProps {
   isOpen: boolean
@@ -43,6 +43,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       path: '/admin/projects',
       icon: <ClipboardList size={24} />,
       text: '프로젝트 관리'
+    },
+    {
+      path: '/admin/data',
+      icon: <Database size={24} />,
+      text: '데이터 관리'
     }
   ]
 
