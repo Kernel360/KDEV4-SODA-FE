@@ -22,19 +22,22 @@ import { projectService } from '../../../services/projectService'
 import type { ProjectMember } from '../../../types/project'
 
 interface LinkData {
-  urlAddress: string;
-  urlDescription: string;
+  urlAddress: string
+  urlDescription: string
 }
 
 interface RequestFormData {
-  title: string;
-  content: string;
-  links: LinkData[];
-  files: File[];
+  title: string
+  content: string
+  links: LinkData[]
+  files: File[]
 }
 
 const ReapplyRequest: React.FC = () => {
-  const { projectId, requestId } = useParams<{ projectId: string, requestId: string }>()
+  const { projectId, requestId } = useParams<{
+    projectId: string
+    requestId: string
+  }>()
   const navigate = useNavigate()
   const { showToast } = useToast()
   const [formData, setFormData] = useState<RequestFormData>({
@@ -53,9 +56,23 @@ const ReapplyRequest: React.FC = () => {
   useEffect(() => {
     const fetchApprovers = async () => {
       try {
-        const response = await projectService.getProjectMembers(Number(projectId), 'CLIENT_COMPANY')
-        if (response && Array.isArray(response)) {
-          setApprovers(response)
+        const response = await projectService.getProjectMembers(
+          Number(projectId),
+          { companyRole: 'CLIENT_COMPANY' }
+        )
+        if (response && response.content) {
+          setApprovers(
+            response.content.map(member => ({
+              id: member.memberId,
+              name: member.memberName,
+              email: member.email,
+              companyRole: member.role.includes('CLI')
+                ? 'CLIENT_COMPANY'
+                : 'DEV_COMPANY',
+              companyName: member.companyName,
+              role: member.role
+            }))
+          )
         }
       } catch (error) {
         console.error('승인권자 목록을 불러오는데 실패했습니다:', error)
@@ -82,8 +99,11 @@ const ReapplyRequest: React.FC = () => {
         members: selectedApprovers.map(id => ({ id }))
       }
 
-      const response = await client.post(`/requests/${requestId}/re-requests`, requestBody)
-      
+      const response = await client.post(
+        `/requests/${requestId}/re-requests`,
+        requestBody
+      )
+
       if (response.data.status === 'success') {
         const newRequestId = response.data.data.requestId
 
@@ -93,11 +113,15 @@ const ReapplyRequest: React.FC = () => {
           formData.files.forEach(file => {
             formDataForFiles.append('file', file)
           })
-          await client.post(`/requests/${newRequestId}/files`, formDataForFiles, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
+          await client.post(
+            `/requests/${newRequestId}/files`,
+            formDataForFiles,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
             }
-          })
+          )
         }
 
         showToast('재승인 요청이 생성되었습니다', 'success')
@@ -145,57 +169,71 @@ const ReapplyRequest: React.FC = () => {
 
   const handleApproverChange = (event: SelectChangeEvent<number[]>) => {
     const value = event.target.value
-    setSelectedApprovers(typeof value === 'string' ? value.split(',').map(Number) : value)
+    setSelectedApprovers(
+      typeof value === 'string' ? value.split(',').map(Number) : value
+    )
   }
 
   return (
     <Box sx={{ maxWidth: '100%', p: 3 }}>
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        mb: 3,
-        pb: 2,
-        borderBottom: '1px solid',
-        borderColor: 'divider'
-      }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          mb: 3,
+          pb: 2,
+          borderBottom: '1px solid',
+          borderColor: 'divider'
+        }}>
         <Button
-          onClick={() => navigate(`/user/projects/${projectId}/requests/${requestId}`)}
-          sx={{ 
+          onClick={() =>
+            navigate(`/user/projects/${projectId}/requests/${requestId}`)
+          }
+          sx={{
             color: 'text.secondary',
             p: 0,
             minWidth: 'auto',
             '&:hover': { background: 'none' }
           }}>
           <ArrowLeft size={20} />
-          <Typography variant="body2" sx={{ ml: 1 }}>승인요청 상세보기로 돌아가기</Typography>
+          <Typography
+            variant="body2"
+            sx={{ ml: 1 }}>
+            승인요청 상세보기로 돌아가기
+          </Typography>
         </Button>
       </Box>
 
-      <Paper 
-        sx={{ 
+      <Paper
+        sx={{
           borderRadius: '4px',
           border: '1px solid #E5E7EB',
           overflow: 'hidden',
           boxShadow: 'none'
-        }} 
-        elevation={0}
-      >
-        <Box 
-          component="form" 
-          onSubmit={handleSubmit} 
+        }}
+        elevation={0}>
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
           id="reapply-form"
-          sx={{ p: 0 }}
-        >
+          sx={{ p: 0 }}>
           <Box sx={{ px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>
-            <Typography variant="body2" color="#6B7280" sx={{ mb: 1 }}>제목</Typography>
+            <Typography
+              variant="body2"
+              color="#6B7280"
+              sx={{ mb: 1 }}>
+              제목
+            </Typography>
             <TextField
               fullWidth
               placeholder="제목을 입력해주세요"
               value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              onChange={e =>
+                setFormData(prev => ({ ...prev, title: e.target.value }))
+              }
               variant="outlined"
               required
-              sx={{ 
+              sx={{
                 '& .MuiOutlinedInput-root': {
                   bgcolor: 'white',
                   fontSize: '0.875rem',
@@ -208,17 +246,24 @@ const ReapplyRequest: React.FC = () => {
           </Box>
 
           <Box sx={{ px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>
-            <Typography variant="body2" color="#6B7280" sx={{ mb: 1 }}>내용</Typography>
+            <Typography
+              variant="body2"
+              color="#6B7280"
+              sx={{ mb: 1 }}>
+              내용
+            </Typography>
             <TextField
               fullWidth
               placeholder="내용을 입력해주세요"
               multiline
               rows={6}
               value={formData.content}
-              onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+              onChange={e =>
+                setFormData(prev => ({ ...prev, content: e.target.value }))
+              }
               variant="outlined"
               required
-              sx={{ 
+              sx={{
                 '& .MuiOutlinedInput-root': {
                   bgcolor: 'white',
                   fontSize: '0.875rem',
@@ -231,26 +276,42 @@ const ReapplyRequest: React.FC = () => {
           </Box>
 
           <Box sx={{ display: 'flex' }}>
-            <Box sx={{ flex: 1, px: 3, py: 2, borderRight: '1px solid #E5E7EB' }}>
-              <Typography variant="body2" color="#6B7280" sx={{ mb: 1 }}>첨부 링크</Typography>
+            <Box
+              sx={{ flex: 1, px: 3, py: 2, borderRight: '1px solid #E5E7EB' }}>
+              <Typography
+                variant="body2"
+                color="#6B7280"
+                sx={{ mb: 1 }}>
+                첨부 링크
+              </Typography>
               <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
                 <TextField
                   size="small"
                   placeholder="URL"
                   value={tempLink.urlAddress}
-                  onChange={(e) => setTempLink(prev => ({ ...prev, urlAddress: e.target.value }))}
+                  onChange={e =>
+                    setTempLink(prev => ({
+                      ...prev,
+                      urlAddress: e.target.value
+                    }))
+                  }
                   sx={{ flex: 2 }}
                 />
                 <TextField
                   size="small"
                   placeholder="설명"
                   value={tempLink.urlDescription}
-                  onChange={(e) => setTempLink(prev => ({ ...prev, urlDescription: e.target.value }))}
+                  onChange={e =>
+                    setTempLink(prev => ({
+                      ...prev,
+                      urlDescription: e.target.value
+                    }))
+                  }
                   sx={{ flex: 1 }}
                 />
                 <Button
                   onClick={handleAddLink}
-                  sx={{ 
+                  sx={{
                     minWidth: 'auto',
                     px: 2,
                     color: '#FFB800',
@@ -260,24 +321,28 @@ const ReapplyRequest: React.FC = () => {
                 </Button>
               </Box>
               {formData.links.map((link, index) => (
-                <Box 
-                  key={index} 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                <Box
+                  key={index}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
                     mb: 1,
                     bgcolor: 'white'
                   }}>
-                  <Typography variant="body2" sx={{ flex: 1 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ flex: 1 }}>
                     {link.urlDescription}
                   </Typography>
-                  <Typography variant="body2" color="#6B7280">
+                  <Typography
+                    variant="body2"
+                    color="#6B7280">
                     {link.urlAddress}
                   </Typography>
-                  <IconButton 
-                    onClick={() => handleRemoveLink(index)} 
+                  <IconButton
+                    onClick={() => handleRemoveLink(index)}
                     size="small"
-                    sx={{ 
+                    sx={{
                       ml: 1,
                       color: '#6B7280',
                       p: 0.5
@@ -289,10 +354,15 @@ const ReapplyRequest: React.FC = () => {
             </Box>
 
             <Box sx={{ flex: 1, px: 3, py: 2 }}>
-              <Typography variant="body2" color="#6B7280" sx={{ mb: 1 }}>파일 첨부</Typography>
+              <Typography
+                variant="body2"
+                color="#6B7280"
+                sx={{ mb: 1 }}>
+                파일 첨부
+              </Typography>
               <Button
                 component="label"
-                sx={{ 
+                sx={{
                   color: '#FFB800',
                   border: '1px solid #FFB800'
                 }}>
@@ -305,21 +375,23 @@ const ReapplyRequest: React.FC = () => {
                 />
               </Button>
               {formData.files.map((file, index) => (
-                <Box 
-                  key={index} 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                <Box
+                  key={index}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
                     mt: 2,
                     bgcolor: 'white'
                   }}>
-                  <Typography variant="body2" sx={{ flex: 1 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ flex: 1 }}>
                     {file.name}
                   </Typography>
-                  <IconButton 
-                    onClick={() => handleRemoveFile(index)} 
+                  <IconButton
+                    onClick={() => handleRemoveFile(index)}
                     size="small"
-                    sx={{ 
+                    sx={{
                       color: '#6B7280',
                       p: 0.5
                     }}>
@@ -338,25 +410,28 @@ const ReapplyRequest: React.FC = () => {
                 value={selectedApprovers}
                 onChange={handleApproverChange}
                 input={<OutlinedInput label="승인권자 선택" />}
-                renderValue={(selected) => (
+                renderValue={selected => (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.map((value) => {
+                    {selected.map(value => {
                       const approver = approvers.find(a => a.id === value)
                       return (
                         <Chip
                           key={value}
                           label={approver?.name || ''}
                           onDelete={() => {
-                            setSelectedApprovers(selectedApprovers.filter(id => id !== value))
+                            setSelectedApprovers(
+                              selectedApprovers.filter(id => id !== value)
+                            )
                           }}
                         />
                       )
                     })}
                   </Box>
-                )}
-              >
-                {approvers.map((approver) => (
-                  <MenuItem key={approver.id} value={approver.id}>
+                )}>
+                {approvers.map(approver => (
+                  <MenuItem
+                    key={approver.id}
+                    value={approver.id}>
                     {approver.name}
                   </MenuItem>
                 ))}
@@ -365,12 +440,15 @@ const ReapplyRequest: React.FC = () => {
           </Box>
         </Box>
       </Paper>
-      
-      <Box sx={{ display: 'flex', gap: 1.5, mt: 3, justifyContent: 'flex-end' }}>
+
+      <Box
+        sx={{ display: 'flex', gap: 1.5, mt: 3, justifyContent: 'flex-end' }}>
         <Button
           variant="outlined"
-          onClick={() => navigate(`/user/projects/${projectId}/requests/${requestId}`)}
-          sx={{ 
+          onClick={() =>
+            navigate(`/user/projects/${projectId}/requests/${requestId}`)
+          }
+          sx={{
             px: 3,
             py: 1,
             color: '#dc2626',
@@ -381,7 +459,7 @@ const ReapplyRequest: React.FC = () => {
         <Button
           type="submit"
           form="reapply-form"
-          sx={{ 
+          sx={{
             px: 4,
             py: 1,
             bgcolor: '#FFB800',
@@ -398,4 +476,4 @@ const ReapplyRequest: React.FC = () => {
   )
 }
 
-export default ReapplyRequest 
+export default ReapplyRequest
