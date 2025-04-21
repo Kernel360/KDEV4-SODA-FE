@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { Project } from '../types/project'
+import type { Project, ProjectStatus } from '../types/project'
 import type { Task } from '../types/task'
 import { client } from '../api/client'
 import {
@@ -8,18 +8,19 @@ import {
   ArticleCreateResponse,
   PriorityType
 } from '../types/article'
+import { ProjectMemberResponse } from '../types/project'
 
 export interface CreateProjectRequest {
   title: string
   description: string
   startDate: string
   endDate: string
-  clientCompanyId: number
-  devCompanyId: number
-  devManagers: number[]
-  devMembers: number[]
-  clientManagers: number[]
-  clientMembers: number[]
+  stageNames: string[]
+  clientAssignments: {
+    companyId: number
+    managerIds: number[]
+    memberIds: number[]
+  }[]
 }
 
 // Request interceptor to add auth token
@@ -79,6 +80,12 @@ interface ApiStage {
   }[]
 }
 
+export interface ProjectMemberSearchCondition {
+  companyRole?: 'DEV_COMPANY' | 'CLIENT_COMPANY'
+  companyId?: number
+  memberRole?: string
+}
+
 export const projectService = {
   // 프로젝트 목록 조회
   async getAllProjects(): Promise<Project[]> {
@@ -105,7 +112,28 @@ export const projectService = {
     try {
       const response = await client.get(`/projects/${id}`)
       if (response.data && response.data.data) {
-        return response.data.data
+        const projectData = response.data.data
+        return {
+          id: projectData.id,
+          title: projectData.title,
+          projectName: projectData.title,
+          name: projectData.title,
+          description: projectData.description,
+          status: projectData.status,
+          startDate: projectData.startDate,
+          endDate: projectData.endDate,
+          clientCompanyNames: projectData.clientCompanyNames || [],
+          clientManagerNames: projectData.clientManagerNames || [],
+          clientMemberNames: projectData.clientMemberNames || [],
+          clientMembers: projectData.clientMembers || [],
+          devCompanyNames: projectData.devCompanyNames || [],
+          devManagerNames: projectData.devManagerNames || [],
+          devMemberNames: projectData.devMemberNames || [],
+          currentUserProjectRole: projectData.currentUserProjectRole,
+          currentUserCompanyRole: projectData.currentUserCompanyRole,
+          createdAt: projectData.createdAt || new Date().toISOString(),
+          updatedAt: projectData.updatedAt || new Date().toISOString()
+        }
       }
       throw new Error('프로젝트 데이터 형식이 올바르지 않습니다.')
     } catch (error) {
@@ -122,7 +150,7 @@ export const projectService = {
   // 프로젝트 단계 조회
   async getProjectStages(projectId: number): Promise<ApiStage[]> {
     const response = await client.get(
-      `http://localhost:8080/projects/${projectId}/stages`
+      `https://api.s0da.co.kr/projects/${projectId}/stages`
     )
     return response.data.data
   },
@@ -136,12 +164,8 @@ export const projectService = {
         'description',
         'startDate',
         'endDate',
-        'clientCompanyId',
-        'devCompanyId',
-        'devManagers',
-        'devMembers',
-        'clientManagers',
-        'clientMembers'
+        'stageNames',
+        'clientAssignments'
       ]
 
       const missingFields = requiredFields.filter(field => {
@@ -168,18 +192,16 @@ export const projectService = {
         throw new Error('종료일은 시작일보다 이후여야 합니다.')
       }
 
-      // 회사 ID 유효성 검증
-      if (project.clientCompanyId === project.devCompanyId) {
-        throw new Error('고객사와 개발사는 서로 다른 회사여야 합니다.')
+      // 클라이언트 할당 검증
+      if (project.clientAssignments.length === 0) {
+        throw new Error('최소 하나의 고객사를 할당해야 합니다.')
       }
 
-      // 담당자 유효성 검증
-      if (project.devManagers.length === 0) {
-        throw new Error('개발사 담당자는 최소 1명 이상이어야 합니다.')
-      }
-
-      if (project.clientManagers.length === 0) {
-        throw new Error('고객사 담당자는 최소 1명 이상이어야 합니다.')
+      // 각 고객사에 대한 담당자 검증
+      for (const assignment of project.clientAssignments) {
+        if (assignment.managerIds.length === 0) {
+          throw new Error('각 고객사에 최소 한 명의 담당자를 지정해야 합니다.')
+        }
       }
 
       const response = await client.post('/projects', project)
@@ -365,6 +387,72 @@ export const projectService = {
       }
     } catch (error) {
       console.error('Error deleting article file:', error)
+      throw error
+    }
+  },
+
+  // 프로젝트 멤버 조회
+  async getProjectMembers(
+    projectId: number,
+    searchCondition: ProjectMemberSearchCondition,
+    page: number = 0,
+    size: number = 10
+  ): Promise<{
+    content: ProjectMemberResponse[]
+    totalElements: number
+    totalPages: number
+    number: number
+    size: number
+  }> {
+    try {
+      const response = await client.get(`/projects/${projectId}/members`, {
+        params: {
+          ...searchCondition,
+          page,
+          size
+        }
+      })
+      return response.data.data
+    } catch (error) {
+      console.error('프로젝트 멤버 조회 실패:', error)
+      throw error
+    }
+  },
+
+  // 프로젝트 멤버 삭제
+  async deleteProjectMember(projectId: number, memberId: number): Promise<void> {
+    try {
+      await client.delete(`/projects/${projectId}/members/${memberId}`)
+    } catch (error) {
+      console.error('프로젝트 멤버 삭제 실패:', error)
+      throw error
+    }
+  },
+
+  // 프로젝트에 회사 추가
+  async addProjectCompany(
+    projectId: number,
+    data: {
+      companyId: number
+      role: 'DEV_COMPANY' | 'CLIENT_COMPANY'
+      managerIds: number[]
+      memberIds: number[]
+    }
+  ): Promise<void> {
+    try {
+      await client.post(`/projects/${projectId}/companies`, data)
+    } catch (error) {
+      console.error('프로젝트 회사 추가 실패:', error)
+      throw error
+    }
+  },
+
+  async updateProjectStatus(projectId: number, status: ProjectStatus): Promise<void> {
+    try {
+      const response = await client.patch(`/projects/${projectId}/status`, { status })
+      return response.data
+    } catch (error) {
+      console.error('프로젝트 상태 업데이트 실패:', error)
       throw error
     }
   }

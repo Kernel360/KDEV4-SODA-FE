@@ -1,40 +1,62 @@
 export interface Project {
-  clientMembers: never[]
-  devManagers: never[]
-  devMembers: never[]
-  clientManagers: never[]
-  id: number
-  title: string
-  description: string
+  status: ProjectStatus
   projectName: string
-  status: string
+  title: string
+  id: number
+  name: string
+  description: string
   startDate: string
   endDate: string
-  clientCompanyId: number
-  devCompanyId: number
-  clientCompanyName: string
-  devCompanyName: string
-  clientCompanyManagers: string[]
-  clientCompanyMembers: string[]
-  devCompanyManagers: string[]
-  devCompanyMembers: string[]
+  currentUserProjectRole: string
+  currentUserCompanyRole: string
+  clientCompanyNames: string[]
+  devCompanyNames: string[]
+  clientManagerNames: string[]
+  devManagerNames: string[]
+  clientMemberNames: string[]
+  devMemberNames: string[]
+  // For backward compatibility
+  clientManagers?: Array<{
+    id: number
+    name: string
+    companyName: string
+  }>
+  clientMembers?: Array<{
+    id: number
+    name: string
+    companyName: string
+  }>
+  devManagers?: Array<{
+    id: number
+    name: string
+    companyName: string
+  }>
+  devMembers?: Array<{
+    id: number
+    name: string
+    companyName: string
+  }>
+  clientCompanyIds?: number[]
+  devCompanyId?: number
+  createdAt: string
+  updatedAt: string
 }
 
-export type ProjectStatus =
-  | '계약'
-  | '진행중'
-  | '납품완료'
-  | '하자보수'
-  | '일시중단'
+export type ProjectStatus = 
+  | 'CONTRACT'      // 계약
+  | 'IN_PROGRESS'   // 진행중
+  | 'DELIVERED'     // 납품완료
+  | 'MAINTENANCE'   // 하자보수
+  | 'ON_HOLD'       // 일시중단
+  | '진행중'        // For backward compatibility
 
 export interface ProjectMember {
   id: number
   name: string
   email: string
-  role: string
-  companyId: number
+  companyRole: string
   companyName: string
-  position?: string
+  role: string
 }
 
 export type StageStatus = '대기' | '진행중' | '완료'
@@ -67,4 +89,17 @@ export interface Stage {
 export interface ProjectWithProgress extends Project {
   progress: number
   stages: Stage[]
+}
+
+export interface ProjectMemberResponse {
+  id: number
+  companyId: number
+  companyName: string
+  memberId: number
+  memberName: string
+  name?: string // For backward compatibility
+  position: string
+  phoneNumber: string
+  email: string
+  role: 'CLI_MANAGER' | 'CLI_PARTICIPANT' | 'DEV_MANAGER' | 'DEV_PARTICIPANT'
 }

@@ -8,12 +8,22 @@ import {
   IconButton,
   Paper,
   Tabs,
-  Tab
+  Tab,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Chip,
+  OutlinedInput,
+  SelectChangeEvent
 } from '@mui/material'
 import { Stage } from '../../../types/project'
 import { client } from '../../../api/client'
 import { useToast } from '../../../contexts/ToastContext'
 import { ArrowLeft } from 'lucide-react'
+import { requestService } from '../../../services/requestService'
+import { projectService } from '../../../services/projectService'
+import type { ProjectMember } from '../../../types/project'
 
 interface LinkData {
   urlAddress: string;
@@ -45,6 +55,8 @@ const CreateRequest: React.FC = () => {
     urlAddress: '',
     urlDescription: ''
   })
+  const [approvers, setApprovers] = useState<ProjectMember[]>([])
+  const [selectedApprovers, setSelectedApprovers] = useState<number[]>([])
 
   useEffect(() => {
     const fetchStages = async () => {
@@ -62,51 +74,58 @@ const CreateRequest: React.FC = () => {
       }
     }
 
+    const fetchApprovers = async () => {
+      try {
+        const response = await projectService.getProjectMembers(Number(projectId), { companyRole: 'CLIENT_COMPANY' })
+        if (response && Array.isArray(response)) {
+          setApprovers(response)
+        } else {
+          console.error('Invalid response format for approvers:', response)
+          setApprovers([])
+        }
+      } catch (error) {
+        console.error('승인권자 목록을 불러오는데 실패했습니다:', error)
+        showToast('승인권자 목록을 불러오는데 실패했습니다', 'error')
+        setApprovers([])
+      }
+    }
+
     if (projectId) {
       fetchStages()
+      fetchApprovers()
     }
   }, [projectId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
     try {
-      // 1. 먼저 승인요청을 생성합니다.
-      const response = await client.post('/requests', {
-        projectId: Number(projectId),
-        stageId: formData.stageId, // stages[selectedTab].id 대신 formData의 stageId 사용
+      const requestBody = {
         title: formData.title,
         content: formData.content,
-        links: formData.links
-      })
-
-      if (response.data.status === 'success') {
-        const requestId = response.data.data.requestId
-
-        // 2. 파일이 있다면 파일을 업로드합니다.
-        if (formData.files.length > 0) {
-          const fileFormData = new FormData()
-          formData.files.forEach(file => {
-            fileFormData.append('file', file)
-          })
-
-          await client.post(
-            `/requests/${requestId}/files`,
-            fileFormData,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data',
-              },
-            }
-          )
-        }
-
-        showToast('승인요청이 생성되었습니다.', 'success')
-        navigate(`/user/projects/${projectId}/requests/${requestId}`)
+        projectId: Number(projectId),
+        stageId: formData.stageId,
+        links: formData.links.map(link => ({
+          urlAddress: link.urlAddress,
+          urlDescription: link.urlDescription
+        })),
+        members: selectedApprovers.map(id => ({ id }))
       }
+
+      const response = await requestService.createRequest(requestBody)
+      
+      if (formData.files.length > 0) {
+        const formDataForFiles = new FormData()
+        formData.files.forEach(file => {
+          formDataForFiles.append('file', file)
+        })
+        await requestService.uploadRequestFiles(response.requestId, formDataForFiles)
+      }
+
+      showToast('승인요청이 생성되었습니다', 'success')
+      navigate(`/user/projects/${projectId}`)
     } catch (error) {
-      console.error('Failed to create request:', error)
-      showToast('승인요청 생성에 실패했습니다.', 'error')
+      console.error('승인요청 생성에 실패했습니다:', error)
+      showToast('승인요청 생성에 실패했습니다', 'error')
     }
   }
 
@@ -142,6 +161,11 @@ const CreateRequest: React.FC = () => {
       ...prev,
       links: prev.links.filter((_, i: number) => i !== index)
     }))
+  }
+
+  const handleApproverChange = (event: SelectChangeEvent<number[]>) => {
+    const value = event.target.value
+    setSelectedApprovers(typeof value === 'string' ? value.split(',').map(Number) : value)
   }
 
   return (
@@ -416,6 +440,40 @@ const CreateRequest: React.FC = () => {
                 </Box>
               ))}
             </Box>
+          </Box>
+
+          <Box sx={{ mb: 3 }}>
+            <FormControl fullWidth>
+              <InputLabel>승인권자 선택</InputLabel>
+              <Select
+                multiple
+                value={selectedApprovers}
+                onChange={handleApproverChange}
+                input={<OutlinedInput label="승인권자 선택" />}
+                renderValue={(selected) => (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {selected.map((value) => {
+                      const approver = approvers.find(a => a.id === value)
+                      return (
+                        <Chip
+                          key={value}
+                          label={approver?.name || ''}
+                          onDelete={() => {
+                            setSelectedApprovers(selectedApprovers.filter(id => id !== value))
+                          }}
+                        />
+                      )
+                    })}
+                  </Box>
+                )}
+              >
+                {approvers.map((approver) => (
+                  <MenuItem key={approver.id} value={approver.id}>
+                    {approver.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Box>
         </Box>
       </Paper>

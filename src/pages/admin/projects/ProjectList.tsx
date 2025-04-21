@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, Typography, Button, useTheme } from '@mui/material'
+import { Box, Typography, Button, useTheme, Chip } from '@mui/material'
 import { Plus, LayoutDashboard } from 'lucide-react'
 import useProjectStore from '../../../stores/projectStore'
 import DataTable from '../../../components/common/DataTable'
@@ -8,6 +8,40 @@ import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
 import { formatDate } from '../../../utils/dateUtils'
 import type { Project } from '../../../types/project'
+
+const getStatusText = (status: string): string => {
+  switch (status) {
+    case 'CONTRACT':
+      return '계약'
+    case 'IN_PROGRESS':
+      return '진행중'
+    case 'DELIVERED':
+      return '납품완료'
+    case 'MAINTENANCE':
+      return '하자보수'
+    case 'ON_HOLD':
+      return '일시중단'
+    default:
+      return '대기'
+  }
+}
+
+const getStatusColor = (status: string): string => {
+  switch (status) {
+    case 'CONTRACT':
+      return '#64748B'
+    case 'IN_PROGRESS':
+      return '#2563EB'
+    case 'DELIVERED':
+      return '#059669'
+    case 'MAINTENANCE':
+      return '#9333EA'
+    case 'ON_HOLD':
+      return '#DC2626'
+    default:
+      return '#64748B'
+  }
+}
 
 const ProjectList: React.FC = () => {
   const navigate = useNavigate()
@@ -39,7 +73,6 @@ const ProjectList: React.FC = () => {
           sx={{
             fontSize: '0.875rem',
             cursor: 'pointer',
-            color: theme.palette.primary.main,
             '&:hover': {
               color: theme.palette.primary.dark,
               textDecoration: 'underline'
@@ -50,38 +83,28 @@ const ProjectList: React.FC = () => {
       )
     },
     {
-      id: 'clientCompany',
-      label: '고객사',
-      render: (row: Project) => row.clientCompanyName
-    },
-    {
-      id: 'devCompany',
-      label: '개발사',
-      render: (row: Project) => row.devCompanyName
-    },
-    {
       id: 'status',
       label: '상태',
       render: (row: Project) => (
-        <Typography
+        <Chip
+          label={getStatusText(row.status)}
+          size="small"
           sx={{
-            fontSize: '0.813rem',
-            fontWeight: 500,
-            color: '#4b5563'
-          }}>
-          {row.status || '대기'}
-        </Typography>
+            backgroundColor: getStatusColor(row.status),
+            color: 'white',
+            fontWeight: 500
+          }}
+        />
       )
     },
     {
-      id: 'startDate',
-      label: '시작 날짜',
-      render: (row: Project) => formatDate(row.startDate)
-    },
-    {
-      id: 'endDate',
-      label: '마감 날짜',
-      render: (row: Project) => formatDate(row.endDate)
+      id: 'period',
+      label: '기간',
+      render: (row: Project) => (
+        <Typography variant="body2">
+          {formatDate(row.startDate)} - {formatDate(row.endDate)}
+        </Typography>
+      )
     },
     {
       id: 'dashboard',

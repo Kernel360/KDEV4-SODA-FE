@@ -6,13 +6,52 @@ import {
   Button,
   TableCell,
   Typography,
-  Paper
+  Paper,
+  TableHead,
+  TableBody,
+  TableRow,
+  Chip
 } from '@mui/material'
 import { LayoutDashboard, Plus } from 'lucide-react'
 import DataTable from '../../../components/common/DataTable'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
 import useProjectStore from '../../../stores/projectStore'
+import { formatDate } from '../../../utils/dateUtils'
+
+const getStatusText = (status: string): string => {
+  switch (status) {
+    case 'CONTRACT':
+      return '계약'
+    case 'IN_PROGRESS':
+      return '진행중'
+    case 'DELIVERED':
+      return '납품완료'
+    case 'MAINTENANCE':
+      return '하자보수'
+    case 'ON_HOLD':
+      return '일시중단'
+    default:
+      return '대기'
+  }
+}
+
+const getStatusColor = (status: string): string => {
+  switch (status) {
+    case 'CONTRACT':
+      return '#64748B'
+    case 'IN_PROGRESS':
+      return '#2563EB'
+    case 'DELIVERED':
+      return '#059669'
+    case 'MAINTENANCE':
+      return '#9333EA'
+    case 'ON_HOLD':
+      return '#DC2626'
+    default:
+      return '#64748B'
+  }
+}
 
 const Projects = () => {
   const theme = useTheme()
@@ -55,39 +94,32 @@ const Projects = () => {
       )
     },
     {
-      id: 'clientCompany',
-      label: '고객사',
-      render: (row: any) => (
-        <TableCell>{row.clientCompanyName}</TableCell>
-      )
-    },
-    {
-      id: 'devCompany',
-      label: '개발사',
-      render: (row: any) => (
-        <TableCell>{row.devCompanyName}</TableCell>
-      )
-    },
-    {
       id: 'status',
       label: '상태',
       render: (row: any) => (
-        <Typography
+        <Chip
+          label={getStatusText(row.status)}
+          size="small"
           sx={{
-            fontSize: '0.813rem',
-            fontWeight: 500,
-            color: row.status === '진행 중' ? theme.palette.success.main :
-                   row.status === '완료' ? theme.palette.info.main :
-                   row.status === '중단' ? theme.palette.error.main :
-                   theme.palette.text.secondary
-          }}>
-          {row.status || '대기'}
+            backgroundColor: getStatusColor(row.status),
+            color: 'white',
+            fontWeight: 500
+          }}
+        />
+      )
+    },
+    {
+      id: 'period',
+      label: '기간',
+      render: (row: any) => (
+        <Typography variant="body2">
+          {formatDate(row.startDate)} - {formatDate(row.endDate)}
         </Typography>
       )
     },
     {
       id: 'dashboard',
-      label: '대시보드 바로가기',
+      label: '대시보드',
       render: (row: any) => (
         <Button
           variant="contained"
