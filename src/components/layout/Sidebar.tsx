@@ -9,7 +9,13 @@ import {
   Box,
   Divider
 } from '@mui/material'
-import { LayoutDashboard, Users, Building2, ClipboardList, Database } from 'lucide-react'
+import {
+  LayoutDashboard,
+  Users,
+  Building2,
+  ClipboardList,
+  Database
+} from 'lucide-react'
 
 interface SidebarProps {
   isOpen: boolean
@@ -67,7 +73,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         display: 'flex',
         flexDirection: 'column',
         transition: 'width 0.3s ease',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        zIndex: 1200,
+        boxShadow: '4px 0 8px rgba(0, 0, 0, 0.1)'
       }}>
       <List>
         {menuItems.map((item, index) => (
