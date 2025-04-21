@@ -42,13 +42,13 @@ export interface Project {
   updatedAt: string
 }
 
-export type ProjectStatus = 
-  | 'CONTRACT'      // 계약
-  | 'IN_PROGRESS'   // 진행중
-  | 'DELIVERED'     // 납품완료
-  | 'MAINTENANCE'   // 하자보수
-  | 'ON_HOLD'       // 일시중단
-  | '진행중'        // For backward compatibility
+export type ProjectStatus =
+  | 'CONTRACT' // 계약
+  | 'IN_PROGRESS' // 진행중
+  | 'DELIVERED' // 납품완료
+  | 'MAINTENANCE' // 하자보수
+  | 'ON_HOLD' // 일시중단
+  | '진행중' // For backward compatibility
 
 export interface ProjectMember {
   id: number

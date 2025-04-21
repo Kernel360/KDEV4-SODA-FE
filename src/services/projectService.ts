@@ -96,13 +96,29 @@ export const projectService = {
   // 사용자의 프로젝트 목록 조회
   async getUserProjects(): Promise<Project[]> {
     try {
+      console.log('프로젝트 목록 조회 시작')
       const response = await client.get('/projects/my')
-      if (response.data && response.data.data) {
+      console.log('프로젝트 목록 조회 응답:', response)
+
+      // 응답 형식에 따른 데이터 추출
+      if (response.data?.data?.content) {
+        return response.data.data.content
+      } else if (response.data?.data) {
         return response.data.data
+      } else if (Array.isArray(response.data)) {
+        return response.data
+      } else {
+        console.warn('예상치 못한 응답 형식:', response)
+        return []
       }
-      throw new Error('프로젝트 데이터 형식이 올바르지 않습니다.')
     } catch (error) {
-      console.error('Error fetching user projects:', error)
+      console.error('프로젝트 목록 조회 중 오류:', error)
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.message ||
+            '프로젝트 목록을 불러오는데 실패했습니다.'
+        )
+      }
       throw error
     }
   },
@@ -150,7 +166,7 @@ export const projectService = {
   // 프로젝트 단계 조회
   async getProjectStages(projectId: number): Promise<ApiStage[]> {
     const response = await client.get(
-      `https://api.s0da.co.kr/projects/${projectId}/stages`
+      `http://localhost:8080/projects/${projectId}/stages`
     )
     return response.data.data
   },
@@ -420,7 +436,10 @@ export const projectService = {
   },
 
   // 프로젝트 멤버 삭제
-  async deleteProjectMember(projectId: number, memberId: number): Promise<void> {
+  async deleteProjectMember(
+    projectId: number,
+    memberId: number
+  ): Promise<void> {
     try {
       await client.delete(`/projects/${projectId}/members/${memberId}`)
     } catch (error) {
@@ -447,9 +466,14 @@ export const projectService = {
     }
   },
 
-  async updateProjectStatus(projectId: number, status: ProjectStatus): Promise<void> {
+  async updateProjectStatus(
+    projectId: number,
+    status: ProjectStatus
+  ): Promise<void> {
     try {
-      const response = await client.patch(`/projects/${projectId}/status`, { status })
+      const response = await client.patch(`/projects/${projectId}/status`, {
+        status
+      })
       return response.data
     } catch (error) {
       console.error('프로젝트 상태 업데이트 실패:', error)
