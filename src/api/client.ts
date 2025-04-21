@@ -6,7 +6,8 @@ export const client = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  withCredentials: true // CORS 요청 시 쿠키를 포함
 })
 
 // 응답 인터셉터 설정
@@ -22,6 +23,11 @@ client.interceptors.response.use(
   },
   error => {
     console.error('API Response Error:', error.response?.data || error.message)
+    if (error.response?.status === 401) {
+      // 토큰 만료 시 로그인 페이지로 리다이렉트
+      localStorage.removeItem('token')
+      window.location.href = '/login'
+    }
     return Promise.reject(error)
   }
 )
