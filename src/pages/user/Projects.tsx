@@ -1,21 +1,15 @@
 import React from 'react'
-import { Box, Typography, Paper } from '@mui/material'
+import { Box, Typography, Container, Paper } from '@mui/material'
+import { FolderKanban } from 'lucide-react'
 import ProjectList from './ProjectList'
 
 const Projects: React.FC = () => {
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography
-        variant="h4"
-        sx={{ mb: 4 }}>
-        참여 중인 프로젝트
-      </Typography>
-      <Paper
-        elevation={0}
-        sx={{ p: 2, bgcolor: 'background.paper' }}>
+    <Container maxWidth="lg">
+      <Box sx={{ py: 4 }}>
         <ProjectList />
-      </Paper>
-    </Box>
+      </Box>
+    </Container>
   )
 }
 

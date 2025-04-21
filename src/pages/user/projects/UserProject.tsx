@@ -140,7 +140,7 @@ const UserProject: React.FC = () => {
             }
           }}>
           <Tab
-            label="결제 관리"
+            label="승인 관리"
             sx={{
               flex: 1,
               maxWidth: 'none'
