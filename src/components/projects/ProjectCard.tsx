@@ -4,18 +4,22 @@ import {
   Card,
   CardContent,
   Typography,
-  LinearProgress
+  LinearProgress,
+  Chip
 } from '@mui/material'
 import { ChevronRight } from 'lucide-react'
 import dayjs from 'dayjs'
 import type { Project } from '../../types/project'
 
 interface ProjectCardProps {
-  project: Project & { progress: number }
+  project: Project
   onClick: () => void
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
+  // 진행률 계산 (임시로 0으로 설정)
+  const progress = 0
+
   return (
     <Card
       onClick={onClick}
@@ -57,7 +61,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
             <Typography
               variant="caption"
               sx={{ fontWeight: 500 }}>
-              {project.devCompanyNames.join(', ')}
+              {project.devCompanyNames?.join(', ') || '없음'}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -69,7 +73,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
             <Typography
               variant="caption"
               sx={{ fontWeight: 500 }}>
-              {project.clientCompanyNames.join(', ')}
+              {project.clientCompanyNames?.join(', ') || '없음'}
             </Typography>
           </Box>
           <Box
@@ -86,7 +90,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <LinearProgress
             variant="determinate"
-            value={project.progress}
+            value={progress}
             sx={{
               flexGrow: 1,
               height: 8,
@@ -100,7 +104,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
           <Typography
             variant="caption"
             color="text.secondary">
-            {project.progress}%
+            {progress}%
           </Typography>
         </Box>
       </CardContent>

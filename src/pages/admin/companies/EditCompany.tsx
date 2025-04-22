@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Box, Typography } from '@mui/material'
-import CompanyForm, { CompanyFormData } from '../../../components/common/CompanyForm'
+import CompanyForm from '../../../components/common/CompanyForm'
 import { companyService } from '../../../services/companyService'
 import { useToast } from '../../../contexts/ToastContext'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
+import { CompanyFormData } from '../../../types/company'
 
 const EditCompany: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -22,11 +23,11 @@ const EditCompany: React.FC = () => {
         const data = await companyService.getCompanyById(Number(id))
         setCompany({
           name: data.name,
-          ceoName: data.ceoName || '',
           phoneNumber: data.phoneNumber || '',
+          companyNumber: data.companyNumber || '',
           address: data.address || '',
-          businessNumber: data.businessNumber || '',
-          isActive: data.isActive
+          detailaddress: data.detailAddress || '',
+          ownerName: data.ceoName || ''
         })
       } catch (error) {
         console.error('회사 정보 조회 중 오류:', error)
@@ -44,11 +45,10 @@ const EditCompany: React.FC = () => {
       if (!id) return
       await companyService.updateCompany(Number(id), {
         name: formData.name,
-        ceoName: formData.ceoName,
         phoneNumber: formData.phoneNumber,
-        businessNumber: formData.businessNumber,
+        companyNumber: formData.companyNumber,
         address: formData.address,
-        isActive: formData.isActive
+        detailaddress: formData.detailaddress
       })
       showToast('회사 정보가 성공적으로 수정되었습니다.', 'success')
       navigate(`/admin/companies/${id}`)

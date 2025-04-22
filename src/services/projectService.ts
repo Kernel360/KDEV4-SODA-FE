@@ -23,6 +23,13 @@ export interface CreateProjectRequest {
   }[]
 }
 
+export interface UpdateProjectRequest {
+  title: string
+  description: string
+  startDate: string
+  endDate: string
+}
+
 // Request interceptor to add auth token
 client.interceptors.request.use(
   config => {
@@ -96,13 +103,29 @@ export const projectService = {
   // 사용자의 프로젝트 목록 조회
   async getUserProjects(): Promise<Project[]> {
     try {
+      console.log('프로젝트 목록 조회 시작')
       const response = await client.get('/projects/my')
-      if (response.data && response.data.data) {
+      console.log('프로젝트 목록 조회 응답:', response)
+
+      // 응답 형식에 따른 데이터 추출
+      if (response.data?.data?.content) {
+        return response.data.data.content
+      } else if (response.data?.data) {
         return response.data.data
+      } else if (Array.isArray(response.data)) {
+        return response.data
+      } else {
+        console.warn('예상치 못한 응답 형식:', response)
+        return []
       }
-      throw new Error('프로젝트 데이터 형식이 올바르지 않습니다.')
     } catch (error) {
-      console.error('Error fetching user projects:', error)
+      console.error('프로젝트 목록 조회 중 오류:', error)
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.message ||
+            '프로젝트 목록을 불러오는데 실패했습니다.'
+        )
+      }
       throw error
     }
   },
@@ -132,7 +155,8 @@ export const projectService = {
           currentUserProjectRole: projectData.currentUserProjectRole,
           currentUserCompanyRole: projectData.currentUserCompanyRole,
           createdAt: projectData.createdAt || new Date().toISOString(),
-          updatedAt: projectData.updatedAt || new Date().toISOString()
+          updatedAt: projectData.updatedAt || new Date().toISOString(),
+          stages: projectData.stages || []
         }
       }
       throw new Error('프로젝트 데이터 형식이 올바르지 않습니다.')
@@ -220,9 +244,14 @@ export const projectService = {
   },
 
   // 프로젝트 수정
-  async updateProject(id: number, project: Partial<Project>): Promise<Project> {
-    const response = await client.put(`/projects/${id}`, project)
-    return response.data.data
+  async updateProject(projectId: number, data: UpdateProjectRequest): Promise<Project> {
+    try {
+      const response = await client.put(`/projects/${projectId}`, data)
+      return response.data.data
+    } catch (error) {
+      console.error('Failed to update project:', error)
+      throw error
+    }
   },
 
   // 프로젝트 삭제
@@ -420,7 +449,10 @@ export const projectService = {
   },
 
   // 프로젝트 멤버 삭제
-  async deleteProjectMember(projectId: number, memberId: number): Promise<void> {
+  async deleteProjectMember(
+    projectId: number,
+    memberId: number
+  ): Promise<void> {
     try {
       await client.delete(`/projects/${projectId}/members/${memberId}`)
     } catch (error) {
@@ -447,13 +479,15 @@ export const projectService = {
     }
   },
 
-  async updateProjectStatus(projectId: number, status: ProjectStatus): Promise<void> {
-    try {
-      const response = await client.patch(`/projects/${projectId}/status`, { status })
-      return response.data
-    } catch (error) {
-      console.error('프로젝트 상태 업데이트 실패:', error)
-      throw error
-    }
+  async updateProjectStatus(
+    projectId: number,
+    status: ProjectStatus
+  ): Promise<void> {
+    await client.patch(`/projects/${projectId}/status`, { status })
+  },
+
+  async getUserRole(): Promise<string> {
+    const response = await client.get('/projects/my/role')
+    return response.data.data
   }
 }

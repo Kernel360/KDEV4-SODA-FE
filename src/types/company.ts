@@ -5,10 +5,14 @@ export interface Company {
   phoneNumber: string
   businessNumber: string
   address: string
+  createdAt: string
+  updatedAt: string
   isActive: boolean
   ceoPhone?: string
   registrationNumber?: string
   addressDetail?: string
+  companyNumber: string
+  detailAddress: string | null
 }
 
 export interface CompanyMember {
@@ -17,4 +21,13 @@ export interface CompanyMember {
   position?: string
   phoneNumber?: string
   email?: string
+}
+
+export interface CompanyFormData {
+  name: string
+  phoneNumber: string
+  companyNumber: string
+  address: string
+  detailaddress: string
+  ownerName: string
 }

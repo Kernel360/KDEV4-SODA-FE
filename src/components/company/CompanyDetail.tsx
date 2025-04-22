@@ -54,9 +54,9 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({
               <Typography
                 variant="subtitle2"
                 color="text.secondary">
-                대표자명
+                전화번호
               </Typography>
-              <Typography variant="body1">{company.ceoName}</Typography>
+              <Typography variant="body1">{company.phoneNumber || '-'}</Typography>
             </Box>
           </Box>
           <Box sx={{ flex: '1 1 calc(50% - 1.5rem)', minWidth: '250px' }}>
@@ -64,21 +64,9 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({
               <Typography
                 variant="subtitle2"
                 color="text.secondary">
-                대표자 연락처
+                사업자번호
               </Typography>
-              <Typography variant="body1">{company.ceoPhone}</Typography>
-            </Box>
-          </Box>
-          <Box sx={{ flex: '1 1 calc(50% - 1.5rem)', minWidth: '250px' }}>
-            <Box sx={{ mb: 2 }}>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary">
-                사업자 등록 번호
-              </Typography>
-              <Typography variant="body1">
-                {company.registrationNumber}
-              </Typography>
+              <Typography variant="body1">{company.companyNumber || '-'}</Typography>
             </Box>
           </Box>
           <Box sx={{ flex: '1 1 100%' }}>
@@ -88,7 +76,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({
                 color="text.secondary">
                 주소
               </Typography>
-              <Typography variant="body1">{company.address}</Typography>
+              <Typography variant="body1">{company.address || '-'}</Typography>
             </Box>
           </Box>
           <Box sx={{ flex: '1 1 100%' }}>
@@ -96,9 +84,9 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({
               <Typography
                 variant="subtitle2"
                 color="text.secondary">
-                상세 주소
+                상세주소
               </Typography>
-              <Typography variant="body1">{company.addressDetail}</Typography>
+              <Typography variant="body1">{company.detailAddress || '-'}</Typography>
             </Box>
           </Box>
         </Box>

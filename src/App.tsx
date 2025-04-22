@@ -24,7 +24,8 @@ import {
   Article,
   CreateArticle,
   EditArticle,
-  ReplyArticle} from './pages'
+  ReplyArticle
+} from './pages'
 import { ThemeProvider } from '@mui/material/styles'
 import { LocalizationProvider } from '@mui/x-date-pickers'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'

@@ -22,6 +22,11 @@ import { logService } from '../../services/logService'
 import type { Log } from '../../types/log'
 import { formatDate } from '../../utils/dateUtils'
 
+interface DiffValue {
+  before: any;
+  after: any;
+}
+
 const formatValue = (value: any): string => {
   if (value === null || value === undefined) return '-'
   if (typeof value === 'string') return value
@@ -64,18 +69,25 @@ const formatStatus = (status: string): string => {
   return statusMap[status] || status
 }
 
-const formatDateTime = (dateString: string): string => {
-  const date = new Date(dateString)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${year}년 ${month}월 ${day}일 ${hours}시 ${minutes}분`
+const formatDateTime = (dateString: string | null | undefined): string => {
+  if (!dateString) return '-'
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return '-'
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${year}년 ${month}월 ${day}일 ${hours}시 ${minutes}분`
+  } catch (error) {
+    console.error('날짜 포맷팅 오류:', error)
+    return '-'
+  }
 }
 
-const formatLinks = (links: any[]): string => {
-  if (!links || links.length === 0) return '없음'
+const formatLinks = (links: any[] | null | undefined): string => {
+  if (!links || !Array.isArray(links) || links.length === 0) return '없음'
   return links.map(link => `- ${link.urlDescription}: ${link.urlAddress}`).join('\n')
 }
 
@@ -84,66 +96,208 @@ const formatFiles = (files: any[]): string => {
   return files.map(file => `- ${file.name}`).join('\n')
 }
 
-const formatRequestData = (data: any): string => {
-  // diff 데이터 처리
-  if (data.diff) {
-    return Object.entries(data.diff)
-      .map(([key, value]) => {
-        const fieldName = formatFieldName(key)
+const formatRequestData = (data: any): JSX.Element => {
+  const groupData = (entries: [string, any][]) => {
+    const groups: { [key: string]: string[] } = {
+      ids: [],      // ID 관련 정보
+      status: [],   // 상태 정보
+      content: [],  // 내용 정보
+      links: [],    // 링크 관련
+      files: [],    // 파일 관련
+      dates: []     // 날짜 관련
+    }
+
+    entries.forEach(([key, value]) => {
+      const fieldName = formatFieldName(key)
+      let formattedValue = ''
+
+      if (typeof value === 'object' && value !== null && 'before' in value && 'after' in value) {
+        const diffValue = value as DiffValue
         if (key === 'status') {
-          return `${fieldName}: ${formatStatus(value as string)}`
+          formattedValue = `${fieldName}: ${formatStatus(diffValue.before as string)} → ${formatStatus(diffValue.after as string)}`
         } else if (key === 'createdAt' || key === 'updatedAt') {
-          return `${fieldName}: ${formatDateTime(value as string)}`
+          formattedValue = `${fieldName}: ${formatDateTime(diffValue.before as string)} → ${formatDateTime(diffValue.after as string)}`
         } else if (key === 'links') {
-          return `${fieldName}:\n${formatLinks(value as any[])}`
+          formattedValue = `${fieldName}:\n  변경 전:\n    ${formatLinks(diffValue.before as any[]).replace(/\n/g, '\n    ')}\n  변경 후:\n    ${formatLinks(diffValue.after as any[]).replace(/\n/g, '\n    ')}`
         } else if (key === 'files') {
-          return `${fieldName}:\n${formatFiles(value as any[])}`
+          formattedValue = `${fieldName}:\n  변경 전:\n    ${formatFiles(diffValue.before as any[]).replace(/\n/g, '\n    ')}\n  변경 후:\n    ${formatFiles(diffValue.after as any[]).replace(/\n/g, '\n    ')}`
+        } else if (typeof diffValue.before === 'object' && diffValue.before !== null) {
+          const beforeValue = 'id' in diffValue.before ? diffValue.before.id : 
+                            'name' in diffValue.before ? diffValue.before.name : 
+                            'title' in diffValue.before ? diffValue.before.title : 
+                            'content' in diffValue.before ? diffValue.before.content : 
+                            JSON.stringify(diffValue.before)
+          const afterValue = 'id' in diffValue.after ? diffValue.after.id : 
+                           'name' in diffValue.after ? diffValue.after.name : 
+                           'title' in diffValue.after ? diffValue.after.title : 
+                           'content' in diffValue.after ? diffValue.after.content : 
+                           JSON.stringify(diffValue.after)
+          formattedValue = `${fieldName}: ${beforeValue} → ${afterValue}`
         } else {
-          return `${fieldName}: ${value}`
+          formattedValue = `${fieldName}: ${diffValue.before} → ${diffValue.after}`
         }
-      })
-      .join('\n')
+      } else {
+        if (key === 'status') {
+          formattedValue = `${fieldName}: ${formatStatus(value as string)}`
+        } else if (key === 'createdAt' || key === 'updatedAt') {
+          formattedValue = `${fieldName}: ${formatDateTime(value as string)}`
+        } else if (key === 'links') {
+          formattedValue = `${fieldName}:\n    ${formatLinks(value as any[]).replace(/\n/g, '\n    ')}`
+        } else if (key === 'files') {
+          formattedValue = `${fieldName}:\n    ${formatFiles(value as any[]).replace(/\n/g, '\n    ')}`
+        } else if (typeof value === 'object' && value !== null) {
+          if ('id' in value) formattedValue = `${fieldName}: ${value.id}`
+          else if ('name' in value) formattedValue = `${fieldName}: ${value.name}`
+          else if ('title' in value) formattedValue = `${fieldName}: ${value.title}`
+          else if ('content' in value) formattedValue = `${fieldName}: ${value.content}`
+          else formattedValue = `${fieldName}: ${JSON.stringify(value)}`
+        } else {
+          formattedValue = `${fieldName}: ${value}`
+        }
+      }
+
+      // 데이터 분류
+      if (key.toLowerCase().includes('id')) {
+        groups.ids.push(formattedValue)
+      } else if (key === 'status') {
+        groups.status.push(formattedValue)
+      } else if (key === 'links') {
+        groups.links.push(formattedValue)
+      } else if (key === 'files') {
+        groups.files.push(formattedValue)
+      } else if (key === 'createdAt' || key === 'updatedAt') {
+        groups.dates.push(formattedValue)
+      } else {
+        // ID, status, links, files, dates를 제외한 모든 정보는 내용 정보로 분류
+        groups.content.push(formattedValue)
+      }
+    })
+
+    return (
+      <Box>
+        {groups.ids.length > 0 && (
+          <Box mb={2}>
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+              ID 정보:
+            </Typography>
+            <Box ml={4}>
+              {groups.ids.map((value, index) => (
+                <Typography key={index} variant="body2" gutterBottom>
+                  {value}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+        )}
+
+        {groups.status.length > 0 && (
+          <Box mb={2}>
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+              상태 정보:
+            </Typography>
+            <Box ml={4}>
+              {groups.status.map((value, index) => (
+                <Typography key={index} variant="body2" gutterBottom>
+                  {value}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+        )}
+
+        {groups.content.length > 0 && (
+          <Box mb={2}>
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+              내용 정보:
+            </Typography>
+            <Box ml={4}>
+              {groups.content.map((value, index) => (
+                <Typography key={index} variant="body2" gutterBottom>
+                  {value}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+        )}
+
+        {groups.links.length > 0 && (
+          <Box mb={2}>
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+              링크 정보:
+            </Typography>
+            <Box ml={4}>
+              {groups.links.map((value, index) => (
+                <Typography key={index} variant="body2" component="pre" sx={{ whiteSpace: 'pre-wrap', ml: 2 }}>
+                  {value}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+        )}
+
+        {groups.files.length > 0 && (
+          <Box mb={2}>
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+              파일 정보:
+            </Typography>
+            <Box ml={4}>
+              {groups.files.map((value, index) => (
+                <Typography key={index} variant="body2" component="pre" sx={{ whiteSpace: 'pre-wrap', ml: 2 }}>
+                  {value}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+        )}
+
+        {groups.dates.length > 0 && (
+          <Box>
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+              시간 정보:
+            </Typography>
+            <Box ml={4}>
+              {groups.dates.map((value, index) => (
+                <Typography key={index} variant="body2" gutterBottom>
+                  {value}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+        )}
+      </Box>
+    )
   }
 
-  // 일반 데이터 처리
-  return `
-요청 ID: ${data.requestId || '-'}
-작업 ID: ${data.taskId || '-'}
-작성자 ID: ${data.memberId || '-'}
-작성자: ${data.memberName || '-'}
-제목: ${data.title || '-'}
-내용: ${data.content || '-'}
-상태: ${formatStatus(data.status || '')}
-등록일: ${formatDateTime(data.createdAt || '')}
-수정일: ${formatDateTime(data.updatedAt || '')}
-
-링크 목록:
-${formatLinks(data.links || [])}
-
-파일 목록:
-${formatFiles(data.files || [])}
-`
+  if (data.diff) {
+    return groupData(Object.entries(data.diff))
+  }
+  return groupData(Object.entries(data))
 }
 
 const DataManagement: React.FC = () => {
   const [logs, setLogs] = useState<Log[]>([])
-  const [page, setPage] = useState(0)
+  const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [entityName, setEntityName] = useState<string>('')
   const [action, setAction] = useState<string>('')
-  const [fromDate, setFromDate] = useState<string>('')
-  const [toDate, setToDate] = useState<string>('')
+  const [fromDate, setFromDate] = useState<string>('2024-01-01')
+  const [toDate, setToDate] = useState<string>(() => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    const day = String(today.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  })
 
   const fetchLogs = async () => {
     try {
       const response = await logService.getLogs({
-        page,
+        page: page - 1,
         size: 10,
-        sort: ['createdAt'],
         entityName: entityName || undefined,
         action: action || undefined,
-        from: fromDate || undefined,
-        to: toDate || undefined
+        from: fromDate ? `${fromDate}T00:00:00` : undefined,
+        to: toDate ? `${toDate}T23:59:59` : undefined
       })
       setLogs(response.content)
       setTotalPages(Math.max(1, Math.ceil(response.totalElements / 10)))
@@ -157,7 +311,7 @@ const DataManagement: React.FC = () => {
   }, [page, entityName, action, fromDate, toDate])
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
-    setPage(value - 1)
+    setPage(value)
   }
 
   return (
@@ -172,28 +326,51 @@ const DataManagement: React.FC = () => {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={3}>
           <FormControl fullWidth size="small">
-            <InputLabel>엔티티</InputLabel>
+            <InputLabel shrink>데이터 종류</InputLabel>
             <Select
               value={entityName}
-              label="엔티티"
-              onChange={(e) => setEntityName(e.target.value)}
+              label="데이터 종류"
+              onChange={(e) => {
+                setEntityName(e.target.value)
+                setPage(1)
+              }}
+              displayEmpty
+              notched
+              sx={{
+                '& .MuiSelect-select': {
+                  backgroundColor: 'white'
+                }
+              }}
             >
-              <MenuItem value="">전체</MenuItem>
+              <MenuItem value="">데이터 종류 전체</MenuItem>
               <MenuItem value="Article">게시글</MenuItem>
               <MenuItem value="Project">프로젝트</MenuItem>
               <MenuItem value="Company">회사</MenuItem>
+              <MenuItem value="Stage">단계</MenuItem>
+              <MenuItem value="Request">승인요청</MenuItem>
+              <MenuItem value="Response">응답</MenuItem>
             </Select>
           </FormControl>
         </Grid>
         <Grid item xs={3}>
           <FormControl fullWidth size="small">
-            <InputLabel>액션</InputLabel>
+            <InputLabel shrink>액션</InputLabel>
             <Select
               value={action}
               label="액션"
-              onChange={(e) => setAction(e.target.value)}
+              onChange={(e) => {
+                setAction(e.target.value)
+                setPage(1)
+              }}
+              displayEmpty
+              notched
+              sx={{
+                '& .MuiSelect-select': {
+                  backgroundColor: 'white'
+                }
+              }}
             >
-              <MenuItem value="">전체</MenuItem>
+              <MenuItem value="">액션 전체</MenuItem>
               <MenuItem value="CREATE">생성</MenuItem>
               <MenuItem value="UPDATE">수정</MenuItem>
               <MenuItem value="DELETE">삭제</MenuItem>
@@ -208,7 +385,15 @@ const DataManagement: React.FC = () => {
             label="시작일"
             InputLabelProps={{ shrink: true }}
             value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
+            onChange={(e) => {
+              setFromDate(e.target.value)
+              setPage(1)
+            }}
+            sx={{
+              '& .MuiInputBase-input': {
+                backgroundColor: 'white'
+              }
+            }}
           />
         </Grid>
         <Grid item xs={3}>
@@ -219,7 +404,15 @@ const DataManagement: React.FC = () => {
             label="종료일"
             InputLabelProps={{ shrink: true }}
             value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
+            onChange={(e) => {
+              setToDate(e.target.value)
+              setPage(1)
+            }}
+            sx={{
+              '& .MuiInputBase-input': {
+                backgroundColor: 'white'
+              }
+            }}
           />
         </Grid>
       </Grid>
@@ -258,7 +451,6 @@ const DataManagement: React.FC = () => {
                   )}
                   {log.action === 'UPDATE' && log.diff && (
                     <Box sx={{ whiteSpace: 'pre-line' }}>
-                      변경된 내용:
                       {formatRequestData({ diff: log.diff })}
                     </Box>
                   )}
@@ -277,7 +469,7 @@ const DataManagement: React.FC = () => {
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
         <Pagination
           count={totalPages}
-          page={page + 1}
+          page={page}
           onChange={handlePageChange}
           color="primary"
           showFirstButton

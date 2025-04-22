@@ -112,7 +112,7 @@ const ProjectDetail = () => {
     id: 0,
     title: '',
     projectName: '',
-    name: '',
+    name: '', 
     description: '',
     status: 'CONTRACT',
     startDate: '',
@@ -130,7 +130,8 @@ const ProjectDetail = () => {
     devManagers: [],
     devMembers: [],
     createdAt: '',
-    updatedAt: ''
+    updatedAt: '',
+    stages: [] // Added missing required stages property
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

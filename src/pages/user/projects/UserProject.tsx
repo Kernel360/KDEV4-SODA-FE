@@ -1,19 +1,23 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { Box, Tabs, Tab } from '@mui/material'
+import { Box, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, TextField } from '@mui/material'
+import { Close as CloseIcon } from '@mui/icons-material'
 import {
   Project,
   Stage,
   ProjectStatus,
-  StageStatus
+  StageStatus,
+  Task
 } from '../../../types/project'
 import ProjectHeader from '../../../components/projects/ProjectHeader'
 import ProjectArticle from '../../../components/projects/ProjectArticle'
 import PaymentManagement from '../../../components/projects/PaymentManagement'
+import StageCard from '../../../components/projects/StageCard'
 import { projectService } from '../../../services/projectService'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
 import { client } from '../../../api/client'
+import { DragDropContext, Droppable } from '@hello-pangea/dnd'
 
 interface ProjectWithProgress extends Project {
   progress: number
@@ -34,10 +38,47 @@ function TabPanel(props: TabPanelProps) {
       hidden={value !== index}
       id={`project-tabpanel-${index}`}
       aria-labelledby={`project-tab-${index}`}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'auto'
+      }}
       {...other}>
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && (
+        <Box sx={{ 
+          p: 3,
+          height: '100%',
+          '&::-webkit-scrollbar': {
+            width: '8px',
+            backgroundColor: '#f5f5f5'
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#f1f1f1',
+            borderRadius: '4px'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#888',
+            borderRadius: '4px',
+            '&:hover': {
+              background: '#555'
+            }
+          }
+        }}>
+          {children}
+        </Box>
+      )}
     </div>
   )
+}
+
+interface ApiStage {
+  id: number
+  name: string
+  stageOrder: number
+  requestCount: number
 }
 
 const UserProject: React.FC = () => {
@@ -47,6 +88,8 @@ const UserProject: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tabValue, setTabValue] = useState(0)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
 
   const handleStatusChange = async (newStatus: ProjectStatus) => {
     if (!project) return
@@ -63,6 +106,54 @@ const UserProject: React.FC = () => {
     setTabValue(newValue)
   }
 
+  const handleStageEdit = async (stageId: number, newTitle: string) => {
+    try {
+      await client.put(`/stages/${stageId}`, { name: newTitle })
+      setStages(prev =>
+        prev.map(stage =>
+          stage.id === stageId ? { ...stage, title: newTitle, name: newTitle } : stage
+        )
+      )
+    } catch (error) {
+      console.error('Failed to update stage:', error)
+    }
+  }
+
+  const handleStageDelete = async (stageId: number) => {
+    try {
+      await client.delete(`/stages/${stageId}`)
+      setStages(prev => prev.filter(stage => stage.id !== stageId))
+    } catch (error) {
+      console.error('Failed to delete stage:', error)
+    }
+  }
+
+  const handleTaskEdit = async (taskId: number, title: string, content: string) => {
+    try {
+      await client.put(`/tasks/${taskId}`, { title, content })
+      setStages(prev =>
+        prev.map(stage => ({
+          ...stage,
+          tasks: stage.tasks.map(task =>
+            task.id === taskId ? { ...task, title, description: content } : task
+          )
+        }))
+      )
+    } catch (error) {
+      console.error('Failed to update task:', error)
+    }
+  }
+
+  const handleDragEnd = (result: any) => {
+    if (!result.destination) return
+
+    const items = Array.from(stages)
+    const [reorderedItem] = items.splice(result.source.index, 1)
+    items.splice(result.destination.index, 0, reorderedItem)
+
+    setStages(items)
+  }
+
   useEffect(() => {
     const fetchProject = async () => {
       try {
@@ -71,21 +162,25 @@ const UserProject: React.FC = () => {
           projectService.getProjectById(parseInt(id)),
           projectService.getProjectStages(parseInt(id))
         ])
+        console.log('Project Data:', projectData)
+        console.log('Stages Data:', stagesData)
         setProject({
           ...projectData,
           progress: 0
         })
-        const convertedStages = stagesData.map(stage => ({
+        const convertedStages = (stagesData as unknown as ApiStage[]).map(stage => ({
           id: stage.id,
           title: stage.name,
           name: stage.name,
           stageOrder: stage.stageOrder,
           order: stage.stageOrder,
-          status: '진행중' as StageStatus,
+          status: '대기' as StageStatus,
           tasks: []
         }))
+        console.log('Converted Stages:', convertedStages)
         setStages(convertedStages)
       } catch (err) {
+        console.error('Error fetching project data:', err)
         setError('프로젝트 정보를 불러오는데 실패했습니다.')
       } finally {
         setLoading(false)
@@ -94,6 +189,11 @@ const UserProject: React.FC = () => {
 
     fetchProject()
   }, [id])
+
+  const handleEditModalOpen = () => {
+    console.log('Current stages when opening modal:', stages)
+    setEditModalOpen(true)
+  }
 
   if (loading) return <LoadingSpinner />
   if (error)
@@ -110,6 +210,11 @@ const UserProject: React.FC = () => {
       <ProjectHeader
         project={project}
         onStatusChange={handleStatusChange}
+        stages={stages}
+        onStageEdit={handleStageEdit}
+        onStageDelete={handleStageDelete}
+        onTaskEdit={handleTaskEdit}
+        onStagesChange={setStages}
       />
 
       <Box
@@ -117,7 +222,10 @@ const UserProject: React.FC = () => {
           width: '100%',
           bgcolor: 'white',
           borderRadius: '8px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          display: 'flex',
+          flexDirection: 'column',
+          height: 'calc(100vh - 200px)'
         }}>
         <Tabs
           value={tabValue}
@@ -140,7 +248,7 @@ const UserProject: React.FC = () => {
             }
           }}>
           <Tab
-            label="결제 관리"
+            label="승인 관리"
             sx={{
               flex: 1,
               maxWidth: 'none'
@@ -155,23 +263,17 @@ const UserProject: React.FC = () => {
           />
         </Tabs>
 
-        <Box sx={{ bgcolor: 'white', minHeight: '500px' }}>
-          <TabPanel
-            value={tabValue}
-            index={0}>
-            <PaymentManagement
-              projectId={project.id}
-              stages={stages}
-            />
+        <Box sx={{ 
+          flex: 1,
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <TabPanel value={tabValue} index={0}>
+            <PaymentManagement projectId={project.id} stages={stages} />
           </TabPanel>
 
-          <TabPanel
-            value={tabValue}
-            index={1}>
-            <ProjectArticle
-              projectId={project.id}
-              stages={stages}
-            />
+          <TabPanel value={tabValue} index={1}>
+            <ProjectArticle projectId={project.id} stages={stages} />
           </TabPanel>
         </Box>
       </Box>
