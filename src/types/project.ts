@@ -40,6 +40,7 @@ export interface Project {
   devCompanyId?: number
   createdAt: string
   updatedAt: string
+  stages: Stage[]
 }
 
 export type ProjectStatus =
