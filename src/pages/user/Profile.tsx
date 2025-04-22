@@ -12,11 +12,11 @@ import {
   DialogActions
 } from '@mui/material'
 import { Edit } from 'lucide-react'
-import { client } from '../../lib/api/client'
-import { Profile } from '../../types/user'
+import { client } from '../../services/client'
+import { Member, Profile } from '../../types/member'
 
 const ProfilePage = () => {
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const [profile, setProfile] = useState<Member | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const [editData, setEditData] = useState<Partial<Profile>>({})
 
@@ -107,17 +107,6 @@ const ProfilePage = () => {
               이메일
             </Typography>
             <Typography variant="body1">{profile.email}</Typography>
-          </Grid>
-
-          <Grid
-            item
-            xs={12}>
-            <Typography
-              variant="subtitle2"
-              color="text.secondary">
-              회사명
-            </Typography>
-            <Typography variant="body1">{profile.companyName}</Typography>
           </Grid>
 
           <Grid
