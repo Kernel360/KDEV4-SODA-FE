@@ -76,16 +76,27 @@ const CreateRequest: React.FC = () => {
 
     const fetchApprovers = async () => {
       try {
-        const response = await projectService.getProjectMembers(Number(projectId), { companyRole: 'CLIENT_COMPANY' })
-        if (response && Array.isArray(response)) {
-          setApprovers(response)
+        const response = await projectService.getProjectMembers(Number(projectId), {
+          companyRole: 'CLIENT_COMPANY',
+          memberRole: 'CLI_MANAGER'
+        })
+        console.log('승인권자 목록 응답:', response)
+        if (response && response.content) {
+          const approvers = response.content.map(member => ({
+            id: member.memberId,
+            name: member.memberName,
+            email: member.email,
+            companyRole: member.role,
+            companyName: member.companyName,
+            role: member.role
+          }))
+          setApprovers(approvers)
         } else {
           console.error('Invalid response format for approvers:', response)
           setApprovers([])
         }
       } catch (error) {
-        console.error('승인권자 목록을 불러오는데 실패했습니다:', error)
-        showToast('승인권자 목록을 불러오는데 실패했습니다', 'error')
+        console.error('승인권자 목록 조회 실패:', error)
         setApprovers([])
       }
     }
