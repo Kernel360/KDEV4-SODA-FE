@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Box,
@@ -117,12 +117,11 @@ const RequestDetail = () => {
   const [userProjectRole, setUserProjectRole] = useState<string | null>(null);
   const [parentRequest, setParentRequest] = useState<RequestDetail | null>(null);
 
-  const canReapply = useMemo(() => {
-    if (!request || request.status !== 'REJECTED' || !user || !userProjectRole) return false;
-    
-    // 어드민이거나 개발사 role을 가진 경우 재승인 가능
-    return user.role === 'ADMIN' || userProjectRole.startsWith('DEV_');
-  }, [request, user, userProjectRole]);
+  const canReapply = useCallback(() => {
+    if (!user) return false;
+    return user.role === 'ADMIN' || 
+           userProjectRole?.startsWith('DEV_');
+  }, [user, userProjectRole]);
 
   // 권한 체크 함수
   const canApproveOrReject = () => {
@@ -241,7 +240,7 @@ const RequestDetail = () => {
           }
 
           // 부모 요청이 있는 경우 부모 요청 정보도 가져오기
-          if (requestData.parentId) {
+          if (requestData.parentId && requestData.parentId !== -1) {
             const parentResponse = await client.get(`/requests/${requestData.parentId}`);
             if (parentResponse.data.status === 'success') {
               setParentRequest(parentResponse.data.data);
@@ -1728,7 +1727,7 @@ const RequestDetail = () => {
       </Dialog>
 
       <Box sx={{ display: 'flex', gap: 2, mt: 3, justifyContent: 'flex-end' }}>
-        {canReapply && (
+        {canReapply() && (
           <Button
             variant="contained"
             onClick={() => navigate(`/user/projects/${projectId}/requests/${requestId}/reapply`)}
