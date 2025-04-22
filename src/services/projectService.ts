@@ -23,6 +23,13 @@ export interface CreateProjectRequest {
   }[]
 }
 
+export interface UpdateProjectRequest {
+  title: string
+  description: string
+  startDate: string
+  endDate: string
+}
+
 // Request interceptor to add auth token
 client.interceptors.request.use(
   config => {
@@ -148,7 +155,8 @@ export const projectService = {
           currentUserProjectRole: projectData.currentUserProjectRole,
           currentUserCompanyRole: projectData.currentUserCompanyRole,
           createdAt: projectData.createdAt || new Date().toISOString(),
-          updatedAt: projectData.updatedAt || new Date().toISOString()
+          updatedAt: projectData.updatedAt || new Date().toISOString(),
+          stages: projectData.stages || []
         }
       }
       throw new Error('프로젝트 데이터 형식이 올바르지 않습니다.')
@@ -236,9 +244,14 @@ export const projectService = {
   },
 
   // 프로젝트 수정
-  async updateProject(id: number, project: Partial<Project>): Promise<Project> {
-    const response = await client.put(`/projects/${id}`, project)
-    return response.data.data
+  async updateProject(projectId: number, data: UpdateProjectRequest): Promise<Project> {
+    try {
+      const response = await client.put(`/projects/${projectId}`, data)
+      return response.data.data
+    } catch (error) {
+      console.error('Failed to update project:', error)
+      throw error
+    }
   },
 
   // 프로젝트 삭제
@@ -470,14 +483,11 @@ export const projectService = {
     projectId: number,
     status: ProjectStatus
   ): Promise<void> {
-    try {
-      const response = await client.patch(`/projects/${projectId}/status`, {
-        status
-      })
-      return response.data
-    } catch (error) {
-      console.error('프로젝트 상태 업데이트 실패:', error)
-      throw error
-    }
+    await client.patch(`/projects/${projectId}/status`, { status })
+  },
+
+  async getUserRole(): Promise<string> {
+    const response = await client.get('/projects/my/role')
+    return response.data.data
   }
 }

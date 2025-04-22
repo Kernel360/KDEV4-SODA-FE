@@ -60,8 +60,6 @@ const ProjectList: React.FC = () => {
         const response = await projectService.getUserProjects()
         if (Array.isArray(response)) {
           setProjects(response)
-        } else if (response?.data) {
-          setProjects(response.data)
         } else {
           setProjects([])
         }

@@ -735,8 +735,7 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
 
       if (response) {
         showToast('프로젝트가 성공적으로 생성되었습니다.', 'success')
-        onSubmit(formData)
-        navigate('/projects')
+        navigate('/admin/projects')
       } else {
         showToast('프로젝트 생성에 실패했습니다.', 'error')
       }

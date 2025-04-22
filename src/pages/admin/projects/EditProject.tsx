@@ -5,7 +5,7 @@ import ProjectForm from '../../../components/common/ProjectForm'
 import { Project } from '../../../types/project'
 import { useToast } from '../../../contexts/ToastContext'
 import dayjs from 'dayjs'
-import { projectService } from '../../../services/projectService'
+import { projectService, UpdateProjectRequest } from '../../../services/projectService'
 
 const EditProject: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -35,22 +35,13 @@ const EditProject: React.FC = () => {
     try {
       if (!id) return
 
-      // 기존 프로젝트 정보와 새로운 정보를 병합
-      const projectData: Partial<Project> = {
-        id: project?.id || 0,
+      const projectData: UpdateProjectRequest = {
         title: formData.name,
         description: formData.description,
         startDate: formData.startDate,
-        endDate: formData.endDate,
-        clientCompanyNames: project?.clientCompanyNames || [],
-        devCompanyNames: project?.devCompanyNames || [],
-        clientManagerNames: project?.clientManagerNames || [],
-        clientMemberNames: project?.clientMemberNames || [],
-        devManagerNames: project?.devManagerNames || [],
-        devMemberNames: project?.devMemberNames || []
+        endDate: formData.endDate
       }
 
-      // API를 호출하여 프로젝트를 업데이트
       await projectService.updateProject(Number(id), projectData)
       showToast('프로젝트가 성공적으로 수정되었습니다.', 'success')
       navigate(`/admin/projects/${id}`)
