@@ -40,15 +40,16 @@ export interface Project {
   devCompanyId?: number
   createdAt: string
   updatedAt: string
+  stages: Stage[]
 }
 
-export type ProjectStatus = 
-  | 'CONTRACT'      // 계약
-  | 'IN_PROGRESS'   // 진행중
-  | 'DELIVERED'     // 납품완료
-  | 'MAINTENANCE'   // 하자보수
-  | 'ON_HOLD'       // 일시중단
-  | '진행중'        // For backward compatibility
+export type ProjectStatus =
+  | 'CONTRACT' // 계약
+  | 'IN_PROGRESS' // 진행중
+  | 'DELIVERED' // 납품완료
+  | 'MAINTENANCE' // 하자보수
+  | 'ON_HOLD' // 일시중단
+  | '진행중' // For backward compatibility
 
 export interface ProjectMember {
   id: number

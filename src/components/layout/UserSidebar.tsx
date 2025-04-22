@@ -30,7 +30,7 @@ const UserSidebar: React.FC<UserSidebarProps> = ({ isOpen }) => {
 
   const menuItems = [
     {
-      path: '/user/dashboard',
+      path: '/user',
       icon: <LayoutDashboard size={24} />,
       text: '대시보드'
     },
@@ -67,7 +67,9 @@ const UserSidebar: React.FC<UserSidebarProps> = ({ isOpen }) => {
         display: 'flex',
         flexDirection: 'column',
         transition: 'width 0.3s ease',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        zIndex: 1200,
+        boxShadow: '4px 0 8px rgba(0, 0, 0, 0.1)'
       }}>
       <List>
         {menuItems.map((item, index) => (

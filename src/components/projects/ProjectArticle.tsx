@@ -365,26 +365,114 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
     <Box>
       <Box
         sx={{
+          mb: 4,
+          mt: 2,
+          width: '100%',
+          overflow: 'auto',
+          '&::-webkit-scrollbar': {
+            height: '6px',
+            backgroundColor: 'transparent'
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'transparent'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'transparent',
+            borderRadius: '3px'
+          },
+          '&:hover::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(0, 0, 0, 0.1)'
+          }
+        }}>
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 2,
+            minWidth: 'min-content',
+            px: 1,
+            py: 1
+          }}>
+          <Paper
+            onClick={() => setSelectedStage(null)}
+            sx={{
+              p: 2,
+              width: 150,
+              cursor: 'pointer',
+              bgcolor: 'white',
+              color: '#666',
+              border: '1px solid',
+              borderColor: selectedStage === null ? '#FFB800' : '#E0E0E0',
+              boxShadow: 'none',
+              transition: 'all 0.2s',
+              '&:hover': {
+                borderColor: '#FFB800'
+              }
+            }}>
+            <Typography
+              variant="h6"
+              sx={{
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                mb: 1,
+                color: selectedStage === null ? '#FFB800' : '#666'
+              }}>
+              전체
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: '#666'
+              }}>
+              {articles.length}건
+            </Typography>
+          </Paper>
+          {propStages.map(stage => (
+            <Paper
+              key={stage.id}
+              onClick={() => setSelectedStage(stage.id)}
+              sx={{
+                p: 2,
+                width: 150,
+                cursor: 'pointer',
+                bgcolor: 'white',
+                color: '#666',
+                border: '1px solid',
+                borderColor: selectedStage === stage.id ? '#FFB800' : '#E0E0E0',
+                boxShadow: 'none',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  borderColor: '#FFB800'
+                }
+              }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  mb: 1,
+                  color: selectedStage === stage.id ? '#FFB800' : '#666'
+                }}>
+                {stage.name}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: '#666'
+                }}>
+                {articles.filter(article => article.stageId === stage.id).length}건
+              </Typography>
+            </Paper>
+          ))}
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           mb: 3
         }}>
-        <Button
-          variant="contained"
-          startIcon={<Plus size={20} />}
-          onClick={() =>
-            navigate(`/user/projects/${projectId}/articles/create`)
-          }
-          sx={{
-            bgcolor: '#FFB800',
-            '&:hover': {
-              bgcolor: '#FFB800',
-              opacity: 0.8
-            }
-          }}>
-          글쓰기
-        </Button>
         <TextField
           size="small"
           placeholder="검색어를 입력하세요"
@@ -412,85 +500,21 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
             }
           }}
         />
-      </Box>
-
-      <Box
-        sx={{
-          mb: 3,
-          mt: 2,
-          width: '100%',
-          overflow: 'auto',
-          '&::-webkit-scrollbar': {
-            height: '6px',
-            backgroundColor: 'transparent'
-          },
-          '&::-webkit-scrollbar-track': {
-            backgroundColor: 'transparent'
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'transparent',
-            borderRadius: '3px'
-          },
-          '&:hover::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0, 0, 0, 0.1)'
+        <Button
+          variant="contained"
+          startIcon={<Plus size={20} />}
+          onClick={() =>
+            navigate(`/user/projects/${projectId}/articles/create`)
           }
-        }}>
-        <Box
           sx={{
-            display: 'flex',
-            gap: 0,
-            minWidth: 'min-content',
-            px: 1,
-            py: 1
+            bgcolor: '#FFB800',
+            '&:hover': {
+              bgcolor: '#FFB800',
+              opacity: 0.8
+            }
           }}>
-          <Box
-            onClick={() => setSelectedStage(null)}
-            sx={{
-              py: 0.8,
-              px: 2,
-              fontSize: '0.9rem',
-              fontWeight: selectedStage === null ? 'bold' : 'normal',
-              color: selectedStage === null ? '#FFB800' : '#666',
-              cursor: 'pointer',
-              position: 'relative',
-              '&:hover': {
-                color: '#FFB800'
-              },
-              '&:not(:last-child)::before': {
-                content: '"|"',
-                position: 'absolute',
-                right: 0,
-                color: '#E0E0E0'
-              }
-            }}>
-            전체
-          </Box>
-          {propStages.map((stage, _) => (
-            <Box
-              key={stage.id}
-              onClick={() => setSelectedStage(stage.id)}
-              sx={{
-                py: 0.8,
-                px: 2,
-                fontSize: '0.9rem',
-                fontWeight: selectedStage === stage.id ? 'bold' : 'normal',
-                color: selectedStage === stage.id ? '#FFB800' : '#666',
-                cursor: 'pointer',
-                position: 'relative',
-                '&:hover': {
-                  color: '#FFB800'
-                },
-                '&:not(:last-child)::before': {
-                  content: '"|"',
-                  position: 'absolute',
-                  right: 0,
-                  color: '#E0E0E0'
-                }
-              }}>
-              {stage.name}
-            </Box>
-          ))}
-        </Box>
+          글쓰기
+        </Button>
       </Box>
 
       <TableContainer component={Paper}>

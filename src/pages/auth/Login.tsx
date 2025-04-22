@@ -76,12 +76,14 @@ const Login: React.FC = () => {
         } else {
           setError('잘못된 사용자 역할입니다.')
         }
+      } else if (response.code === '2301') {
+        showToast('등록되지 않은 아이디입니다.', 'error')
       } else {
         showToast('로그인에 실패했습니다.', 'error')
       }
     } catch (error) {
       console.error('Login error:', error)
-      showToast('로그인 중 오류가 발생했습니다.', 'error')
+      showToast('아이디 또는 비밀번호가 일치하지 않습니다.', 'error')
     } finally {
       setIsLoading(false)
     }
@@ -165,7 +167,8 @@ const Login: React.FC = () => {
                     로그인
                   </h2>
                   <p className="text-muted-foreground text-sm sm:text-base">
-                    소다 서비스를 이용하시려면 로그인해 주세요.<br></br><br></br>
+                    소다 서비스를 이용하시려면 로그인해 주세요.<br></br>
+                    <br></br>
                     어드민 ID,PW: admin01 / admin01!<br></br>
                     사용자 ID,PW: seoyeon1234 / password1234
                   </p>
