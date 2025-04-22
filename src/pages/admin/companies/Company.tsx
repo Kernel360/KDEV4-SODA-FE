@@ -3,6 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom'
 import CompanyDetail from '../../../components/company/CompanyDetail'
 import type { Company } from '../../../types/company'
 import { useToast } from '../../../contexts/ToastContext'
+import { companyService } from '../../../services/companyService'
+import LoadingSpinner from '../../../components/common/LoadingSpinner'
+import ErrorMessage from '../../../components/common/ErrorMessage'
 
 const CompanyPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -15,20 +18,9 @@ const CompanyPage: React.FC = () => {
   useEffect(() => {
     const fetchCompany = async () => {
       try {
-        // TODO: API 호출로 대체
-        const dummyCompany: Company = {
-          id: Number(id),
-          name: '테스트 회사',
-          ceoName: '홍길동',
-          ceoPhone: '010-1234-5678',
-          registrationNumber: '123-45-67890',
-          address: '서울특별시 강남구 테헤란로 123',
-          addressDetail: '4층 401호',
-          phoneNumber: '',
-          businessNumber: '',
-          isActive: false
-        }
-        setCompany(dummyCompany)
+        if (!id) return
+        const data = await companyService.getCompanyDetail(Number(id))
+        setCompany(data)
       } catch (err) {
         setError('회사 정보를 불러오는데 실패했습니다.')
         showToast('회사 정보를 불러오는데 실패했습니다.', 'error')
@@ -56,9 +48,9 @@ const CompanyPage: React.FC = () => {
     }
   }
 
-  if (loading) return <div>Loading...</div>
-  if (error) return <div>{error}</div>
-  if (!company) return <div>회사를 찾을 수 없습니다.</div>
+  if (loading) return <LoadingSpinner />
+  if (error) return <ErrorMessage message={error} />
+  if (!company) return <ErrorMessage message="회사를 찾을 수 없습니다." />
 
   return (
     <CompanyDetail

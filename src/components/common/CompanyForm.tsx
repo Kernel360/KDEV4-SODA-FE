@@ -1,40 +1,35 @@
-import { useState } from 'react'
-import { Box, Paper, TextField, Button, Grid, FormControlLabel, Switch } from '@mui/material'
+import { useState, useEffect } from 'react'
+import { Box, Paper, TextField, Button, Grid } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-//import { Company } from '../../types/company'
-
-export interface CompanyFormData {
-  name: string
-  ceoName: string
-  phoneNumber: string
-  businessNumber: string
-  address: string
-  isActive: boolean
-}
+import { CompanyFormData } from '../../types/company'
 
 interface CompanyFormProps {
+  onSubmit: (data: CompanyFormData) => void
   initialData?: CompanyFormData
-  onSubmit: (data: CompanyFormData) => Promise<void>
 }
 
-const CompanyForm = ({ initialData, onSubmit }: CompanyFormProps) => {
+const CompanyForm = ({ onSubmit, initialData }: CompanyFormProps) => {
   const navigate = useNavigate()
-  const [formData, setFormData] = useState<CompanyFormData>(
-    initialData || {
-      name: '',
-      ceoName: '',
-      phoneNumber: '',
-      businessNumber: '',
-      address: '',
-      isActive: true
+  const [formData, setFormData] = useState<CompanyFormData>({
+    name: '',
+    phoneNumber: '',
+    companyNumber: '',
+    address: '',
+    detailaddress: '',
+    ownerName: ''
+  })
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData)
     }
-  )
+  }, [initialData])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, checked } = e.target
+    const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'isActive' ? checked : value
+      [name]: value
     }))
   }
 
@@ -50,7 +45,7 @@ const CompanyForm = ({ initialData, onSubmit }: CompanyFormProps) => {
   return (
     <Paper sx={{ p: 3 }}>
       <form onSubmit={handleSubmit}>
-        <Grid container spacing={2}>
+        <Grid container spacing={3}>
           <Grid item xs={12}>
             <TextField
               fullWidth
@@ -66,14 +61,15 @@ const CompanyForm = ({ initialData, onSubmit }: CompanyFormProps) => {
               fullWidth
               required
               label="대표자명"
-              name="ceoName"
-              value={formData.ceoName}
+              name="ownerName"
+              value={formData.ownerName}
               onChange={handleChange}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
+              required
               label="연락처"
               name="phoneNumber"
               value={formData.phoneNumber}
@@ -83,15 +79,17 @@ const CompanyForm = ({ initialData, onSubmit }: CompanyFormProps) => {
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
+              required
               label="사업자등록번호"
-              name="businessNumber"
-              value={formData.businessNumber}
+              name="companyNumber"
+              value={formData.companyNumber}
               onChange={handleChange}
             />
           </Grid>
           <Grid item xs={12}>
             <TextField
               fullWidth
+              required
               label="주소"
               name="address"
               value={formData.address}
@@ -99,15 +97,12 @@ const CompanyForm = ({ initialData, onSubmit }: CompanyFormProps) => {
             />
           </Grid>
           <Grid item xs={12}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.isActive}
-                  onChange={handleChange}
-                  name="isActive"
-                />
-              }
-              label="활성화 상태"
+            <TextField
+              fullWidth
+              label="상세주소"
+              name="detailaddress"
+              value={formData.detailaddress}
+              onChange={handleChange}
             />
           </Grid>
           <Grid item xs={12}>
