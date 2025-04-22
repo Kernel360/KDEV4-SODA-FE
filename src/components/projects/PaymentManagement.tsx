@@ -133,7 +133,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
 
         // 현재 페이지의 요청들 중 parentId가 있는 요청들의 부모 요청 ID 수집
         const parentIds = currentPageRequests
-          .filter((req: Request) => req.parentId)
+          .filter((req: Request) => req.parentId && req.parentId !== -1)
           .map((req: Request) => req.parentId)
           .filter(
             (id: number, index: number, self: number[]) =>
@@ -153,7 +153,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
           // 부모-자식 요청 그룹화
           const groups: RequestGroup[] = []
           currentPageRequests.forEach((request: Request) => {
-            if (request.parentId) {
+            if (request.parentId && request.parentId !== -1) {
               const parentRequest = parentRequests.find(
                 p => p.requestId === request.parentId
               )
