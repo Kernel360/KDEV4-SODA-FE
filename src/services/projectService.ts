@@ -93,6 +93,23 @@ export interface ProjectMemberSearchCondition {
   memberRole?: string
 }
 
+interface CreateVoteRequest {
+  title: string
+  voteItems: string[]
+  allowMultipleSelection: boolean
+  allowTextAnswer: boolean
+  deadLine?: string
+}
+
+interface CreateVoteResponse {
+  voteId: number
+  articleId: number
+  title: string
+  deadLine?: string
+  allowMultipleSelection: boolean
+  allowTextAnswer: boolean
+}
+
 export const projectService = {
   // 프로젝트 목록 조회
   async getAllProjects(status?: string, keyword?: string): Promise<Project[]> {
@@ -336,36 +353,38 @@ export const projectService = {
   async uploadArticleFiles(articleId: number, files: File[]): Promise<void> {
     try {
       // 1. presigned URL 요청
-      const presignedResponse = await client.post(`/articles/${articleId}/files/presigned-urls`, 
+      const presignedResponse = await client.post(
+        `/articles/${articleId}/files/presigned-urls`,
         files.map(file => ({
           fileName: file.name,
           contentType: file.type
         }))
-      );
+      )
 
       if (presignedResponse.data.status === 'success') {
-        const { entries } = presignedResponse.data.data;
+        const { entries } = presignedResponse.data.data
 
         // 2. S3에 파일 업로드
         await Promise.all(
           entries.map((entry, i) =>
             axios.put(entry.presignedUrl, files[i], {
-              headers: { 'Content-Type': files[i].type },
+              headers: { 'Content-Type': files[i].type }
             })
           )
-        );
+        )
 
         // 3. 업로드 완료 확인
-        await client.post(`/articles/${articleId}/files/confirm-upload`,
+        await client.post(
+          `/articles/${articleId}/files/confirm-upload`,
           entries.map(entry => ({
             fileName: entry.fileName,
             url: entry.fileUrl
           }))
-        );
+        )
       }
     } catch (error) {
-      console.error('Failed to upload article files:', error);
-      throw error;
+      console.error('Failed to upload article files:', error)
+      throw error
     }
   },
 
@@ -520,6 +539,14 @@ export const projectService = {
 
   async getUserRole(): Promise<string> {
     const response = await client.get('/projects/my/role')
+    return response.data.data
+  },
+
+  async createVote(
+    articleId: number,
+    data: CreateVoteRequest
+  ): Promise<CreateVoteResponse> {
+    const response = await client.post(`/articles/${articleId}/vote`, data)
     return response.data.data
   }
 }
