@@ -1,20 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import {
-  Box,
-  Tabs,
-  Tab,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  IconButton,
-  TextField,
-  Chip,
-  Stack
-} from '@mui/material'
-import { Close as CloseIcon } from '@mui/icons-material'
+import { Box, Tabs, Tab } from '@mui/material'
 import {
   Project,
   Stage,
@@ -25,13 +11,10 @@ import {
 import ProjectHeader from '../../../components/projects/ProjectHeader'
 import ProjectArticle from '../../../components/projects/ProjectArticle'
 import PaymentManagement from '../../../components/projects/PaymentManagement'
-import StageCard from '../../../components/projects/StageCard'
 import { projectService } from '../../../services/projectService'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
 import { client } from '../../../api/client'
-import { DragDropContext, Droppable } from '@hello-pangea/dnd'
-import { useToast } from '../../../contexts/ToastContext'
 
 interface ProjectWithProgress extends Project {
   progress: number
@@ -50,19 +33,43 @@ function TabPanel(props: TabPanelProps) {
     <div
       role="tabpanel"
       hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
+      id={`project-tabpanel-${index}`}
+      aria-labelledby={`project-tab-${index}`}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'auto'
+      }}
       {...other}>
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && (
+        <Box
+          sx={{
+            p: 3,
+            height: '100%',
+            '&::-webkit-scrollbar': {
+              width: '8px',
+              backgroundColor: '#f5f5f5'
+            },
+            '&::-webkit-scrollbar-track': {
+              background: '#f1f1f1',
+              borderRadius: '4px'
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: '#888',
+              borderRadius: '4px',
+              '&:hover': {
+                background: '#555'
+              }
+            }
+          }}>
+          {children}
+        </Box>
+      )}
     </div>
   )
-}
-
-function a11yProps(index: number) {
-  return {
-    id: `simple-tab-${index}`,
-    'aria-controls': `simple-tabpanel-${index}`
-  }
 }
 
 interface ApiStage {
@@ -76,7 +83,6 @@ const UserProject: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
-  const { showToast } = useToast()
   const queryParams = new URLSearchParams(location.search)
   const initialTab = queryParams.get('tab') === 'articles' ? 1 : 0
 
@@ -84,70 +90,31 @@ const UserProject: React.FC = () => {
   const [stages, setStages] = useState<Stage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [value, setValue] = useState(initialTab)
-  const [isEditMode, setIsEditMode] = useState(false)
-  const [editModalOpen, setEditModalOpen] = useState(false)
-  const [expandedStatus, setExpandedStatus] = useState(false)
-
-  const getStatusText = (status: ProjectStatus): string => {
-    switch (status) {
-      case 'CONTRACT':
-        return '계약'
-      case 'IN_PROGRESS':
-        return '진행중'
-      case 'DELIVERED':
-        return '납품완료'
-      case 'MAINTENANCE':
-        return '하자보수'
-      case 'ON_HOLD':
-        return '일시중단'
-      default:
-        return status
-    }
-  }
-
-  const getStatusColor = (status: ProjectStatus): string => {
-    switch (status) {
-      case 'CONTRACT':
-        return '#64748B'
-      case 'IN_PROGRESS':
-        return '#2563EB'
-      case 'DELIVERED':
-        return '#059669'
-      case 'MAINTENANCE':
-        return '#9333EA'
-      case 'ON_HOLD':
-        return '#DC2626'
-      default:
-        return '#64748B'
-    }
-  }
-
-  const handleStatusChange = async (newStatus: ProjectStatus) => {
-    if (!project) return
-    try {
-      await projectService.updateProjectStatus(project.id, newStatus)
-      setProject(prev => (prev ? { ...prev, status: newStatus } : null))
-      showToast('프로젝트 상태가 변경되었습니다.', 'success')
-    } catch (error) {
-      console.error('Failed to update project status:', error)
-      showToast('프로젝트 상태 변경에 실패했습니다.', 'error')
-    }
-  }
+  const [tabValue, setTabValue] = useState(initialTab)
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const fromArticles = location.pathname.includes('/articles/')
     if (fromArticles) {
-      setValue(1)
-      // URL에서 from 파라미터를 제거하고 tab 파라미터로 대체
+      setTabValue(1)
       params.set('tab', 'articles')
       navigate(`/user/projects/${id}?${params.toString()}`, { replace: true })
     }
   }, [location.pathname, navigate, id])
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue)
+  const handleStatusChange = async (newStatus: ProjectStatus) => {
+    if (!project) return
+    try {
+      await client.put(`/projects/${project.id}/status`, { status: newStatus })
+      setProject(prev => (prev ? { ...prev, status: newStatus } : null))
+    } catch (error) {
+      console.error('Failed to update project status:', error)
+      throw error
+    }
+  }
+
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue)
     const newTab = newValue === 1 ? 'articles' : 'payments'
     const params = new URLSearchParams(location.search)
     params.set('tab', newTab)
@@ -198,16 +165,6 @@ const UserProject: React.FC = () => {
     }
   }
 
-  const handleDragEnd = (result: any) => {
-    if (!result.destination) return
-
-    const items = Array.from(stages)
-    const [reorderedItem] = items.splice(result.source.index, 1)
-    items.splice(result.destination.index, 0, reorderedItem)
-
-    setStages(items)
-  }
-
   useEffect(() => {
     const fetchProject = async () => {
       try {
@@ -246,11 +203,6 @@ const UserProject: React.FC = () => {
     fetchProject()
   }, [id])
 
-  const handleEditModalOpen = () => {
-    console.log('Current stages when opening modal:', stages)
-    setEditModalOpen(true)
-  }
-
   if (loading) return <LoadingSpinner />
   if (error)
     return (
@@ -283,34 +235,41 @@ const UserProject: React.FC = () => {
           flexDirection: 'column',
           height: 'calc(100vh - 200px)'
         }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs
-            value={value}
-            onChange={handleChange}
-            aria-label="project management tabs"
-            sx={{
-              '& .MuiTabs-indicator': {
-                backgroundColor: '#FFB800'
-              },
-              '& .MuiTab-root': {
-                fontSize: '1.25rem',
-                fontWeight: 'bold',
-                color: '#666',
-                '&.Mui-selected': {
-                  color: '#FFB800'
-                }
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          sx={{
+            borderBottom: '1px solid #E0E0E0',
+            '& .MuiTab-root': {
+              fontSize: '1.25rem',
+              fontWeight: 'bold',
+              py: 3,
+              minHeight: '64px',
+              color: '#666',
+              '&.Mui-selected': {
+                color: '#FFB800'
               }
-            }}>
-            <Tab
-              label="결제 관리"
-              {...a11yProps(0)}
-            />
-            <Tab
-              label="질문 관리"
-              {...a11yProps(1)}
-            />
-          </Tabs>
-        </Box>
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#FFB800',
+              height: '3px'
+            }
+          }}>
+          <Tab
+            label="승인 관리"
+            sx={{
+              flex: 1,
+              maxWidth: 'none'
+            }}
+          />
+          <Tab
+            label="질문 관리"
+            sx={{
+              flex: 1,
+              maxWidth: 'none'
+            }}
+          />
+        </Tabs>
 
         <Box
           sx={{
@@ -319,15 +278,16 @@ const UserProject: React.FC = () => {
             overflow: 'hidden'
           }}>
           <TabPanel
-            value={value}
+            value={tabValue}
             index={0}>
             <PaymentManagement
               projectId={project.id}
               stages={stages}
             />
           </TabPanel>
+
           <TabPanel
-            value={value}
+            value={tabValue}
             index={1}>
             <ProjectArticle
               projectId={project.id}
