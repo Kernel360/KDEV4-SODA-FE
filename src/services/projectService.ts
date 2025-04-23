@@ -9,7 +9,6 @@ import {
   PriorityType
 } from '../types/article'
 import { ProjectMemberResponse } from '../types/project'
-import { ApiResponse } from '../types/api'
 
 export interface CreateProjectRequest {
   title: string
@@ -96,9 +95,20 @@ export interface ProjectMemberSearchCondition {
 
 export const projectService = {
   // 프로젝트 목록 조회
-  async getAllProjects(): Promise<Project[]> {
-    const response = await client.get('/projects')
-    return response.data.data.content
+  async getAllProjects(status?: string, keyword?: string): Promise<Project[]> {
+    try {
+      const params = new URLSearchParams()
+      if (status) params.append('status', status)
+      if (keyword) params.append('keyword', keyword)
+
+      const response = await client.get(
+        `/projects${params.toString() ? `?${params.toString()}` : ''}`
+      )
+      return response.data.data.content
+    } catch (error) {
+      console.error('Error fetching all projects:', error)
+      throw error
+    }
   },
 
   // 사용자의 프로젝트 목록 조회
