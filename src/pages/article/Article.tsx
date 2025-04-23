@@ -61,6 +61,8 @@ const Article: React.FC = () => {
   const [textAnswer, setTextAnswer] = useState('')
   const [showVoteResult, setShowVoteResult] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [showAddItem, setShowAddItem] = useState(false)
+  const [newItemText, setNewItemText] = useState('')
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -427,11 +429,6 @@ const Article: React.FC = () => {
                   ) : (
                     // 투표 입력 폼
                     <Stack spacing={2}>
-                      {console.log('렌더링 시 투표 정보:', {
-                        isTextVote: voteInfo?.items.length === 0,
-                        voteInfo,
-                        textAnswer
-                      })}
                       {voteInfo?.items.length === 0 ? (
                         // 텍스트 답변 입력
                         <>
@@ -454,19 +451,88 @@ const Article: React.FC = () => {
                         </>
                       ) : (
                         // 일반 투표 (체크박스)
-                        voteInfo?.items.map((item: any) => (
-                          <FormControlLabel
-                            key={item.itemId}
-                            control={
-                              <Checkbox
-                                checked={selectedItems.includes(item.itemId)}
-                                onChange={() => handleItemSelect(item.itemId)}
-                                disabled={voteInfo?.closed}
-                              />
-                            }
-                            label={item.content}
-                          />
-                        ))
+                        <>
+                          {voteInfo?.items.map((item: any) => (
+                            <FormControlLabel
+                              key={item.itemId}
+                              control={
+                                <Checkbox
+                                  checked={selectedItems.includes(item.itemId)}
+                                  onChange={() => handleItemSelect(item.itemId)}
+                                  disabled={voteInfo?.closed}
+                                />
+                              }
+                              label={item.content}
+                            />
+                          ))}
+                          {!voteInfo?.closed && (
+                            <>
+                              {showAddItem ? (
+                                <Box sx={{ mt: 2 }}>
+                                  <Stack
+                                    direction="row"
+                                    spacing={2}>
+                                    <TextField
+                                      fullWidth
+                                      size="small"
+                                      value={newItemText}
+                                      onChange={e =>
+                                        setNewItemText(e.target.value)
+                                      }
+                                      placeholder="새로운 투표 항목 입력"
+                                    />
+                                    <Button
+                                      variant="contained"
+                                      onClick={async () => {
+                                        if (!newItemText.trim()) return
+                                        try {
+                                          await projectService.addVoteItem(
+                                            Number(articleId),
+                                            newItemText.trim()
+                                          )
+                                          // 투표 정보 새로고침
+                                          const data =
+                                            await projectService.getVoteInfo(
+                                              Number(articleId)
+                                            )
+                                          setVoteInfo(data)
+                                          setNewItemText('')
+                                          setShowAddItem(false)
+                                        } catch (error: any) {
+                                          console.error(
+                                            'Error adding vote item:',
+                                            error
+                                          )
+                                          const errorCode =
+                                            error.response?.data?.code
+                                          if (errorCode === '1309') {
+                                            setErrorMessage('권한이 없습니다')
+                                          } else if (errorCode === '1308') {
+                                            setErrorMessage(
+                                              '중복된 항목을 추가할 수 없습니다'
+                                            )
+                                          } else {
+                                            setErrorMessage(
+                                              '항목 추가에 실패했습니다'
+                                            )
+                                          }
+                                        }
+                                      }}>
+                                      추가
+                                    </Button>
+                                  </Stack>
+                                </Box>
+                              ) : (
+                                <Button
+                                  variant="outlined"
+                                  onClick={() => setShowAddItem(true)}
+                                  sx={{ mt: 2 }}>
+                                  항목 추가
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </>
                       )}
                       <Stack
                         direction="row"

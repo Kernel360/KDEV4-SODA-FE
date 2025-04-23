@@ -589,16 +589,23 @@ export const projectService = {
     return response.data.data
   },
 
-  async submitVote(articleId: number, data: VoteSubmission): Promise<void> {
+  async submitVote(articleId: number, voteSubmission: VoteSubmission) {
     const response = await client.post(
-      `/articles/${articleId}/vote/submission`,
-      data
+      `/articles/${articleId}/vote/submit`,
+      voteSubmission
     )
-    return response.data.data
+    return response.data
   },
 
   async getVoteResult(articleId: number): Promise<VoteResult> {
     const response = await client.get(`/articles/${articleId}/vote-results`)
     return response.data.data
+  },
+
+  async addVoteItem(articleId: number, itemText: string) {
+    const response = await client.post(`/articles/${articleId}/vote/items`, {
+      itemText
+    })
+    return response.data
   }
 }
