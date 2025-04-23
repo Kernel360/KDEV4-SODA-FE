@@ -21,7 +21,9 @@ import {
   Checkbox,
   FormControlLabel,
   TextField,
-  LinearProgress
+  LinearProgress,
+  Alert,
+  Snackbar
 } from '@mui/material'
 import type { Article as ArticleType } from '../../types/article'
 import { projectService } from '../../services/projectService'
@@ -58,6 +60,7 @@ const Article: React.FC = () => {
   const [selectedItems, setSelectedItems] = useState<number[]>([])
   const [textAnswer, setTextAnswer] = useState('')
   const [showVoteResult, setShowVoteResult] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -166,8 +169,15 @@ const Article: React.FC = () => {
       console.log('투표 결과:', result)
       setVoteResult(result)
       setShowVoteResult(true)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting vote:', error)
+      // 에러 응답에서 코드 확인
+      const errorCode = error.response?.data?.code
+      if (errorCode === '1309') {
+        setErrorMessage('투표할 권한이 없습니다')
+      } else {
+        setErrorMessage('중복 투표는 불가능합니다')
+      }
     }
   }
 
@@ -246,6 +256,19 @@ const Article: React.FC = () => {
 
   return (
     <Box sx={{ mt: 3 }}>
+      <Snackbar
+        open={errorMessage !== null}
+        autoHideDuration={3000}
+        onClose={() => setErrorMessage(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert
+          onClose={() => setErrorMessage(null)}
+          severity="error"
+          sx={{ width: '100%' }}>
+          {errorMessage}
+        </Alert>
+      </Snackbar>
+
       <Box
         sx={{
           display: 'flex',
