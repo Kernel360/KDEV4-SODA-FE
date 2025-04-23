@@ -9,6 +9,7 @@ import {
   PriorityType
 } from '../types/article'
 import { ProjectMemberResponse } from '../types/project'
+import { ApiResponse } from '../types/api'
 
 export interface CreateProjectRequest {
   title: string
@@ -244,7 +245,10 @@ export const projectService = {
   },
 
   // 프로젝트 수정
-  async updateProject(projectId: number, data: UpdateProjectRequest): Promise<Project> {
+  async updateProject(
+    projectId: number,
+    data: UpdateProjectRequest
+  ): Promise<Project> {
     try {
       const response = await client.put(`/projects/${projectId}`, data)
       return response.data.data
@@ -271,16 +275,25 @@ export const projectService = {
 
   async getProjectArticles(
     projectId: number,
-    stageId?: number | null
-  ): Promise<Article[]> {
-    try {
-      const response = await client.get(`/projects/${projectId}/articles`, {
-        params: { stageId }
-      })
-      return response.data.data
-    } catch (error) {
-      console.error('Error fetching project articles:', error)
-      throw error
+    stageId?: number | null,
+    searchType?: string,
+    keyword?: string,
+    page?: number,
+    size?: number
+  ): Promise<{ data: Article[] }> {
+    const response = await client.get(`/projects/${projectId}/articles`, {
+      params: {
+        stageId: stageId || undefined,
+        searchType: searchType || undefined,
+        keyword: keyword || undefined,
+        page: page || 0,
+        size: size || 10,
+        sort: []
+      }
+    })
+    // API 응답 구조에 맞게 데이터 추출
+    return {
+      data: response.data.data?.content || []
     }
   },
 
