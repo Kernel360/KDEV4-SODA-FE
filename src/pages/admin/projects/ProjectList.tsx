@@ -251,28 +251,26 @@ const ProjectList: React.FC = () => {
           <Stack
             direction="row"
             spacing={1}
-            sx={{ mb: 2 }}>
+            sx={{ mb: 2, justifyContent: 'flex-start' }}>
             {PROJECT_STATUSES.map(status => (
               <Button
                 key={status.value}
-                variant={
-                  selectedStatus === status.value ? 'contained' : 'outlined'
-                }
+                variant="outlined"
                 onClick={() => handleStatusChange(status.value)}
                 sx={{
-                  bgcolor:
-                    selectedStatus === status.value ? '#FFB800' : 'white',
-                  color: selectedStatus === status.value ? 'white' : '#666',
+                  bgcolor: 'white',
+                  color: '#666',
                   border: '1px solid',
                   borderColor:
                     selectedStatus === status.value ? '#FFB800' : '#E0E0E0',
                   '&:hover': {
-                    bgcolor:
-                      selectedStatus === status.value ? '#E5A600' : '#f5f5f5',
+                    bgcolor: '#f5f5f5',
                     borderColor:
-                      selectedStatus === status.value ? '#E5A600' : '#E0E0E0'
+                      selectedStatus === status.value ? '#FFB800' : '#E0E0E0'
                   },
-                  flex: 1
+                  px: 3,
+                  py: 1.5,
+                  fontSize: '0.875rem'
                 }}>
                 {status.label}
               </Button>
