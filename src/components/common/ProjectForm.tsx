@@ -22,8 +22,8 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   isEdit = false
 }) => {
   const [formData, setFormData] = React.useState<ProjectFormData>({
-        name: initialData.name || '',
-        description: initialData.description || '',
+    name: initialData.name || '',
+    description: initialData.description || '',
     startDate: initialData.startDate || null,
     endDate: initialData.endDate || null
   })
@@ -34,24 +34,28 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   }
 
   return (
-    <Box component="form" onSubmit={handleSubmit}>
+    <Box
+      component="form"
+      onSubmit={handleSubmit}>
       <Stack spacing={3}>
-      <TextField
+        <TextField
           label="프로젝트명"
-        value={formData.name}
+          value={formData.name}
           onChange={e => setFormData({ ...formData, name: e.target.value })}
           required
-        fullWidth
-      />
+          fullWidth
+        />
 
-      <TextField
+        <TextField
           label="설명"
-        value={formData.description}
-          onChange={e => setFormData({ ...formData, description: e.target.value })}
-        multiline
-        rows={4}
-        fullWidth
-      />
+          value={formData.description}
+          onChange={e =>
+            setFormData({ ...formData, description: e.target.value })
+          }
+          multiline
+          rows={4}
+          fullWidth
+        />
 
         <DatePicker
           label="시작일"
@@ -65,15 +69,14 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
           value={formData.endDate}
           onChange={date => setFormData({ ...formData, endDate: date })}
           slotProps={{ textField: { fullWidth: true } }}
-                      />
+        />
 
         <Button
           type="submit"
           variant="contained"
           color="primary"
           size="large"
-          fullWidth
-        >
+          fullWidth>
           {isEdit ? '수정하기' : '생성하기'}
         </Button>
       </Stack>

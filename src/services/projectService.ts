@@ -110,6 +110,40 @@ interface CreateVoteResponse {
   allowTextAnswer: boolean
 }
 
+interface VoteInfo {
+  voteId: number
+  title: string
+  deadLine: string
+  closed: boolean
+  items: {
+    itemId: number
+    content: string
+  }[]
+  multipleSelection: boolean
+}
+
+interface VoteSubmission {
+  selectedItemIds: number[]
+  textAnswer?: string
+}
+
+interface VoteResult {
+  voteId: number
+  title: string
+  allowMultipleSelection: boolean
+  allowTextAnswer: boolean
+  deadLine: string
+  totalParticipants: number
+  itemResults: {
+    itemId: number
+    itemText: string
+    count: number
+    percentage: number
+  }[]
+  textAnswers: string[]
+  closed: boolean
+}
+
 export const projectService = {
   // 프로젝트 목록 조회
   async getAllProjects(status?: string, keyword?: string): Promise<Project[]> {
@@ -547,6 +581,24 @@ export const projectService = {
     data: CreateVoteRequest
   ): Promise<CreateVoteResponse> {
     const response = await client.post(`/articles/${articleId}/vote`, data)
+    return response.data.data
+  },
+
+  async getVoteInfo(articleId: number): Promise<VoteInfo> {
+    const response = await client.get(`/articles/${articleId}/vote`)
+    return response.data.data
+  },
+
+  async submitVote(articleId: number, data: VoteSubmission): Promise<void> {
+    const response = await client.post(
+      `/articles/${articleId}/vote/submission`,
+      data
+    )
+    return response.data.data
+  },
+
+  async getVoteResult(articleId: number): Promise<VoteResult> {
+    const response = await client.get(`/articles/${articleId}/vote-results`)
     return response.data.data
   }
 }
