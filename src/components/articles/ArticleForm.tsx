@@ -98,8 +98,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     field: keyof ArticleFormData,
     value:
       | string
-      | number
-      | Date
+      | dayjs.Dayjs
       | null
       | Array<{
           id?: number
