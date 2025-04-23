@@ -123,7 +123,7 @@ interface VoteInfo {
 }
 
 interface VoteSubmission {
-  selectedItemIds: number[]
+  selectedItemIds?: number[]
   textAnswer?: string
 }
 

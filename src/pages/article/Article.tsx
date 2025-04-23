@@ -103,6 +103,13 @@ const Article: React.FC = () => {
       if (!articleId) return
       try {
         const data = await projectService.getVoteInfo(Number(articleId))
+        console.log('투표 정보:', {
+          isTextVote: data.items.length === 0,
+          multipleSelection: data.multipleSelection,
+          title: data.title,
+          items: data.items,
+          전체데이터: data
+        })
         setVoteInfo(data)
       } catch (error) {
         console.error('Error fetching vote info:', error)
@@ -136,12 +143,27 @@ const Article: React.FC = () => {
   const handleVoteSubmit = async () => {
     if (!articleId) return
     try {
-      await projectService.submitVote(Number(articleId), {
-        selectedItemIds: selectedItems,
-        textAnswer: voteInfo?.allowTextAnswer ? textAnswer : undefined
+      console.log('투표 제출 시도:', {
+        isTextVote: voteInfo?.items.length === 0,
+        textAnswer,
+        selectedItems,
+        voteInfo
       })
+
+      if (voteInfo?.items.length === 0) {
+        // 텍스트 답변 투표
+        await projectService.submitVote(Number(articleId), {
+          textAnswer: textAnswer.trim()
+        })
+      } else {
+        // 일반 투표
+        await projectService.submitVote(Number(articleId), {
+          selectedItemIds: selectedItems
+        })
+      }
       // 투표 후 결과 보기
       const result = await projectService.getVoteResult(Number(articleId))
+      console.log('투표 결과:', result)
       setVoteResult(result)
       setShowVoteResult(true)
     } catch (error) {
@@ -300,7 +322,7 @@ const Article: React.FC = () => {
 
           {voteInfo && (
             <Box sx={{ my: 3 }}>
-              <Paper sx={{ p: 3 }}>
+              <Paper sx={{ p: 3, bgcolor: 'grey.50' }}>
                 <Stack spacing={2}>
                   <Typography variant="h6">{voteInfo.title}</Typography>
 
@@ -317,80 +339,111 @@ const Article: React.FC = () => {
                     // 투표 결과 표시
                     <Stack spacing={2}>
                       <Typography variant="subtitle2">
-                        총 참여자: {voteResult?.totalParticipants}명
+                        총 참여자: {voteResult?.totalParticipants || 0}명
                       </Typography>
-                      {voteResult?.itemResults.map((item: any) => (
-                        <Box key={item.itemId}>
-                          <Stack
-                            direction="row"
-                            spacing={2}
-                            alignItems="center"
-                            sx={{ mb: 1 }}>
-                            <Typography sx={{ flex: 1 }}>
-                              {item.itemText}
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              color="text.secondary">
-                              {item.count}명 (
-                              {(item.percentage * 100).toFixed(1)}%)
-                            </Typography>
-                          </Stack>
-                          <LinearProgress
-                            variant="determinate"
-                            value={item.percentage * 100}
-                            sx={{ height: 8, borderRadius: 1 }}
-                          />
-                        </Box>
-                      ))}
-                      {voteResult?.allowTextAnswer &&
-                        voteResult.textAnswers.length > 0 && (
-                          <Box>
-                            <Typography
-                              variant="subtitle2"
-                              sx={{ mb: 1 }}>
-                              텍스트 응답:
-                            </Typography>
-                            <Stack spacing={1}>
-                              {voteResult.textAnswers.map(
-                                (answer: string, index: number) => (
-                                  <Typography
-                                    key={index}
-                                    variant="body2">
-                                    {answer}
-                                  </Typography>
-                                )
-                              )}
-                            </Stack>
-                          </Box>
-                        )}
+                      {voteResult?.itemResults?.length > 0
+                        ? // 일반 투표 결과
+                          voteResult.itemResults.map((item: any) => (
+                            <Box key={item.itemId}>
+                              <Stack
+                                direction="row"
+                                spacing={2}
+                                alignItems="center"
+                                sx={{ mb: 1 }}>
+                                <Typography sx={{ flex: 1 }}>
+                                  {item.itemText}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary">
+                                  {item.count}명 (
+                                  {(item.percentage * 100).toFixed(1)}%)
+                                </Typography>
+                              </Stack>
+                              <LinearProgress
+                                variant="determinate"
+                                value={item.percentage * 100}
+                                sx={{ height: 8, borderRadius: 1 }}
+                              />
+                            </Box>
+                          ))
+                        : // 텍스트 답변 결과
+                          voteResult?.textAnswers?.length > 0 && (
+                            <Box>
+                              <Typography
+                                variant="subtitle2"
+                                sx={{ mb: 1 }}>
+                                답변 목록:
+                              </Typography>
+                              <Stack spacing={1}>
+                                {voteResult.textAnswers.map(
+                                  (answer: string, index: number) => (
+                                    <Typography
+                                      key={index}
+                                      variant="body2"
+                                      sx={{
+                                        p: 2,
+                                        bgcolor: 'grey.100',
+                                        borderRadius: 1
+                                      }}>
+                                      {answer}
+                                    </Typography>
+                                  )
+                                )}
+                              </Stack>
+                            </Box>
+                          )}
+                      {!voteInfo?.closed && (
+                        <Button
+                          variant="outlined"
+                          onClick={() => setShowVoteResult(false)}>
+                          투표하기
+                        </Button>
+                      )}
                     </Stack>
                   ) : (
                     // 투표 입력 폼
                     <Stack spacing={2}>
-                      {voteInfo.items?.map((item: any) => (
-                        <FormControlLabel
-                          key={item.itemId}
-                          control={
-                            <Checkbox
-                              checked={selectedItems.includes(item.itemId)}
-                              onChange={() => handleItemSelect(item.itemId)}
-                              disabled={voteInfo.closed}
-                            />
-                          }
-                          label={item.content}
-                        />
-                      ))}
-                      {voteInfo.allowTextAnswer && (
-                        <TextField
-                          fullWidth
-                          multiline
-                          rows={3}
-                          label="답변 입력"
-                          value={textAnswer}
-                          onChange={e => setTextAnswer(e.target.value)}
-                          disabled={voteInfo.closed}
-                        />
+                      {console.log('렌더링 시 투표 정보:', {
+                        isTextVote: voteInfo?.items.length === 0,
+                        voteInfo,
+                        textAnswer
+                      })}
+                      {voteInfo?.items.length === 0 ? (
+                        // 텍스트 답변 입력
+                        <>
+                          <Typography variant="subtitle1">
+                            답변을 입력해주세요
+                          </Typography>
+                          <TextField
+                            fullWidth
+                            multiline
+                            rows={3}
+                            label="답변 입력"
+                            value={textAnswer}
+                            onChange={e => {
+                              console.log('텍스트 입력:', e.target.value)
+                              setTextAnswer(e.target.value)
+                            }}
+                            disabled={voteInfo?.closed}
+                            placeholder="답변을 입력하세요"
+                          />
+                        </>
+                      ) : (
+                        // 일반 투표 (체크박스)
+                        voteInfo?.items.map((item: any) => (
+                          <FormControlLabel
+                            key={item.itemId}
+                            control={
+                              <Checkbox
+                                checked={selectedItems.includes(item.itemId)}
+                                onChange={() => handleItemSelect(item.itemId)}
+                                disabled={voteInfo?.closed}
+                              />
+                            }
+                            label={item.content}
+                          />
+                        ))
                       )}
                       <Stack
                         direction="row"
@@ -400,14 +453,16 @@ const Article: React.FC = () => {
                           onClick={handleShowVoteResult}>
                           투표 결과 보기
                         </Button>
-                        {!voteInfo.closed && (
+                        {!voteInfo?.closed && (
                           <Button
                             variant="contained"
                             onClick={handleVoteSubmit}
                             disabled={
-                              (!voteInfo.allowTextAnswer &&
-                                selectedItems.length === 0) ||
-                              (voteInfo.allowTextAnswer && !textAnswer.trim())
+                              voteInfo?.items.length === 0
+                                ? !textAnswer.trim()
+                                : selectedItems.length === 0 ||
+                                  (!voteInfo?.multipleSelection &&
+                                    selectedItems.length > 1)
                             }>
                             투표하기
                           </Button>
