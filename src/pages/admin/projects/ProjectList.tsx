@@ -237,9 +237,9 @@ const ProjectList: React.FC = () => {
               startIcon={<Plus size={20} />}
               onClick={() => navigate('/admin/projects/create')}
               sx={{
-                bgcolor: '#FFB800',
+                bgcolor: 'primary.main', // 테마 기본 색상 사용 또는 원하는 색상 지정
                 '&:hover': {
-                  bgcolor: '#E5A600'
+                  bgcolor: 'primary.dark' // 호버 시 약간 어둡게
                 },
                 minWidth: '200px'
               }}>
