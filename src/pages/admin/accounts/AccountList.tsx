@@ -138,9 +138,9 @@ export default function AccountList() {
           startIcon={<PlusCircle />}
           onClick={() => navigate('/admin/accounts/create')}
           sx={{
-            bgcolor: 'black',
+            bgcolor: 'primary.main', // 테마 기본 색상 사용 또는 원하는 색상 지정
             '&:hover': {
-              bgcolor: 'rgba(0, 0, 0, 0.8)'
+              bgcolor: 'primary.dark' // 호버 시 약간 어둡게
             }
           }}>
           새 계정 생성

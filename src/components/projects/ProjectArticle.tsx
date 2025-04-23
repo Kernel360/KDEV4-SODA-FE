@@ -12,19 +12,29 @@ import {
   Button,
   TextField,
   InputAdornment,
-  Chip
+  Chip,
+  Select,
+  MenuItem,
+  FormControl,
+  IconButton
 } from '@mui/material'
 import { Article, ArticleStatus, PriorityType } from '../../types/article'
 import { Stage } from '../../types/project'
 import { projectService } from '../../services/projectService'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ErrorMessage from '../../components/common/ErrorMessage'
-import { Search, Plus, Link2 } from 'lucide-react'
+import { Search, Link2, Plus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
 
 interface ProjectArticleProps {
   projectId: number
   stages: Stage[]
+}
+
+enum SearchType {
+  TITLE_CONTENT = 'TITLE_CONTENT',
+  AUTHOR = 'AUTHOR'
 }
 
 const ITEMS_PER_PAGE = 5
@@ -61,7 +71,6 @@ const ArticleRow: React.FC<{
   const navigate = useNavigate()
   const createdAt = new Date(article.createdAt)
 
-  // 부모 게시물이 삭제된 경우
   if (article.deleted && !article.parentArticleId) {
     return (
       <>
@@ -81,7 +90,7 @@ const ArticleRow: React.FC<{
         {article.children &&
           article.children.length > 0 &&
           article.children
-            .filter((child: any) => !child.deleted) // 삭제된 답글은 표시하지 않음
+            .filter((child: any) => !child.deleted)
             .map((child: any) => (
               <ArticleRow
                 key={child.id}
@@ -106,7 +115,9 @@ const ArticleRow: React.FC<{
       <TableRow
         hover
         onClick={() =>
-          navigate(`/user/projects/${projectId}/articles/${article.id}`)
+          navigate(
+            `/user/projects/${projectId}/articles/${article.id}?tab=articles`
+          )
         }
         sx={{
           cursor: 'pointer',
@@ -158,7 +169,7 @@ const ArticleRow: React.FC<{
       {article.children &&
         article.children.length > 0 &&
         article.children
-          .filter((child: any) => !child.deleted) // 삭제된 답글은 표시하지 않음
+          .filter((child: any) => !child.deleted)
           .map((child: any) => (
             <ArticleRow
               key={child.id}
@@ -187,28 +198,66 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedStage, setSelectedStage] = useState<number | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(0)
+  const [searchType, setSearchType] = useState<SearchType>(
+    SearchType.TITLE_CONTENT
+  )
+  const [searchKeyword, setSearchKeyword] = useState('')
+  const [totalPages, setTotalPages] = useState(0)
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
-    const fetchArticles = async () => {
-      try {
-        setLoading(true)
-        const data = await projectService.getProjectArticles(
-          projectId,
-          selectedStage
-        )
-        console.log('Fetched articles:', data)
-        setArticles(data)
-      } catch (err) {
-        setError('게시글을 불러오는데 실패했습니다.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchArticles()
-  }, [projectId, selectedStage])
+  }, [projectId, selectedStage, currentPage, searchType, searchTerm])
+
+  const fetchArticles = async (page: number = 0) => {
+    try {
+      setLoading(true)
+      const response = await projectService.getProjectArticles(
+        projectId,
+        selectedStage,
+        searchType,
+        searchTerm,
+        page,
+        ITEMS_PER_PAGE
+      )
+      setArticles(Array.isArray(response.data) ? response.data : [])
+      setTotalPages(
+        Math.ceil(
+          (Array.isArray(response.data) ? response.data.length : 0) /
+            ITEMS_PER_PAGE
+        )
+      )
+      setLoading(false)
+    } catch (error) {
+      console.error('Error fetching articles:', error)
+      toast.error('게시글 목록을 불러오는데 실패했습니다.')
+      setLoading(false)
+      setError('게시글 목록을 불러오는데 실패했습니다.')
+      setArticles([])
+    }
+  }
+
+  const handleStageChange = (stageId: number | null) => {
+    setSelectedStage(stageId)
+    setCurrentPage(0)
+  }
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchKeyword(e.target.value)
+  }
+
+  const handleSearch = () => {
+    setSearchTerm(searchKeyword)
+    setCurrentPage(0)
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleSearch()
+    }
+  }
 
   const getPriorityColor = (priority: PriorityType) => {
     switch (priority) {
@@ -268,132 +317,28 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
     }
   }
 
-  const filteredArticles = articles
-    .filter(article => {
-      // 답글이 없는 게시글은 삭제된 경우 목록에서 제외
-      if (
-        !article.parentArticleId &&
-        !article.children?.length &&
-        article.deleted
-      ) {
-        return false
-      }
-      // 답글이 있는 게시글은 삭제 여부와 관계없이 표시
-      return !article.parentArticleId
-    })
-    .filter(article =>
-      searchQuery
-        ? article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          article.userName.toLowerCase().includes(searchQuery.toLowerCase())
-        : true
-    )
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-
-  // Get total count of parent articles (excluding replies) for numbering
-  const totalParentArticlesCount = filteredArticles.length
-
-  // Get all articles including replies for pagination
-  const getAllArticles = (articles: Article[]): Article[] => {
-    return articles.reduce((acc: Article[], article) => {
-      acc.push(article)
-      if (article.children && article.children.length > 0) {
-        acc.push(...getAllArticles(article.children))
-      }
-      return acc
-    }, [])
-  }
-
-  const allArticles = getAllArticles(articles)
-  const totalArticlesCount = allArticles.length
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
-  const endIndex = startIndex + ITEMS_PER_PAGE
-
-  const getVisibleArticles = (
-    articles: Article[],
-    start: number,
-    end: number
-  ): Article[] => {
-    let count = 0
-    return articles.filter(article => {
-      const shouldInclude = count >= start && count < end
-      if (shouldInclude || (article.children && article.children.length > 0)) {
-        const visibleChildren = article.children
-          ? getVisibleArticles(
-              article.children,
-              Math.max(0, start - count),
-              end - count
-            )
-          : []
-
-        if (shouldInclude || visibleChildren.length > 0) {
-          if (visibleChildren.length > 0) {
-            article.children = visibleChildren
-          }
-          count++
-          return true
-        }
-      }
-      count++
-      return false
-    })
-  }
-
-  const paginatedArticles = getVisibleArticles(
-    filteredArticles,
-    startIndex,
-    endIndex
-  )
-
-  const totalPages = Math.ceil(totalArticlesCount / ITEMS_PER_PAGE)
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-  }
-
-  if (loading) {
-    return <LoadingSpinner />
-  }
-
-  if (error) {
-    return <ErrorMessage message={error} />
-  }
+  if (loading) return <LoadingSpinner />
+  if (error) return <ErrorMessage message={error} />
 
   return (
     <Box>
       <Box
         sx={{
-          mb: 4,
-          mt: 2,
-          width: '100%',
-          overflow: 'auto',
-          '&::-webkit-scrollbar': {
-            height: '6px',
-            backgroundColor: 'transparent'
-          },
-          '&::-webkit-scrollbar-track': {
-            backgroundColor: 'transparent'
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'transparent',
-            borderRadius: '3px'
-          },
-          '&:hover::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0, 0, 0, 0.1)'
-          }
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3,
+          mb: 3
         }}>
         <Box
           sx={{
             display: 'flex',
             gap: 2,
-            minWidth: 'min-content',
             px: 1,
-            py: 1
+            py: 1,
+            flexWrap: 'wrap'
           }}>
           <Paper
-            onClick={() => setSelectedStage(null)}
+            onClick={() => handleStageChange(null)}
             sx={{
               p: 2,
               width: 150,
@@ -418,18 +363,11 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
               }}>
               전체
             </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                color: '#666'
-              }}>
-              {articles.length}건
-            </Typography>
           </Paper>
           {propStages.map(stage => (
             <Paper
               key={stage.id}
-              onClick={() => setSelectedStage(stage.id)}
+              onClick={() => handleStageChange(stage.id)}
               sx={{
                 p: 2,
                 width: 150,
@@ -454,161 +392,177 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
                 }}>
                 {stage.name}
               </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: '#666'
-                }}>
-                {articles.filter(article => article.stageId === stage.id).length}건
-              </Typography>
             </Paper>
           ))}
         </Box>
-      </Box>
-
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3
-        }}>
-        <TextField
-          size="small"
-          placeholder="검색어를 입력하세요"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search size={20} />
-              </InputAdornment>
-            )
-          }}
+        <Box
           sx={{
-            width: '300px',
-            '& .MuiOutlinedInput-root': {
-              '& fieldset': {
-                borderColor: '#E0E0E0'
-              },
-              '&:hover fieldset': {
-                borderColor: '#FFB800'
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#FFB800'
-              }
-            }
-          }}
-        />
-        <Button
-          variant="contained"
-          startIcon={<Plus size={20} />}
-          onClick={() =>
-            navigate(`/user/projects/${projectId}/articles/create`)
-          }
-          sx={{
-            bgcolor: '#FFB800',
-            '&:hover': {
-              bgcolor: '#FFB800',
-              opacity: 0.8
-            }
+            display: 'flex',
+            gap: 2,
+            alignItems: 'center',
+            width: '100%',
+            justifyContent: 'space-between'
           }}>
-          글쓰기
-        </Button>
+          <Box sx={{ display: 'flex', gap: 2, flex: 1 }}>
+            <FormControl
+              size="small"
+              sx={{
+                width: '150px',
+                flexShrink: 0
+              }}>
+              <Select
+                value={searchType}
+                onChange={e => setSearchType(e.target.value as SearchType)}>
+                <MenuItem value={SearchType.TITLE_CONTENT}>제목+내용</MenuItem>
+                <MenuItem value={SearchType.AUTHOR}>작성자</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              size="small"
+              placeholder="검색어를 입력하세요"
+              value={searchKeyword}
+              onChange={handleSearchChange}
+              onKeyPress={handleKeyPress}
+              sx={{ flex: 1 }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={handleSearch}>
+                      <Search />
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+            />
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<Plus />}
+            onClick={() =>
+              navigate(
+                `/user/projects/${projectId}/articles/create?tab=articles`
+              )
+            }
+            sx={{
+              whiteSpace: 'nowrap',
+              bgcolor: '#FFB800',
+              '&:hover': {
+                bgcolor: '#E5A600'
+              }
+            }}>
+            글쓰기
+          </Button>
+        </Box>
       </Box>
 
-      <TableContainer component={Paper}>
+      <TableContainer
+        component={Paper}
+        sx={{
+          boxShadow: 'none',
+          border: '1px solid #E0E0E0'
+        }}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell
-                align="center"
-                width={80}>
-                번호
-              </TableCell>
-              <TableCell
-                align="center"
-                width={100}>
-                우선순위
-              </TableCell>
-              <TableCell
-                align="center"
-                width={100}>
-                상태
-              </TableCell>
+              <TableCell align="center">번호</TableCell>
+              <TableCell align="center">우선순위</TableCell>
+              <TableCell align="center">상태</TableCell>
               <TableCell>제목</TableCell>
-              <TableCell
-                align="center"
-                width={120}>
-                작성자
-              </TableCell>
-              <TableCell
-                align="center"
-                width={120}>
-                작성일
-              </TableCell>
+              <TableCell align="center">작성자</TableCell>
+              <TableCell align="center">작성일</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {paginatedArticles.map((article, index) => (
-              <ArticleRow
-                key={article.id}
-                article={article}
-                projectId={projectId}
-                index={index}
-                totalCount={totalParentArticlesCount}
-                articles={articles}
-                getPriorityColor={getPriorityColor}
-                getPriorityText={getPriorityText}
-                getStatusColor={getStatusColor}
-                getStatusText={getStatusText}
-              />
-            ))}
+            {articles.length > 0 ? (
+              articles.map((article, index) => (
+                <ArticleRow
+                  key={article.id}
+                  article={article}
+                  projectId={projectId}
+                  index={index}
+                  totalCount={articles.length}
+                  articles={articles}
+                  getPriorityColor={getPriorityColor}
+                  getPriorityText={getPriorityText}
+                  getStatusColor={getStatusColor}
+                  getStatusText={getStatusText}
+                />
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  align="center"
+                  sx={{ py: 8 }}>
+                  <Typography color="text.secondary">
+                    {selectedStage !== null
+                      ? '해당 단계의 게시글이 존재하지 않습니다.'
+                      : '게시글이 존재하지 않습니다.'}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
 
-      {totalPages > 1 && (
-        <Box
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          mt: 3,
+          mb: 3,
+          gap: 0.5,
+          '& .MuiButton-root': {
+            minWidth: '32px',
+            height: '32px',
+            padding: 0,
+            fontSize: '0.875rem'
+          }
+        }}>
+        <Button
+          onClick={() => setCurrentPage(prev => prev - 1)}
+          disabled={currentPage === 0}
           sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: 1,
-            mt: 2
+            color: '#666',
+            '&:hover': {
+              bgcolor: '#f5f5f5'
+            },
+            '&.Mui-disabled': {}
           }}>
+          {'<'}
+        </Button>
+        {[...Array(totalPages)].map((_, index) => (
           <Button
-            variant="outlined"
-            size="small"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            sx={{ minWidth: 'auto', px: 1 }}>
-            &lt;
+            key={index}
+            onClick={() => setCurrentPage(index)}
+            sx={{
+              color: currentPage === index ? '#fff' : '#666',
+              border: '1px solid',
+              borderColor: currentPage === index ? '#FFB800' : '#E0E0E0',
+              bgcolor: currentPage === index ? '#FFB800' : 'white',
+              '&:hover': {
+                bgcolor: currentPage === index ? '#E5A600' : '#f5f5f5',
+                borderColor: currentPage === index ? '#E5A600' : '#E0E0E0'
+              }
+            }}>
+            {index + 1}
           </Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-            <Button
-              key={page}
-              variant={currentPage === page ? 'contained' : 'outlined'}
-              onClick={() => handlePageChange(page)}
-              size="small"
-              sx={{
-                minWidth: 32,
-                height: 32,
-                p: 0
-              }}>
-              {page}
-            </Button>
-          ))}
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            sx={{ minWidth: 'auto', px: 1 }}>
-            &gt;
-          </Button>
-        </Box>
-      )}
+        ))}
+        <Button
+          onClick={() => setCurrentPage(prev => prev + 1)}
+          disabled={currentPage >= totalPages - 1}
+          sx={{
+            color: '#666',
+            '&:hover': {
+              bgcolor: '#f5f5f5',
+              border: '1px solid #E0E0E0'
+            },
+            '&.Mui-disabled': {}
+          }}>
+          {'>'}
+        </Button>
+      </Box>
     </Box>
   )
 }
