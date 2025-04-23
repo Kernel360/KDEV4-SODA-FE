@@ -15,12 +15,16 @@ import {
   FormControl,
   InputLabel,
   TextField,
-  Grid
+  Grid,
+  InputAdornment,
+  Button
 } from '@mui/material'
-import { Database } from 'lucide-react'
+import { Database, Search } from 'lucide-react'
 import { logService } from '../../services/logService'
 import type { Log } from '../../types/log'
 import { formatDate } from '../../utils/dateUtils'
+import { useNavigate } from 'react-router-dom'
+import { useToast } from '../../contexts/ToastContext'
 
 interface DiffValue {
   before: any;
@@ -275,9 +279,14 @@ const formatRequestData = (data: any): JSX.Element => {
 }
 
 const DataManagement: React.FC = () => {
+  const navigate = useNavigate()
+  const { showToast } = useToast()
   const [logs, setLogs] = useState<Log[]>([])
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [searchTerm, setSearchTerm] = useState('')
   const [entityName, setEntityName] = useState<string>('')
   const [action, setAction] = useState<string>('')
   const [fromDate, setFromDate] = useState<string>('2024-01-01')
@@ -291,24 +300,34 @@ const DataManagement: React.FC = () => {
 
   const fetchLogs = async () => {
     try {
+      setLoading(true)
+      setError(null)
+
       const response = await logService.getLogs({
         page: page - 1,
         size: 10,
-        entityName: entityName || undefined,
-        action: action || undefined,
-        from: fromDate ? `${fromDate}T00:00:00` : undefined,
-        to: toDate ? `${toDate}T23:59:59` : undefined
+        keyword: searchTerm.trim() || undefined
       })
+
       setLogs(response.content)
       setTotalPages(Math.max(1, Math.ceil(response.totalElements / 10)))
     } catch (error) {
-      console.error('로그 데이터를 불러오는데 실패했습니다:', error)
+      console.error('로그 조회 중 오류:', error)
+      setError('로그를 불러오는데 실패했습니다.')
+      showToast('로그를 불러오는데 실패했습니다.', 'error')
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => {
     fetchLogs()
-  }, [page, entityName, action, fromDate, toDate])
+  }, [page, entityName, action, fromDate, toDate, searchTerm])
+
+  const handleSearch = () => {
+    setPage(0)
+    fetchLogs()
+  }
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
     setPage(value)
@@ -417,6 +436,40 @@ const DataManagement: React.FC = () => {
         </Grid>
       </Grid>
 
+      <Box display="flex" alignItems="center" gap={2} mb={3}>
+        <TextField
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="검색어를 입력하세요"
+          size="small"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search />
+              </InputAdornment>
+            )
+          }}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              handleSearch()
+            }
+          }}
+        />
+        <Button
+          variant="contained"
+          onClick={handleSearch}
+          size="small"
+        >
+          검색
+        </Button>
+      </Box>
+
+      {error && (
+        <Typography color="error" sx={{ mb: 2 }}>
+          {error}
+        </Typography>
+      )}
+
       <TableContainer component={Paper} sx={{ mb: 3 }}>
         <Table>
           <TableHead>
@@ -469,11 +522,9 @@ const DataManagement: React.FC = () => {
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
         <Pagination
           count={totalPages}
-          page={page}
-          onChange={handlePageChange}
+          page={page + 1}
+          onChange={(_, value) => setPage(value - 1)}
           color="primary"
-          showFirstButton
-          showLastButton
         />
       </Box>
     </Box>
