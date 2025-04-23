@@ -9,6 +9,16 @@ import { PriorityType } from '../../types/article'
 import { projectService } from '../../services/projectService'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import { Stage, TaskStatus } from '../../types/stage'
+import dayjs from 'dayjs'
+import toast from 'react-hot-toast'
+
+interface VoteForm {
+  title: string
+  voteItems: string[]
+  allowMultipleSelection: boolean
+  allowTextAnswer: boolean
+  deadLine: dayjs.Dayjs | null
+}
 
 const CreateArticle: React.FC = () => {
   const navigate = useNavigate()
@@ -91,50 +101,33 @@ const CreateArticle: React.FC = () => {
     return Object.keys(errors).length === 0
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, voteData?: VoteForm) => {
     e.preventDefault()
-    if (!validateForm() || !projectId) return
+    setLoading(true)
+    setValidationErrors({})
 
     try {
-      setLoading(true)
-      const request = {
-        projectId: Number(projectId),
-        title: formData.title,
-        content: formData.content,
-        priority: formData.priority,
-        stageId: Number(formData.stageId),
-        deadLine: formData.deadLine?.toISOString() || '',
-        linkList:
-          formData.links?.map(link => ({
-            urlAddress: link.url,
-            urlDescription: link.title
-          })) || []
-      }
-
-      // 1. 먼저 게시글을 생성합니다
+      // 게시글 생성
       const articleResponse = await projectService.createArticle(
         Number(projectId),
-        request
+        {
+          projectId: Number(projectId),
+          title: formData.title,
+          content: formData.content,
+          stageId: Number(formData.stageId),
+          priority: formData.priority,
+          deadLine: formData.deadLine?.toISOString(),
+          linkList: formData.links.map(link => ({
+            urlAddress: link.url,
+            urlDescription: link.title
+          }))
+        }
       )
-      console.log('Create article response data:', articleResponse)
 
-      if (!articleResponse?.data?.id) {
-        console.log('Response structure:', {
-          response: articleResponse,
-          data: articleResponse?.data,
-          id: articleResponse?.data?.id
-        })
-        throw new Error('게시글 생성 후 ID를 받아올 수 없습니다.')
-      }
-
-      const newArticleId = articleResponse.data.id
-
-      // 새로 추가된 파일이 있는 경우 파일 업로드
+      // 파일 업로드
       const newFiles = formData.files.filter(file => !file.id)
       if (newFiles.length > 0) {
-        console.log('새로 추가된 파일 업로드 시작:', newFiles)
         try {
-          // URL.createObjectURL로 생성된 URL에서 실제 File 객체를 가져옴
           const fileObjects = await Promise.all(
             newFiles.map(async file => {
               const response = await fetch(file.url)
@@ -142,28 +135,42 @@ const CreateArticle: React.FC = () => {
               return new File([blob], file.name, { type: file.type })
             })
           )
-
-          const uploadResponse = await projectService.uploadArticleFiles(
-            Number(newArticleId),
+          await projectService.uploadArticleFiles(
+            articleResponse.data.id,
             fileObjects
           )
-          console.log('파일 업로드 응답:', uploadResponse)
-        } catch (uploadError) {
-          console.error('파일 업로드 에러:', uploadError)
-          showToast('파일 업로드에 실패했습니다.', 'error')
+        } catch (error) {
+          console.error('파일 업로드 중 오류 발생:', error)
+          toast.error('파일 업로드에 실패했습니다.')
         }
       }
 
-      showToast('게시글이 성공적으로 작성되었습니다.', 'success')
-      navigate(`/user/projects/${projectId}/articles/${newArticleId}`) // 새로 생성된 게시글로 이동
-    } catch (error) {
-      console.error('Error creating article:', error)
-      if (error instanceof Error) {
-        setError(error.message)
-        showToast(error.message, 'error')
+      // 투표 생성
+      if (voteData && voteData.title) {
+        try {
+          await projectService.createVote(articleResponse.data.id, {
+            title: voteData.title,
+            voteItems: voteData.allowTextAnswer
+              ? []
+              : voteData.voteItems.filter(item => item.trim() !== ''),
+            allowMultipleSelection: voteData.allowMultipleSelection,
+            allowTextAnswer: voteData.allowTextAnswer,
+            deadLine: voteData.deadLine?.toISOString()
+          })
+        } catch (error) {
+          console.error('투표 생성 중 오류 발생:', error)
+          toast.error('투표 생성에 실패했습니다.')
+        }
+      }
+
+      toast.success('게시글이 생성되었습니다.')
+      navigate(`/user/projects/${projectId}?tab=articles`)
+    } catch (error: any) {
+      console.error('게시글 생성 중 오류 발생:', error)
+      if (error.response?.data?.errors) {
+        setValidationErrors(error.response.data.errors)
       } else {
-        setError('게시글 작성에 실패했습니다.')
-        showToast('게시글 작성에 실패했습니다.', 'error')
+        toast.error('게시글 생성에 실패했습니다.')
       }
     } finally {
       setLoading(false)

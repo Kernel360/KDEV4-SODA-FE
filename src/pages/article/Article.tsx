@@ -17,7 +17,13 @@ import {
   List,
   ListItem,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  Checkbox,
+  FormControlLabel,
+  TextField,
+  LinearProgress,
+  Alert,
+  Snackbar
 } from '@mui/material'
 import type { Article as ArticleType } from '../../types/article'
 import { projectService } from '../../services/projectService'
@@ -49,6 +55,14 @@ const Article: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleted, setIsDeleted] = useState(false)
   const [currentUser, setCurrentUser] = useState<string | null>(null)
+  const [voteInfo, setVoteInfo] = useState<any>(null)
+  const [voteResult, setVoteResult] = useState<any>(null)
+  const [selectedItems, setSelectedItems] = useState<number[]>([])
+  const [textAnswer, setTextAnswer] = useState('')
+  const [showVoteResult, setShowVoteResult] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [showAddItem, setShowAddItem] = useState(false)
+  const [newItemText, setNewItemText] = useState('')
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -89,6 +103,27 @@ const Article: React.FC = () => {
     fetchArticle()
   }, [projectId, articleId])
 
+  useEffect(() => {
+    const fetchVoteInfo = async () => {
+      if (!articleId) return
+      try {
+        const data = await projectService.getVoteInfo(Number(articleId))
+        console.log('투표 정보:', {
+          isTextVote: data.items.length === 0,
+          multipleSelection: data.multipleSelection,
+          title: data.title,
+          items: data.items,
+          전체데이터: data
+        })
+        setVoteInfo(data)
+      } catch (error) {
+        console.error('Error fetching vote info:', error)
+      }
+    }
+
+    fetchVoteInfo()
+  }, [articleId])
+
   const handleDelete = async () => {
     if (!projectId || !articleId) return
 
@@ -108,6 +143,67 @@ const Article: React.FC = () => {
 
   const handleBack = () => {
     navigate(`/user/projects/${projectId}?tab=articles`)
+  }
+
+  const handleVoteSubmit = async () => {
+    if (!articleId) return
+    try {
+      console.log('투표 제출 시도:', {
+        isTextVote: voteInfo?.items.length === 0,
+        textAnswer,
+        selectedItems,
+        voteInfo
+      })
+
+      if (voteInfo?.items.length === 0) {
+        // 텍스트 답변 투표
+        await projectService.submitVote(Number(articleId), {
+          textAnswer: textAnswer.trim()
+        })
+      } else {
+        // 일반 투표
+        await projectService.submitVote(Number(articleId), {
+          selectedItemIds: selectedItems
+        })
+      }
+      // 투표 후 결과 보기
+      const result = await projectService.getVoteResult(Number(articleId))
+      console.log('투표 결과:', result)
+      setVoteResult(result)
+      setShowVoteResult(true)
+    } catch (error: any) {
+      console.error('Error submitting vote:', error)
+      // 에러 응답에서 코드 확인
+      const errorCode = error.response?.data?.code
+      if (errorCode === '1309') {
+        setErrorMessage('투표할 권한이 없습니다')
+      } else {
+        setErrorMessage('중복 투표는 불가능합니다')
+      }
+    }
+  }
+
+  const handleShowVoteResult = async () => {
+    if (!articleId) return
+    try {
+      const result = await projectService.getVoteResult(Number(articleId))
+      setVoteResult(result)
+      setShowVoteResult(true)
+    } catch (error) {
+      console.error('Error fetching vote result:', error)
+    }
+  }
+
+  const handleItemSelect = (itemId: number) => {
+    if (voteInfo?.multipleSelection) {
+      setSelectedItems(prev =>
+        prev.includes(itemId)
+          ? prev.filter(id => id !== itemId)
+          : [...prev, itemId]
+      )
+    } else {
+      setSelectedItems([itemId])
+    }
   }
 
   if (loading) {
@@ -162,6 +258,19 @@ const Article: React.FC = () => {
 
   return (
     <Box sx={{ mt: 3 }}>
+      <Snackbar
+        open={errorMessage !== null}
+        autoHideDuration={3000}
+        onClose={() => setErrorMessage(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert
+          onClose={() => setErrorMessage(null)}
+          severity="error"
+          sx={{ width: '100%' }}>
+          {errorMessage}
+        </Alert>
+      </Snackbar>
+
       <Box
         sx={{
           display: 'flex',
@@ -235,6 +344,225 @@ const Article: React.FC = () => {
             }}>
             {article.content}
           </Typography>
+
+          {voteInfo && (
+            <Box sx={{ my: 3 }}>
+              <Paper sx={{ p: 3, bgcolor: 'grey.50' }}>
+                <Stack spacing={2}>
+                  <Typography variant="h6">{voteInfo.title}</Typography>
+
+                  {voteInfo.deadLine && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary">
+                      마감:{' '}
+                      {dayjs(voteInfo.deadLine).format('YYYY.MM.DD HH:mm')}
+                    </Typography>
+                  )}
+
+                  {showVoteResult ? (
+                    // 투표 결과 표시
+                    <Stack spacing={2}>
+                      <Typography variant="subtitle2">
+                        총 참여자: {voteResult?.totalParticipants || 0}명
+                      </Typography>
+                      {voteResult?.itemResults?.length > 0
+                        ? // 일반 투표 결과
+                          voteResult.itemResults.map((item: any) => (
+                            <Box key={item.itemId}>
+                              <Stack
+                                direction="row"
+                                spacing={2}
+                                alignItems="center"
+                                sx={{ mb: 1 }}>
+                                <Typography sx={{ flex: 1 }}>
+                                  {item.itemText}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary">
+                                  {item.count}명 (
+                                  {(item.percentage * 100).toFixed(1)}%)
+                                </Typography>
+                              </Stack>
+                              <LinearProgress
+                                variant="determinate"
+                                value={item.percentage * 100}
+                                sx={{ height: 8, borderRadius: 1 }}
+                              />
+                            </Box>
+                          ))
+                        : // 텍스트 답변 결과
+                          voteResult?.textAnswers?.length > 0 && (
+                            <Box>
+                              <Typography
+                                variant="subtitle2"
+                                sx={{ mb: 1 }}>
+                                답변 목록:
+                              </Typography>
+                              <Stack spacing={1}>
+                                {voteResult.textAnswers.map(
+                                  (answer: string, index: number) => (
+                                    <Typography
+                                      key={index}
+                                      variant="body2"
+                                      sx={{
+                                        p: 2,
+                                        bgcolor: 'grey.100',
+                                        borderRadius: 1
+                                      }}>
+                                      {answer}
+                                    </Typography>
+                                  )
+                                )}
+                              </Stack>
+                            </Box>
+                          )}
+                      {!voteInfo?.closed && (
+                        <Button
+                          variant="outlined"
+                          onClick={() => setShowVoteResult(false)}>
+                          투표하기
+                        </Button>
+                      )}
+                    </Stack>
+                  ) : (
+                    // 투표 입력 폼
+                    <Stack spacing={2}>
+                      {voteInfo?.items.length === 0 ? (
+                        // 텍스트 답변 입력
+                        <>
+                          <Typography variant="subtitle1">
+                            답변을 입력해주세요
+                          </Typography>
+                          <TextField
+                            fullWidth
+                            multiline
+                            rows={3}
+                            label="답변 입력"
+                            value={textAnswer}
+                            onChange={e => {
+                              console.log('텍스트 입력:', e.target.value)
+                              setTextAnswer(e.target.value)
+                            }}
+                            disabled={voteInfo?.closed}
+                            placeholder="답변을 입력하세요"
+                          />
+                        </>
+                      ) : (
+                        // 일반 투표 (체크박스)
+                        <>
+                          {voteInfo?.items.map((item: any) => (
+                            <FormControlLabel
+                              key={item.itemId}
+                              control={
+                                <Checkbox
+                                  checked={selectedItems.includes(item.itemId)}
+                                  onChange={() => handleItemSelect(item.itemId)}
+                                  disabled={voteInfo?.closed}
+                                />
+                              }
+                              label={item.content}
+                            />
+                          ))}
+                          {!voteInfo?.closed && (
+                            <>
+                              {showAddItem ? (
+                                <Box sx={{ mt: 2 }}>
+                                  <Stack
+                                    direction="row"
+                                    spacing={2}>
+                                    <TextField
+                                      fullWidth
+                                      size="small"
+                                      value={newItemText}
+                                      onChange={e =>
+                                        setNewItemText(e.target.value)
+                                      }
+                                      placeholder="새로운 투표 항목 입력"
+                                    />
+                                    <Button
+                                      variant="contained"
+                                      onClick={async () => {
+                                        if (!newItemText.trim()) return
+                                        try {
+                                          await projectService.addVoteItem(
+                                            Number(articleId),
+                                            newItemText.trim()
+                                          )
+                                          // 투표 정보 새로고침
+                                          const data =
+                                            await projectService.getVoteInfo(
+                                              Number(articleId)
+                                            )
+                                          setVoteInfo(data)
+                                          setNewItemText('')
+                                          setShowAddItem(false)
+                                        } catch (error: any) {
+                                          console.error(
+                                            'Error adding vote item:',
+                                            error
+                                          )
+                                          const errorCode =
+                                            error.response?.data?.code
+                                          if (errorCode === '1309') {
+                                            setErrorMessage('권한이 없습니다')
+                                          } else if (errorCode === '1308') {
+                                            setErrorMessage(
+                                              '중복된 항목을 추가할 수 없습니다'
+                                            )
+                                          } else {
+                                            setErrorMessage(
+                                              '항목 추가에 실패했습니다'
+                                            )
+                                          }
+                                        }
+                                      }}>
+                                      추가
+                                    </Button>
+                                  </Stack>
+                                </Box>
+                              ) : (
+                                <Button
+                                  variant="outlined"
+                                  onClick={() => setShowAddItem(true)}
+                                  sx={{ mt: 2 }}>
+                                  항목 추가
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </>
+                      )}
+                      <Stack
+                        direction="row"
+                        spacing={2}>
+                        <Button
+                          variant="outlined"
+                          onClick={handleShowVoteResult}>
+                          투표 결과 보기
+                        </Button>
+                        {!voteInfo?.closed && (
+                          <Button
+                            variant="contained"
+                            onClick={handleVoteSubmit}
+                            disabled={
+                              voteInfo?.items.length === 0
+                                ? !textAnswer.trim()
+                                : selectedItems.length === 0 ||
+                                  (!voteInfo?.multipleSelection &&
+                                    selectedItems.length > 1)
+                            }>
+                            투표하기
+                          </Button>
+                        )}
+                      </Stack>
+                    </Stack>
+                  )}
+                </Stack>
+              </Paper>
+            </Box>
+          )}
 
           <Divider />
 
