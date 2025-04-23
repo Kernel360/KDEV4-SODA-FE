@@ -16,6 +16,7 @@ import { DateTimePicker } from '@mui/x-date-pickers'
 import { Stage } from '../../types/stage'
 import { PriorityType } from '../../types/article'
 import { ArrowLeft, Link2, Upload, FileText, Trash2 } from 'lucide-react'
+import dayjs from 'dayjs'
 
 const UploadBox = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -38,7 +39,7 @@ export interface ArticleFormData {
   content: string
   stageId: string
   priority: PriorityType
-  deadLine: Date | null
+  deadLine: dayjs.Dayjs | null
   files: Array<{
     id?: number
     name: string
