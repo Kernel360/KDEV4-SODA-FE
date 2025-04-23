@@ -115,7 +115,9 @@ const ArticleRow: React.FC<{
       <TableRow
         hover
         onClick={() =>
-          navigate(`/user/projects/${projectId}/articles/${article.id}`)
+          navigate(
+            `/user/projects/${projectId}/articles/${article.id}?tab=articles`
+          )
         }
         sx={{
           cursor: 'pointer',
@@ -437,7 +439,9 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
             variant="contained"
             startIcon={<Plus />}
             onClick={() =>
-              navigate(`/user/projects/${projectId}/articles/create`)
+              navigate(
+                `/user/projects/${projectId}/articles/create?tab=articles`
+              )
             }
             sx={{
               whiteSpace: 'nowrap',

@@ -16,6 +16,7 @@ import { DateTimePicker } from '@mui/x-date-pickers'
 import { Stage } from '../../types/stage'
 import { PriorityType } from '../../types/article'
 import { ArrowLeft, Link2, Upload, FileText, Trash2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 const UploadBox = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -55,6 +56,7 @@ interface ArticleFormProps {
   stages: Stage[]
   isLoading?: boolean
   isReply?: boolean
+  projectId: number
   validationErrors?: {
     title?: string
     content?: string
@@ -73,6 +75,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   stages,
   isLoading,
   isReply = false,
+  projectId,
   validationErrors = {},
   onChange,
   onSubmit,
@@ -84,6 +87,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   const [linkTitle, setLinkTitle] = useState('')
   const [linkUrl, setLinkUrl] = useState('')
   const [, setIsDeletingLink] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     setLocalFormData(formData)
@@ -232,10 +236,18 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     return '새 게시글 작성'
   }
 
+  const handleBack = () => {
+    if (isReply) {
+      onCancel()
+    } else {
+      navigate(`/user/projects/${projectId}?tab=articles`)
+    }
+  }
+
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
       <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
-        <IconButton onClick={onCancel}>
+        <IconButton onClick={handleBack}>
           <ArrowLeft />
         </IconButton>
         <Typography variant="h6">{getTitle()}</Typography>
@@ -519,7 +531,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         <Box sx={{ mt: 4, display: 'flex', gap: 1 }}>
           <Button
             variant="outlined"
-            onClick={onCancel}
+            onClick={handleBack}
             sx={{ minWidth: 120 }}>
             취소
           </Button>

@@ -286,6 +286,7 @@ const EditArticle: React.FC = () => {
         }
         onDeleteLink={handleDeleteLink}
         onDeleteFile={handleDeleteFile}
+        projectId={Number(projectId)}
       />
     </Box>
   )
