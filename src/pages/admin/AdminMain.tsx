@@ -408,7 +408,7 @@ export default function AdminMain() {
                             variant="contained"
                             size="small"
                             startIcon={<LayoutDashboard size={16} />}
-                            onClick={() => handleProjectManageClick(project.id)}
+                            onClick={() => handleProjectClick(project.id)}
                             sx={{
                               minWidth: 'auto',
                               px: 1.5,

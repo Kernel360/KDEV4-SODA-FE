@@ -17,12 +17,17 @@ import {
   TableHead,
   TableBody,
   TableRow,
-  TableCell
+  TableCell,
+  Chip,
+  Paper
 } from '@mui/material'
 import { ArrowForward } from '@mui/icons-material'
 import { projectService } from '../../services/projectService'
 import { useToast } from '../../contexts/ToastContext'
 import type { Project } from '../../types/project'
+import { useUserStore } from '../../stores/userStore'
+import { client } from '../../api/client'
+import dayjs from 'dayjs'
 
 interface DashboardItem {
   id: number
@@ -31,16 +36,29 @@ interface DashboardItem {
   status?: string
 }
 
+interface Request {
+  requestId: number
+  projectId: number
+  title: string
+  status: string
+  createdAt: string
+}
+
 const UserDashboard: React.FC = () => {
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const { user } = useUserStore()
   const [projects, setProjects] = useState<Project[]>([])
+  const [recentRequests, setRecentRequests] = useState<Request[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchUserProjects()
-  }, [])
+    if (user?.memberId) {
+      fetchRecentRequests()
+    }
+  }, [user?.memberId])
 
   const fetchUserProjects = async () => {
     try {
@@ -60,23 +78,76 @@ const UserDashboard: React.FC = () => {
     }
   }
 
-  // 임시 데이터 (실제로는 API에서 가져올 예정)
-  const recentRequests: DashboardItem[] = [
-    { id: 1, title: '요청사항 1', date: '2024-03-15', status: '진행중' },
-    { id: 2, title: '요청사항 2', date: '2024-03-14', status: '완료' },
-    { id: 3, title: '요청사항 3', date: '2024-03-13', status: '대기중' }
-  ]
+  const fetchRecentRequests = async () => {
+    try {
+      const response = await client.get(`/members/${user.memberId}/requests`, {
+        params: {
+          page: 0,
+          size: 3
+        }
+      })
+      if (response.data.status === 'success') {
+        setRecentRequests(response.data.data.content)
+      }
+    } catch (error) {
+      console.error('최근 요청사항 조회 중 오류:', error)
+      showToast('최근 요청사항을 불러오는데 실패했습니다.', 'error')
+    }
+  }
 
+  // 임시 데이터 (실제로는 API에서 가져올 예정)
   const recentQuestions: DashboardItem[] = [
     { id: 1, title: '질문 1', date: '2024-03-15' },
     { id: 2, title: '질문 2', date: '2024-03-14' },
     { id: 3, title: '질문 3', date: '2024-03-13' }
   ]
 
-  const handleItemClick = (type: string, id: number) => {
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return '승인'
+      case 'REJECTED':
+        return '거절'
+      case 'PENDING':
+        return '대기'
+      case 'APPROVING':
+        return '승인중'
+      default:
+        return status
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return {
+          color: '#16a34a',
+          backgroundColor: '#dcfce7'
+        }
+      case 'REJECTED':
+        return {
+          color: '#dc2626',
+          backgroundColor: '#fee2e2'
+        }
+      case 'PENDING':
+        return {
+          color: '#4b5563',
+          backgroundColor: '#f3f4f6'
+        }
+      default:
+        return {
+          color: '#4b5563',
+          backgroundColor: '#f3f4f6'
+        }
+    }
+  }
+
+  const handleItemClick = (type: string, id: number, projectId?: number) => {
     switch (type) {
       case 'request':
-        navigate(`/requests/${id}`)
+        if (projectId) {
+          navigate(`/user/projects/${projectId}/requests/${id}`)
+        }
         break
       case 'question':
         navigate(`/questions/${id}`)
@@ -91,143 +162,117 @@ const UserDashboard: React.FC = () => {
 
   const renderDashboardSection = (
     title: string,
-    items: DashboardItem[],
+    items: any[],
     type: string,
-    viewAllPath: string
-  ) => {
-    const getStatusText = (status: string | undefined) => {
-      switch (status) {
-        case 'IN_PROGRESS':
-          return '진행중'
-        case 'COMPLETED':
-          return '완료'
-        case 'PENDING':
-          return '대기중'
-        case 'CANCELLED':
-          return '취소'
-        default:
-          return status || ''
-      }
-    }
-
-    if (type === 'project') {
-      return (
-        <Card sx={{ minHeight: '300px', height: '100%' }}>
-          <CardContent>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 2
-              }}>
-              <Typography
-                variant="h6"
-                component="div">
-                {title}
-              </Typography>
-              <Button
-                endIcon={<ArrowForward />}
-                onClick={() => navigate(viewAllPath)}>
-                전체보기
-              </Button>
-            </Box>
-            <Box sx={{ width: '100%', overflowX: 'auto' }}>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>프로젝트명</TableCell>
-                      <TableCell>시작일</TableCell>
-                      <TableCell>상태</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {items.map(item => (
-                      <TableRow
-                        key={item.id}
-                        hover
-                        sx={{ cursor: 'pointer' }}
-                        onClick={() => handleItemClick(type, item.id)}>
-                        <TableCell>{item.title}</TableCell>
-                        <TableCell>{item.date}</TableCell>
-                        <TableCell>
-                          <Typography
-                            sx={{
-                              color:
-                                item.status === 'IN_PROGRESS'
-                                  ? 'primary.main'
-                                  : 'text.secondary',
-                              fontWeight: 'medium'
-                            }}>
-                            {getStatusText(item.status)}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Box>
-          </CardContent>
-        </Card>
-      )
-    }
-
-    return (
-      <Card sx={{ minHeight: '300px', height: '100%' }}>
-        <CardContent>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              mb: 2
-            }}>
-            <Typography
-              variant="h6"
-              component="div">
-              {title}
-            </Typography>
-            <Button
-              endIcon={<ArrowForward />}
-              onClick={() => navigate(viewAllPath)}>
-              전체보기
-            </Button>
-          </Box>
-          <List>
-            {items.map((item, index) => (
-              <React.Fragment key={item.id}>
-                <ListItem
-                  button
-                  onClick={() => handleItemClick(type, item.id)}
-                  sx={{ py: 1 }}>
-                  <ListItemText
-                    primary={
-                      <Box
-                        component="span"
-                        sx={{ display: 'block' }}>
-                        {item.title}
-                      </Box>
-                    }
-                    secondary={
-                      <Box
-                        component="span"
-                        sx={{ display: 'block' }}>
-                        {item.date}
-                        {item.status && ` - ${item.status}`}
-                      </Box>
-                    }
+    viewAllLink: string
+  ) => (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 3,
+        height: '100%',
+        border: '1px solid',
+        borderColor: 'divider'
+      }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 2
+        }}>
+        <Typography variant="h6">{title}</Typography>
+        <Button
+          variant="text"
+          onClick={() => navigate(viewAllLink)}
+          sx={{ color: 'text.secondary' }}>
+          전체보기
+        </Button>
+      </Box>
+      <List>
+        {type === 'request' ? (
+          recentRequests.map((request, index) => (
+            <React.Fragment key={request.requestId}>
+              <ListItem
+                button
+                onClick={() => handleItemClick(type, request.requestId, request.projectId)}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  py: 2
+                }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body1" sx={{ mb: 1 }}>
+                    {request.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {dayjs(request.createdAt).format('YYYY-MM-DD HH:mm')}
+                  </Typography>
+                </Box>
+                <Chip
+                  label={getStatusText(request.status)}
+                  sx={{
+                    ...getStatusColor(request.status),
+                    ml: 2
+                  }}
+                />
+              </ListItem>
+              {index < recentRequests.length - 1 && (
+                <Box
+                  sx={{
+                    borderBottom: '1px solid',
+                    borderColor: 'divider'
+                  }}
+                />
+              )}
+            </React.Fragment>
+          ))
+        ) : (
+          items.map((item, index) => (
+            <React.Fragment key={item.id}>
+              <ListItem
+                button
+                onClick={() => handleItemClick(type, item.id)}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  py: 2
+                }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body1" sx={{ mb: 1 }}>
+                    {item.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {dayjs(item.date).format('YYYY-MM-DD HH:mm')}
+                  </Typography>
+                </Box>
+                {item.status && (
+                  <Chip
+                    label={item.status}
+                    sx={{
+                      ml: 2,
+                      backgroundColor: '#f3f4f6',
+                      color: '#4b5563'
+                    }}
                   />
-                </ListItem>
-                {index < items.length - 1 && <Divider />}
-              </React.Fragment>
-            ))}
-          </List>
-        </CardContent>
-      </Card>
-    )
-  }
+                )}
+              </ListItem>
+              {index < items.length - 1 && (
+                <Box
+                  sx={{
+                    borderBottom: '1px solid',
+                    borderColor: 'divider'
+                  }}
+                />
+              )}
+            </React.Fragment>
+          ))
+        )}
+      </List>
+    </Paper>
+  )
 
   if (loading) {
     return (
@@ -260,7 +305,7 @@ const UserDashboard: React.FC = () => {
           md={6}>
           {renderDashboardSection(
             '최근 요청사항',
-            recentRequests,
+            [],
             'request',
             '/user/requests'
           )}
