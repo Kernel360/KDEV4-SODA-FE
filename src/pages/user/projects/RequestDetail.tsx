@@ -24,6 +24,7 @@ import { client } from '../../../api/client';
 import { useToast } from '../../../contexts/ToastContext';
 import { useUserStore } from '../../../stores/userStore';
 import type { ProjectMember } from '../../../types/project';
+import axios from 'axios';
 
 interface Approver {
   id: number;
@@ -243,8 +244,10 @@ const RequestDetail = () => {
           if (requestData.parentId && requestData.parentId !== -1) {
             const parentResponse = await client.get(`/requests/${requestData.parentId}`);
             if (parentResponse.data.status === 'success') {
-              setParentRequest(parentResponse.data.data);
+              setParentRequest(parentResponse.data);
             }
+          } else {
+            setParentRequest(null);
           }
         }
 
@@ -359,7 +362,7 @@ const RequestDetail = () => {
 
   const handleEditSubmit = async () => {
     try {
-      // 1. 본문/링크 수정 - 새로 추가된 링크만 전송
+      // 1. 요청 수정
       const response = await client.put(`/requests/${requestId}`, {
         title: editForm.title,
         content: editForm.content,
@@ -369,16 +372,44 @@ const RequestDetail = () => {
         }))
       });
 
-      // 2. 파일 업로드
-      if (editFiles.length > 0) {
-        const formData = new FormData();
-        editFiles.forEach(file => formData.append('file', file));
-        await client.post(`/requests/${requestId}/files`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-      }
-
       if (response.data.status === 'success') {
+        // 2. 파일이 있는 경우 S3 업로드 처리
+        if (editFiles.length > 0) {
+          try {
+            // 2-1. presigned URL 요청
+            const presignedResponse = await client.post(`/requests/${requestId}/files/presigned-urls`, 
+              editFiles.map(file => ({
+                fileName: file.name,
+                contentType: file.type
+              }))
+            );
+
+            if (presignedResponse.data.status === 'success') {
+              const { entries } = presignedResponse.data.data;
+
+              // 2-2. S3에 파일 업로드
+              await Promise.all(
+                entries.map((entry, i) =>
+                  axios.put(entry.presignedUrl, editFiles[i], {
+                    headers: { 'Content-Type': editFiles[i].type },
+                  })
+                )
+              );
+
+              // 2-3. 업로드 완료 확인
+              await client.post(`/requests/${requestId}/files/confirm-upload`,
+                entries.map(entry => ({
+                  fileName: entry.fileName,
+                  url: entry.fileUrl
+                }))
+              );
+            }
+          } catch (error) {
+            console.error('파일 업로드 중 오류 발생:', error);
+            showToast('파일 업로드 중 오류가 발생했습니다.', 'error');
+          }
+        }
+
         showToast('요청이 성공적으로 수정되었습니다.', 'success');
         setEditMode(false);
         // 새로고침하여 최신 데이터 반영
@@ -441,22 +472,41 @@ const RequestDetail = () => {
       if (response.data.status === 'success') {
         const responseId = response.data.data.responseId;
 
-        // 2. 파일이 있다면 파일 업로드
+        // 2. 파일이 있는 경우 S3 업로드 처리
         if (responseForm.files.length > 0) {
-          const formData = new FormData();
-          responseForm.files.forEach(file => {
-            formData.append('file', file);
-          });
+          try {
+            // 2-1. presigned URL 요청
+            const presignedResponse = await client.post(`/responses/${responseId}/files/presigned-urls`, 
+              responseForm.files.map(file => ({
+                fileName: file.name,
+                contentType: file.type
+              }))
+            );
 
-          await client.post(
-            `/responses/${responseId}/files`,
-            formData,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data',
-              },
+            if (presignedResponse.data.status === 'success') {
+              const { entries } = presignedResponse.data.data;
+
+              // 2-2. S3에 파일 업로드
+              await Promise.all(
+                entries.map((entry, i) =>
+                  axios.put(entry.presignedUrl, responseForm.files[i], {
+                    headers: { 'Content-Type': responseForm.files[i].type },
+                  })
+                )
+              );
+
+              // 2-3. 업로드 완료 확인
+              await client.post(`/responses/${responseId}/files/confirm-upload`,
+                entries.map(entry => ({
+                  fileName: entry.fileName,
+                  url: entry.fileUrl
+                }))
+              );
             }
-          );
+          } catch (error) {
+            console.error('파일 업로드 중 오류 발생:', error);
+            showToast('파일 업로드 중 오류가 발생했습니다.', 'error');
+          }
         }
 
         showToast(`${responseType === 'APPROVE' ? '승인' : '거절'}이 완료되었습니다.`, 'success');
