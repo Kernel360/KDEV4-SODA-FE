@@ -24,4 +24,5 @@ export interface LogQueryParams {
   page?: number;
   size?: number;
   sort?: string[];
+  keyword?: string;
 } 
