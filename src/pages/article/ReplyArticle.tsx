@@ -202,10 +202,14 @@ const ReplyArticle: React.FC = () => {
       formData={formData}
       stages={stages}
       isLoading={loading}
+      isReply={true}
       validationErrors={validationErrors}
-      onChange={setFormData}
       onSubmit={handleSubmit}
-      onCancel={() => navigate(`/user/projects/${projectId}`)}
+      onChange={setFormData}
+      onCancel={() =>
+        navigate(`/user/projects/${projectId}/articles/${articleId}`)
+      }
+      projectId={Number(projectId)}
     />
   )
 }

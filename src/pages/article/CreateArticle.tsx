@@ -189,6 +189,7 @@ const CreateArticle: React.FC = () => {
         onSubmit={handleSubmit}
         onChange={setFormData}
         onCancel={handleCancel}
+        projectId={Number(projectId)}
       />
     </Box>
   )

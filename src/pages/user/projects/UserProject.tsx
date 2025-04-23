@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
-import { Box, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, TextField } from '@mui/material'
-import { Close as CloseIcon } from '@mui/icons-material'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { Box, Tabs, Tab } from '@mui/material'
 import {
   Project,
   Stage,
@@ -12,12 +11,10 @@ import {
 import ProjectHeader from '../../../components/projects/ProjectHeader'
 import ProjectArticle from '../../../components/projects/ProjectArticle'
 import PaymentManagement from '../../../components/projects/PaymentManagement'
-import StageCard from '../../../components/projects/StageCard'
 import { projectService } from '../../../services/projectService'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
 import { client } from '../../../api/client'
-import { DragDropContext, Droppable } from '@hello-pangea/dnd'
 
 interface ProjectWithProgress extends Project {
   progress: number
@@ -48,25 +45,26 @@ function TabPanel(props: TabPanelProps) {
       }}
       {...other}>
       {value === index && (
-        <Box sx={{ 
-          p: 3,
-          height: '100%',
-          '&::-webkit-scrollbar': {
-            width: '8px',
-            backgroundColor: '#f5f5f5'
-          },
-          '&::-webkit-scrollbar-track': {
-            background: '#f1f1f1',
-            borderRadius: '4px'
-          },
-          '&::-webkit-scrollbar-thumb': {
-            background: '#888',
-            borderRadius: '4px',
-            '&:hover': {
-              background: '#555'
+        <Box
+          sx={{
+            p: 3,
+            height: '100%',
+            '&::-webkit-scrollbar': {
+              width: '8px',
+              backgroundColor: '#f5f5f5'
+            },
+            '&::-webkit-scrollbar-track': {
+              background: '#f1f1f1',
+              borderRadius: '4px'
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: '#888',
+              borderRadius: '4px',
+              '&:hover': {
+                background: '#555'
+              }
             }
-          }
-        }}>
+          }}>
           {children}
         </Box>
       )}
@@ -83,13 +81,26 @@ interface ApiStage {
 
 const UserProject: React.FC = () => {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const queryParams = new URLSearchParams(location.search)
+  const initialTab = queryParams.get('tab') === 'articles' ? 1 : 0
+
   const [project, setProject] = useState<ProjectWithProgress | null>(null)
   const [stages, setStages] = useState<Stage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [tabValue, setTabValue] = useState(0)
-  const [isEditMode, setIsEditMode] = useState(false)
-  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [tabValue, setTabValue] = useState(initialTab)
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const fromArticles = location.pathname.includes('/articles/')
+    if (fromArticles) {
+      setTabValue(1)
+      params.set('tab', 'articles')
+      navigate(`/user/projects/${id}?${params.toString()}`, { replace: true })
+    }
+  }, [location.pathname, navigate, id])
 
   const handleStatusChange = async (newStatus: ProjectStatus) => {
     if (!project) return
@@ -104,6 +115,10 @@ const UserProject: React.FC = () => {
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue)
+    const newTab = newValue === 1 ? 'articles' : 'payments'
+    const params = new URLSearchParams(location.search)
+    params.set('tab', newTab)
+    navigate(`?${params.toString()}`, { replace: true })
   }
 
   const handleStageEdit = async (stageId: number, newTitle: string) => {
@@ -111,7 +126,9 @@ const UserProject: React.FC = () => {
       await client.put(`/stages/${stageId}`, { name: newTitle })
       setStages(prev =>
         prev.map(stage =>
-          stage.id === stageId ? { ...stage, title: newTitle, name: newTitle } : stage
+          stage.id === stageId
+            ? { ...stage, title: newTitle, name: newTitle }
+            : stage
         )
       )
     } catch (error) {
@@ -128,7 +145,11 @@ const UserProject: React.FC = () => {
     }
   }
 
-  const handleTaskEdit = async (taskId: number, title: string, content: string) => {
+  const handleTaskEdit = async (
+    taskId: number,
+    title: string,
+    content: string
+  ) => {
     try {
       await client.put(`/tasks/${taskId}`, { title, content })
       setStages(prev =>
@@ -142,16 +163,6 @@ const UserProject: React.FC = () => {
     } catch (error) {
       console.error('Failed to update task:', error)
     }
-  }
-
-  const handleDragEnd = (result: any) => {
-    if (!result.destination) return
-
-    const items = Array.from(stages)
-    const [reorderedItem] = items.splice(result.source.index, 1)
-    items.splice(result.destination.index, 0, reorderedItem)
-
-    setStages(items)
   }
 
   useEffect(() => {
@@ -168,15 +179,17 @@ const UserProject: React.FC = () => {
           ...projectData,
           progress: 0
         })
-        const convertedStages = (stagesData as unknown as ApiStage[]).map(stage => ({
-          id: stage.id,
-          title: stage.name,
-          name: stage.name,
-          stageOrder: stage.stageOrder,
-          order: stage.stageOrder,
-          status: '대기' as StageStatus,
-          tasks: []
-        }))
+        const convertedStages = (stagesData as unknown as ApiStage[]).map(
+          stage => ({
+            id: stage.id,
+            title: stage.name,
+            name: stage.name,
+            stageOrder: stage.stageOrder,
+            order: stage.stageOrder,
+            status: '대기' as StageStatus,
+            tasks: []
+          })
+        )
         console.log('Converted Stages:', convertedStages)
         setStages(convertedStages)
       } catch (err) {
@@ -189,11 +202,6 @@ const UserProject: React.FC = () => {
 
     fetchProject()
   }, [id])
-
-  const handleEditModalOpen = () => {
-    console.log('Current stages when opening modal:', stages)
-    setEditModalOpen(true)
-  }
 
   if (loading) return <LoadingSpinner />
   if (error)
@@ -263,17 +271,28 @@ const UserProject: React.FC = () => {
           />
         </Tabs>
 
-        <Box sx={{ 
-          flex: 1,
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <TabPanel value={tabValue} index={0}>
-            <PaymentManagement projectId={project.id} stages={stages} />
+        <Box
+          sx={{
+            flex: 1,
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+          <TabPanel
+            value={tabValue}
+            index={0}>
+            <PaymentManagement
+              projectId={project.id}
+              stages={stages}
+            />
           </TabPanel>
 
-          <TabPanel value={tabValue} index={1}>
-            <ProjectArticle projectId={project.id} stages={stages} />
+          <TabPanel
+            value={tabValue}
+            index={1}>
+            <ProjectArticle
+              projectId={project.id}
+              stages={stages}
+            />
           </TabPanel>
         </Box>
       </Box>

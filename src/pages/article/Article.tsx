@@ -97,13 +97,17 @@ const Article: React.FC = () => {
       await projectService.deleteArticle(Number(projectId), Number(articleId))
       setDeleteDialogOpen(false)
       setIsDeleted(true)
-      navigate(`/user/projects/${projectId}`)
+      navigate(`/user/projects/${projectId}?tab=articles`)
     } catch (error) {
       console.error('Error deleting article:', error)
       setError('게시글 삭제에 실패했습니다.')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleBack = () => {
+    navigate(`/user/projects/${projectId}?tab=articles`)
   }
 
   if (loading) {
@@ -128,7 +132,7 @@ const Article: React.FC = () => {
             gap: 2,
             mb: 3
           }}>
-          <IconButton onClick={() => navigate(`/user/projects/${projectId}`)}>
+          <IconButton onClick={handleBack}>
             <ArrowLeft size={24} />
           </IconButton>
           <Typography
@@ -145,7 +149,7 @@ const Article: React.FC = () => {
         <Box sx={{ mt: 2 }}>
           <Button
             variant="outlined"
-            onClick={() => navigate(`/user/projects/${projectId}`)}
+            onClick={handleBack}
             startIcon={<ArrowLeft size={16} />}>
             목록
           </Button>
@@ -165,7 +169,7 @@ const Article: React.FC = () => {
           gap: 2,
           mb: 3
         }}>
-        <IconButton onClick={() => navigate(`/user/projects/${projectId}`)}>
+        <IconButton onClick={handleBack}>
           <ArrowLeft size={24} />
         </IconButton>
 
@@ -333,7 +337,7 @@ const Article: React.FC = () => {
       <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
         <Button
           variant="outlined"
-          onClick={() => navigate(`/user/projects/${projectId}`)}
+          onClick={handleBack}
           startIcon={<ArrowLeft size={16} />}>
           목록
         </Button>

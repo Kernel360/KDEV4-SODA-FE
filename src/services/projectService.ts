@@ -95,9 +95,20 @@ export interface ProjectMemberSearchCondition {
 
 export const projectService = {
   // 프로젝트 목록 조회
-  async getAllProjects(): Promise<Project[]> {
-    const response = await client.get('/projects')
-    return response.data.data.content
+  async getAllProjects(status?: string, keyword?: string): Promise<Project[]> {
+    try {
+      const params = new URLSearchParams()
+      if (status) params.append('status', status)
+      if (keyword) params.append('keyword', keyword)
+
+      const response = await client.get(
+        `/projects${params.toString() ? `?${params.toString()}` : ''}`
+      )
+      return response.data.data.content
+    } catch (error) {
+      console.error('Error fetching all projects:', error)
+      throw error
+    }
   },
 
   // 사용자의 프로젝트 목록 조회
@@ -244,7 +255,10 @@ export const projectService = {
   },
 
   // 프로젝트 수정
-  async updateProject(projectId: number, data: UpdateProjectRequest): Promise<Project> {
+  async updateProject(
+    projectId: number,
+    data: UpdateProjectRequest
+  ): Promise<Project> {
     try {
       const response = await client.put(`/projects/${projectId}`, data)
       return response.data.data
@@ -271,16 +285,25 @@ export const projectService = {
 
   async getProjectArticles(
     projectId: number,
-    stageId?: number | null
-  ): Promise<Article[]> {
-    try {
-      const response = await client.get(`/projects/${projectId}/articles`, {
-        params: { stageId }
-      })
-      return response.data.data
-    } catch (error) {
-      console.error('Error fetching project articles:', error)
-      throw error
+    stageId?: number | null,
+    searchType?: string,
+    keyword?: string,
+    page?: number,
+    size?: number
+  ): Promise<{ data: Article[] }> {
+    const response = await client.get(`/projects/${projectId}/articles`, {
+      params: {
+        stageId: stageId || undefined,
+        searchType: searchType || undefined,
+        keyword: keyword || undefined,
+        page: page || 0,
+        size: size || 10,
+        sort: []
+      }
+    })
+    // API 응답 구조에 맞게 데이터 추출
+    return {
+      data: response.data.data?.content || []
     }
   },
 
