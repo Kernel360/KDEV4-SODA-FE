@@ -10,7 +10,9 @@ import {
   DialogActions,
   Button,
   IconButton,
-  TextField
+  TextField,
+  Chip,
+  Stack
 } from '@mui/material'
 import { Close as CloseIcon } from '@mui/icons-material'
 import {
@@ -29,6 +31,7 @@ import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
 import { client } from '../../../api/client'
 import { DragDropContext, Droppable } from '@hello-pangea/dnd'
+import { useToast } from '../../../contexts/ToastContext'
 
 interface ProjectWithProgress extends Project {
   progress: number
@@ -73,6 +76,7 @@ const UserProject: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
+  const { showToast } = useToast()
   const queryParams = new URLSearchParams(location.search)
   const initialTab = queryParams.get('tab') === 'articles' ? 1 : 0
 
@@ -83,15 +87,51 @@ const UserProject: React.FC = () => {
   const [value, setValue] = useState(initialTab)
   const [isEditMode, setIsEditMode] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
+  const [expandedStatus, setExpandedStatus] = useState(false)
+
+  const getStatusText = (status: ProjectStatus): string => {
+    switch (status) {
+      case 'CONTRACT':
+        return '계약'
+      case 'IN_PROGRESS':
+        return '진행중'
+      case 'DELIVERED':
+        return '납품완료'
+      case 'MAINTENANCE':
+        return '하자보수'
+      case 'ON_HOLD':
+        return '일시중단'
+      default:
+        return status
+    }
+  }
+
+  const getStatusColor = (status: ProjectStatus): string => {
+    switch (status) {
+      case 'CONTRACT':
+        return '#64748B'
+      case 'IN_PROGRESS':
+        return '#2563EB'
+      case 'DELIVERED':
+        return '#059669'
+      case 'MAINTENANCE':
+        return '#9333EA'
+      case 'ON_HOLD':
+        return '#DC2626'
+      default:
+        return '#64748B'
+    }
+  }
 
   const handleStatusChange = async (newStatus: ProjectStatus) => {
     if (!project) return
     try {
-      await client.put(`/projects/${project.id}/status`, { status: newStatus })
+      await projectService.updateProjectStatus(project.id, newStatus)
       setProject(prev => (prev ? { ...prev, status: newStatus } : null))
+      showToast('프로젝트 상태가 변경되었습니다.', 'success')
     } catch (error) {
       console.error('Failed to update project status:', error)
-      throw error
+      showToast('프로젝트 상태 변경에 실패했습니다.', 'error')
     }
   }
 
@@ -249,37 +289,25 @@ const UserProject: React.FC = () => {
             onChange={handleChange}
             aria-label="project management tabs"
             sx={{
-              borderBottom: '1px solid #E0E0E0',
+              '& .MuiTabs-indicator': {
+                backgroundColor: '#FFB800'
+              },
               '& .MuiTab-root': {
                 fontSize: '1.25rem',
                 fontWeight: 'bold',
-                py: 3,
-                minHeight: '64px',
                 color: '#666',
                 '&.Mui-selected': {
                   color: '#FFB800'
                 }
-              },
-              '& .MuiTabs-indicator': {
-                backgroundColor: '#FFB800',
-                height: '3px'
               }
             }}>
             <Tab
-              label="승인 관리"
+              label="결제 관리"
               {...a11yProps(0)}
-              sx={{
-                flex: 1,
-                maxWidth: 'none'
-              }}
             />
             <Tab
               label="질문 관리"
               {...a11yProps(1)}
-              sx={{
-                flex: 1,
-                maxWidth: 'none'
-              }}
             />
           </Tabs>
         </Box>
@@ -294,16 +322,15 @@ const UserProject: React.FC = () => {
             value={value}
             index={0}>
             <PaymentManagement
-              projectId={Number(id)}
+              projectId={project.id}
               stages={stages}
             />
           </TabPanel>
-
           <TabPanel
             value={value}
             index={1}>
             <ProjectArticle
-              projectId={Number(id)}
+              projectId={project.id}
               stages={stages}
             />
           </TabPanel>
