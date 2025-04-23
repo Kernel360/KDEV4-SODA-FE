@@ -24,6 +24,7 @@ import { ArrowLeft } from 'lucide-react'
 import { requestService } from '../../../services/requestService'
 import { projectService } from '../../../services/projectService'
 import type { ProjectMember } from '../../../types/project'
+import axios from 'axios'
 
 interface LinkData {
   urlAddress: string;
@@ -109,6 +110,7 @@ const CreateRequest: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     try {
       const requestBody = {
         title: formData.title,
@@ -124,12 +126,41 @@ const CreateRequest: React.FC = () => {
 
       const response = await requestService.createRequest(requestBody)
       
+      // 파일이 있는 경우 S3 업로드 처리
       if (formData.files.length > 0) {
-        const formDataForFiles = new FormData()
-        formData.files.forEach(file => {
-          formDataForFiles.append('file', file)
-        })
-        await requestService.uploadRequestFiles(response.requestId, formDataForFiles)
+        try {
+          // 1. presigned URL 요청
+          const presignedResponse = await client.post(`/requests/${response.requestId}/files/presigned-urls`, 
+            formData.files.map(file => ({
+              fileName: file.name,
+              contentType: file.type
+            }))
+          );
+
+          if (presignedResponse.data.status === 'success') {
+            const { entries } = presignedResponse.data.data;
+
+            // 2. S3에 파일 업로드
+            await Promise.all(
+              entries.map((entry, i) =>
+                axios.put(entry.presignedUrl, formData.files[i], {
+                  headers: { 'Content-Type': formData.files[i].type },
+                })
+              )
+            );
+
+            // 3. 업로드 완료 확인
+            await client.post(`/requests/${response.requestId}/files/confirm-upload`,
+              entries.map(entry => ({
+                fileName: entry.fileName,
+                url: entry.fileUrl
+              }))
+            );
+          }
+        } catch (error) {
+          console.error('파일 업로드 중 오류 발생:', error);
+          showToast('파일 업로드 중 오류가 발생했습니다.', 'error');
+        }
       }
 
       showToast('승인요청이 생성되었습니다', 'success')

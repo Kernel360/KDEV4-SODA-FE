@@ -9,6 +9,7 @@ import ArticleForm, {
 import { Stage, TaskStatus } from '../../types/stage'
 import { useToast } from '../../contexts/ToastContext'
 import { useUserStore } from '../../stores/userStore'
+import dayjs from 'dayjs'
 
 const EditArticle: React.FC = () => {
   const { projectId, articleId } = useParams<{
@@ -72,9 +73,7 @@ const EditArticle: React.FC = () => {
             content: articleResponse.content,
             stageId: matchingStage ? String(matchingStage.id) : '',
             priority: articleResponse.priority,
-            deadLine: articleResponse.deadLine
-              ? new Date(articleResponse.deadLine)
-              : null,
+            deadLine: dayjs(articleResponse.deadLine),
             files:
               articleResponse.fileList
                 ?.filter(file => !file.deleted)

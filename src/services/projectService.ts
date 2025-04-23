@@ -185,7 +185,7 @@ export const projectService = {
   // 프로젝트 단계 조회
   async getProjectStages(projectId: number): Promise<ApiStage[]> {
     const response = await client.get(
-      `https://api.s0da.co.kr/projects/${projectId}/stages`
+      `http://localhost:8080/projects/${projectId}/stages`
     )
     return response.data.data
   },
@@ -335,28 +335,37 @@ export const projectService = {
 
   async uploadArticleFiles(articleId: number, files: File[]): Promise<void> {
     try {
-      if (!articleId) {
-        throw new Error('Article ID is required for file upload')
+      // 1. presigned URL 요청
+      const presignedResponse = await client.post(`/articles/${articleId}/files/presigned-urls`, 
+        files.map(file => ({
+          fileName: file.name,
+          contentType: file.type
+        }))
+      );
+
+      if (presignedResponse.data.status === 'success') {
+        const { entries } = presignedResponse.data.data;
+
+        // 2. S3에 파일 업로드
+        await Promise.all(
+          entries.map((entry, i) =>
+            axios.put(entry.presignedUrl, files[i], {
+              headers: { 'Content-Type': files[i].type },
+            })
+          )
+        );
+
+        // 3. 업로드 완료 확인
+        await client.post(`/articles/${articleId}/files/confirm-upload`,
+          entries.map(entry => ({
+            fileName: entry.fileName,
+            url: entry.fileUrl
+          }))
+        );
       }
-
-      const formData = new FormData()
-      files.forEach(file => {
-        formData.append('file', file)
-      })
-
-      const response = await client.post(
-        `/articles/${articleId}/files`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
-      )
-      console.log('File upload response:', response.data)
     } catch (error) {
-      console.error('Error uploading files:', error)
-      throw error
+      console.error('Failed to upload article files:', error);
+      throw error;
     }
   },
 
