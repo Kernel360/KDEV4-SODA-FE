@@ -633,5 +633,21 @@ export const projectService = {
       request
     )
     return response.data
+  },
+
+  addProjectMembers: async (
+    projectId: number,
+    request: {
+      companyId: number
+      managerIds: number[]
+      memberIds: number[]
+    }
+  ) => {
+    console.log('Adding project members:', { projectId, request })
+    const response = await client.post(
+      `/projects/${projectId}/members`,
+      request
+    )
+    return response.data
   }
 }

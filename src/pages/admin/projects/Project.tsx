@@ -255,6 +255,8 @@ const ProjectDetail = () => {
   }>({})
   const [articles, setArticles] = useState<any[]>([])
   const [loadingArticles, setLoadingArticles] = useState(false)
+  const [showDeleteMemberDialog, setShowDeleteMemberDialog] = useState(false)
+  const [memberToDelete, setMemberToDelete] = useState<number | null>(null)
 
   // 3. Effect hooks
   useEffect(() => {
@@ -731,27 +733,23 @@ const ProjectDetail = () => {
   }
 
   const handleMemberDelete = async (memberId: number) => {
+    setMemberToDelete(memberId)
+    setShowDeleteMemberDialog(true)
+  }
+
+  const confirmMemberDelete = async () => {
+    if (!memberToDelete) return
+
     try {
-      // 현재 선택된 회사의 멤버 중 담당자 수 확인
-      const managers = selectedCompanyMembers.members.filter(member =>
-        member.role.includes('MANAGER')
-      )
-
-      // 삭제하려는 멤버가 담당자인 경우, 담당자가 한 명이면 삭제 불가
-      const memberToDelete = selectedCompanyMembers.members.find(
-        member => member.memberId === memberId
-      )
-      if (memberToDelete?.role.includes('MANAGER') && managers.length === 1) {
-        showToast('담당자는 최소 한 명 이상이어야 합니다.', 'error')
-        return
-      }
-
-      await projectService.deleteProjectMember(Number(id), memberId)
+      await projectService.deleteProjectMember(Number(id), memberToDelete)
       showToast('멤버가 성공적으로 삭제되었습니다.', 'success')
 
       // 멤버 목록 새로고침
       const response = await projectService.getProjectMembers(Number(id), {
-        companyRole: tabValue === 1 ? 'CLIENT_COMPANY' : 'DEV_COMPANY',
+        companyRole:
+          selectedCompanyMembers.companyType === 'client'
+            ? 'CLIENT_COMPANY'
+            : 'DEV_COMPANY',
         companyId: selectedCompanyMembers.companyId
       })
 
@@ -759,9 +757,15 @@ const ProjectDetail = () => {
         ...prev,
         members: response.content
       }))
+
+      // 프로젝트 멤버 목록도 새로고침
+      await fetchMembers()
     } catch (error) {
       console.error('멤버 삭제 실패:', error)
       showToast('멤버 삭제 중 오류가 발생했습니다.', 'error')
+    } finally {
+      setShowDeleteMemberDialog(false)
+      setMemberToDelete(null)
     }
   }
 
@@ -819,6 +823,63 @@ const ProjectDetail = () => {
       showToast('멤버 정보를 불러오는데 실패했습니다.', 'error')
     } finally {
       setLoadingMembers(false)
+    }
+  }
+
+  const handleAddNewMembers = async () => {
+    try {
+      // 새로 선택된 멤버들만 필터링
+      const newManagers = selectedCompanyManagers.filter(
+        id =>
+          !selectedCompanyMembers.members.some(member => member.memberId === id)
+      )
+      const newMembers = selectedRegularMembers.filter(
+        id =>
+          !selectedCompanyMembers.members.some(member => member.memberId === id)
+      )
+
+      if (newManagers.length === 0 && newMembers.length === 0) {
+        showToast('추가할 멤버가 없습니다.', 'info')
+        return
+      }
+
+      const response = await projectService.addProjectMembers(Number(id), {
+        companyId: selectedCompanyMembers.companyId,
+        managerIds: newManagers,
+        memberIds: newMembers
+      })
+
+      if (response.status === 'success') {
+        showToast('멤버가 성공적으로 추가되었습니다.', 'success')
+
+        // 멤버 목록 새로고침
+        const updatedMembers = await projectService.getProjectMembers(
+          Number(id),
+          {
+            companyRole:
+              selectedCompanyMembers.companyType === 'client'
+                ? 'CLIENT_COMPANY'
+                : 'DEV_COMPANY',
+            companyId: selectedCompanyMembers.companyId
+          }
+        )
+
+        setSelectedCompanyMembers(prev => ({
+          ...prev,
+          members: updatedMembers.content
+        }))
+
+        // 프로젝트 멤버 목록도 새로고침
+        await fetchMembers()
+
+        setShowAddCompanyMemberDialog(false)
+        setSelectedCompanyManagers([])
+        setSelectedRegularMembers([])
+        setMemberSearch('')
+      }
+    } catch (error) {
+      console.error('멤버 추가 실패:', error)
+      showToast('멤버 추가 중 오류가 발생했습니다.', 'error')
     }
   }
 
@@ -1934,7 +1995,7 @@ const ProjectDetail = () => {
                   backgroundColor: 'rgba(226, 232, 240, 0.1)'
                 }
               }}>
-              수정
+              멤버 추가
             </Button>
           </Box>
         </DialogTitle>
@@ -2708,12 +2769,40 @@ const ProjectDetail = () => {
           <Button
             variant="contained"
             color="primary"
-            onClick={handleAddNewCompany}
+            onClick={handleAddNewMembers}
             disabled={
               selectedCompanyManagers.length === 0 &&
-              selectedCompanyMembers.members.length === 0
+              selectedRegularMembers.length === 0
             }>
             추가
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Member Confirmation Dialog */}
+      <Dialog
+        open={showDeleteMemberDialog}
+        onClose={() => {
+          setShowDeleteMemberDialog(false)
+          setMemberToDelete(null)
+        }}>
+        <DialogTitle>멤버 삭제 확인</DialogTitle>
+        <DialogContent>
+          <Typography>정말로 이 멤버를 삭제하시겠습니까?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowDeleteMemberDialog(false)
+              setMemberToDelete(null)
+            }}
+            color="primary">
+            취소
+          </Button>
+          <Button
+            onClick={confirmMemberDelete}
+            color="error">
+            삭제
           </Button>
         </DialogActions>
       </Dialog>
