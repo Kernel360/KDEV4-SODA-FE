@@ -89,7 +89,10 @@ export default function AdminMain() {
         setActiveProjects(response.data.data.content)
       }
     } catch (error) {
-      console.error('활동이 많은 프로젝트 목록을 불러오는데 실패했습니다:', error)
+      console.error(
+        '활동이 많은 프로젝트 목록을 불러오는데 실패했습니다:',
+        error
+      )
     } finally {
       setLoadingActiveProjects(false)
     }
@@ -356,7 +359,7 @@ export default function AdminMain() {
           {/* 마감 임박 프로젝트 */}
           <Grid
             item
-            xs={6}>
+            xs={5.5}>
             <Paper
               elevation={0}
               sx={{
@@ -452,7 +455,7 @@ export default function AdminMain() {
                           <TableRow
                             key={project.id}
                             hover>
-                            <TableCell>
+                            <TableCell sx={{ maxWidth: '200px' }}>
                               <Typography
                                 onClick={() =>
                                   handleProjectManageClick(project.id)
@@ -464,7 +467,10 @@ export default function AdminMain() {
                                   '&:hover': {
                                     color: '#FBBF24',
                                     textDecoration: 'underline'
-                                  }
+                                  },
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
                                 }}>
                                 {project.title}
                               </Typography>
@@ -495,20 +501,20 @@ export default function AdminMain() {
                             </TableCell>
                             <TableCell>
                               <Button
-                                variant="contained"
+                                variant="outlined"
                                 size="small"
-                                startIcon={<LayoutDashboard size={16} />}
+                                startIcon={<LayoutDashboard size={14} />}
                                 onClick={() => handleProjectClick(project.id)}
                                 sx={{
-                                  minWidth: 'auto',
-                                  px: 1.5,
-                                  py: 0.5,
-                                  fontSize: '0.75rem',
-                                  backgroundColor: '#FBBF24',
+                                  color: '#1E293B',
+                                  bgcolor: 'white',
+                                  border: '1px solid #E2E8F0',
                                   '&:hover': {
-                                    backgroundColor: '#FCD34D'
+                                    bgcolor: '#FFF8E6'
                                   },
-                                  color: '#ffffff'
+                                  fontSize: '0.875rem',
+                                  py: 0.5,
+                                  px: 1.5
                                 }}>
                                 대시보드
                               </Button>
@@ -525,7 +531,7 @@ export default function AdminMain() {
           {/* 최근 활동이 많은 프로젝트 */}
           <Grid
             item
-            xs={6}>
+            xs={6.5}>
             <Paper
               elevation={0}
               sx={{
@@ -630,13 +636,15 @@ export default function AdminMain() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      activeProjects.slice(0, 3).map((project) => (
+                      activeProjects.slice(0, 3).map(project => (
                         <TableRow
                           key={project.id}
                           hover>
-                          <TableCell>
+                          <TableCell sx={{ maxWidth: '250px' }}>
                             <Typography
-                              onClick={() => handleProjectManageClick(project.id)}
+                              onClick={() =>
+                                handleProjectManageClick(project.id)
+                              }
                               sx={{
                                 fontSize: '0.875rem',
                                 cursor: 'pointer',
@@ -644,7 +652,10 @@ export default function AdminMain() {
                                 '&:hover': {
                                   color: '#FBBF24',
                                   textDecoration: 'underline'
-                                }
+                                },
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
                               }}>
                               {project.title}
                             </Typography>
@@ -676,26 +687,28 @@ export default function AdminMain() {
                                 color: '#4b5563'
                               }}>
                               {project.recentActivityDate
-                                ? dayjs(project.recentActivityDate).format('YYYY년 M월 D일')
+                                ? dayjs(project.recentActivityDate).format(
+                                    'YYYY년 M월 D일'
+                                  )
                                 : '-'}
                             </Typography>
                           </TableCell>
                           <TableCell>
                             <Button
-                              variant="contained"
+                              variant="outlined"
                               size="small"
-                              startIcon={<LayoutDashboard size={16} />}
+                              startIcon={<LayoutDashboard size={14} />}
                               onClick={() => handleProjectClick(project.id)}
                               sx={{
-                                minWidth: 'auto',
-                                px: 1.5,
-                                py: 0.5,
-                                fontSize: '0.75rem',
-                                backgroundColor: '#FBBF24',
+                                color: '#1E293B',
+                                bgcolor: 'white',
+                                border: '1px solid #E2E8F0',
                                 '&:hover': {
-                                  backgroundColor: '#FCD34D'
+                                  bgcolor: '#FFF8E6'
                                 },
-                                color: '#ffffff'
+                                fontSize: '0.875rem',
+                                py: 0.5,
+                                px: 1.5
                               }}>
                               대시보드
                             </Button>

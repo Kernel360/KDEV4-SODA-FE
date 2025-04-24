@@ -255,6 +255,14 @@ const ProjectDetail = () => {
   }>({})
   const [articles, setArticles] = useState<any[]>([])
   const [loadingArticles, setLoadingArticles] = useState(false)
+  const [showDeleteMemberDialog, setShowDeleteMemberDialog] = useState(false)
+  const [memberToDelete, setMemberToDelete] = useState<number | null>(null)
+  const [showDeleteCompanyDialog, setShowDeleteCompanyDialog] = useState(false)
+  const [companyToDelete, setCompanyToDelete] = useState<{
+    id: number
+    name: string
+    type: 'client' | 'dev'
+  } | null>(null)
 
   // 3. Effect hooks
   useEffect(() => {
@@ -320,24 +328,25 @@ const ProjectDetail = () => {
 
       // 추가 가능한 회사만 필터링
       const filteredCompanies = response.filter(company => {
-        if (companyType === 'client') {
-          return !project.clientCompanyNames.some(name => {
+        // 이미 프로젝트에 할당된 회사인지 확인
+        const isAssigned =
+          project.clientCompanyNames.some(name => {
+            const existingCompany = allCompanies.find(c => c.name === name)
+            return existingCompany?.id === company.id
+          }) ||
+          project.devCompanyNames.some(name => {
             const existingCompany = allCompanies.find(c => c.name === name)
             return existingCompany?.id === company.id
           })
-        } else {
-          return !project.devCompanyNames.some(name => {
-            const existingCompany = allCompanies.find(c => c.name === name)
-            return existingCompany?.id === company.id
-          })
-        }
+
+        return !isAssigned
       })
 
       const formattedCompanies = filteredCompanies.map(company => ({
         id: company.id,
         name: company.name,
         address: company.address,
-        type: companyType
+        type: companyType // companyType 유지
       }))
 
       setAvailableCompanies(formattedCompanies)
@@ -615,11 +624,12 @@ const ProjectDetail = () => {
   }
 
   const handleCompanySelect = (company: Company) => {
+    console.log('회사 선택:', { company, companyType })
     setSelectedNewCompany({
       id: company.id,
       name: company.name
     })
-    setCompanyType(company.type)
+    // companyType을 유지
     setShowAddCompanyDialog(false)
     setShowAddCompanyMemberDialog(true)
   }
@@ -628,14 +638,51 @@ const ProjectDetail = () => {
     if (!selectedNewCompany) return
 
     try {
-      const response = await projectService.addProjectCompany(Number(id), {
-        companyId: selectedNewCompany.id,
-        role: companyType === 'client' ? 'CLIENT_COMPANY' : 'DEV_COMPANY',
-        managerIds: selectedCompanyManagers,
-        memberIds: selectedRegularMembers
-      })
+      // 개발사와 고객사 추가 로직 분리
+      if (companyType === 'dev') {
+        console.log('개발사 추가 요청:', {
+          devAssignments: [
+            {
+              companyId: selectedNewCompany.id,
+              managerIds: selectedCompanyManagers,
+              memberIds: selectedRegularMembers
+            }
+          ]
+        })
 
-      showToast('회사가 추가되었습니다', 'success')
+        // 개발사 추가 API 호출
+        const response = await projectService.addProjectDevCompanies(
+          Number(id),
+          {
+            devAssignments: [
+              {
+                companyId: selectedNewCompany.id,
+                managerIds: selectedCompanyManagers,
+                memberIds: selectedRegularMembers
+              }
+            ]
+          }
+        )
+
+        if (response.status === 'success') {
+          showToast('개발사가 추가되었습니다', 'success')
+          // 프로젝트 상태를 진행중으로 업데이트
+          await projectService.updateProjectStatus(Number(id), 'IN_PROGRESS')
+          // 프로젝트 정보 새로고침
+          await fetchProjectDetail()
+        }
+      } else {
+        // 고객사 추가 로직
+        await projectService.addProjectCompany(Number(id), {
+          companyId: selectedNewCompany.id,
+          role: 'CLIENT_COMPANY',
+          managerIds: selectedCompanyManagers,
+          memberIds: selectedRegularMembers
+        })
+        showToast('고객사가 추가되었습니다', 'success')
+      }
+
+      // 멤버 목록 새로고침
       fetchMembers()
       setShowAddCompanyMemberDialog(false)
       setSelectedNewCompany(null)
@@ -692,27 +739,23 @@ const ProjectDetail = () => {
   }
 
   const handleMemberDelete = async (memberId: number) => {
+    setMemberToDelete(memberId)
+    setShowDeleteMemberDialog(true)
+  }
+
+  const confirmMemberDelete = async () => {
+    if (!memberToDelete) return
+
     try {
-      // 현재 선택된 회사의 멤버 중 담당자 수 확인
-      const managers = selectedCompanyMembers.members.filter(member =>
-        member.role.includes('MANAGER')
-      )
-
-      // 삭제하려는 멤버가 담당자인 경우, 담당자가 한 명이면 삭제 불가
-      const memberToDelete = selectedCompanyMembers.members.find(
-        member => member.memberId === memberId
-      )
-      if (memberToDelete?.role.includes('MANAGER') && managers.length === 1) {
-        showToast('담당자는 최소 한 명 이상이어야 합니다.', 'error')
-        return
-      }
-
-      await projectService.deleteProjectMember(Number(id), memberId)
+      await projectService.deleteProjectMember(Number(id), memberToDelete)
       showToast('멤버가 성공적으로 삭제되었습니다.', 'success')
 
       // 멤버 목록 새로고침
       const response = await projectService.getProjectMembers(Number(id), {
-        companyRole: tabValue === 1 ? 'CLIENT_COMPANY' : 'DEV_COMPANY',
+        companyRole:
+          selectedCompanyMembers.companyType === 'client'
+            ? 'CLIENT_COMPANY'
+            : 'DEV_COMPANY',
         companyId: selectedCompanyMembers.companyId
       })
 
@@ -720,9 +763,15 @@ const ProjectDetail = () => {
         ...prev,
         members: response.content
       }))
+
+      // 프로젝트 멤버 목록도 새로고침
+      await fetchMembers()
     } catch (error) {
       console.error('멤버 삭제 실패:', error)
       showToast('멤버 삭제 중 오류가 발생했습니다.', 'error')
+    } finally {
+      setShowDeleteMemberDialog(false)
+      setMemberToDelete(null)
     }
   }
 
@@ -783,6 +832,63 @@ const ProjectDetail = () => {
     }
   }
 
+  const handleAddNewMembers = async () => {
+    try {
+      // 새로 선택된 멤버들만 필터링
+      const newManagers = selectedCompanyManagers.filter(
+        id =>
+          !selectedCompanyMembers.members.some(member => member.memberId === id)
+      )
+      const newMembers = selectedRegularMembers.filter(
+        id =>
+          !selectedCompanyMembers.members.some(member => member.memberId === id)
+      )
+
+      if (newManagers.length === 0 && newMembers.length === 0) {
+        showToast('추가할 멤버가 없습니다.', 'info')
+        return
+      }
+
+      const response = await projectService.addProjectMembers(Number(id), {
+        companyId: selectedCompanyMembers.companyId,
+        managerIds: newManagers,
+        memberIds: newMembers
+      })
+
+      if (response.status === 'success') {
+        showToast('멤버가 성공적으로 추가되었습니다.', 'success')
+
+        // 멤버 목록 새로고침
+        const updatedMembers = await projectService.getProjectMembers(
+          Number(id),
+          {
+            companyRole:
+              selectedCompanyMembers.companyType === 'client'
+                ? 'CLIENT_COMPANY'
+                : 'DEV_COMPANY',
+            companyId: selectedCompanyMembers.companyId
+          }
+        )
+
+        setSelectedCompanyMembers(prev => ({
+          ...prev,
+          members: updatedMembers.content
+        }))
+
+        // 프로젝트 멤버 목록도 새로고침
+        await fetchMembers()
+
+        setShowAddCompanyMemberDialog(false)
+        setSelectedCompanyManagers([])
+        setSelectedRegularMembers([])
+        setMemberSearch('')
+      }
+    } catch (error) {
+      console.error('멤버 추가 실패:', error)
+      showToast('멤버 추가 중 오류가 발생했습니다.', 'error')
+    }
+  }
+
   // 멤버 선택 모달에서 일반 멤버 선택 처리
   const handleRegularMemberToggle = (memberId: number) => {
     setSelectedRegularMembers(prev =>
@@ -790,6 +896,26 @@ const ProjectDetail = () => {
         ? prev.filter(id => id !== memberId)
         : [...prev, memberId]
     )
+  }
+
+  const handleCompanyDelete = async () => {
+    if (!companyToDelete || !id) return
+
+    try {
+      await projectService.deleteProjectCompany(Number(id), companyToDelete.id)
+      showToast('회사가 성공적으로 삭제되었습니다.', 'success')
+
+      // 프로젝트 정보 새로고침
+      await fetchProjectDetail()
+      // 멤버 목록 새로고침
+      await fetchMembers()
+    } catch (error) {
+      console.error('회사 삭제 실패:', error)
+      showToast('회사 삭제 중 오류가 발생했습니다.', 'error')
+    } finally {
+      setShowDeleteCompanyDialog(false)
+      setCompanyToDelete(null)
+    }
   }
 
   return (
@@ -1552,39 +1678,68 @@ const ProjectDetail = () => {
                                   }}>
                                   {companyName}
                                 </Typography>
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  startIcon={<User size={16} />}
-                                  onClick={() => {
-                                    console.log('멤버 관리 버튼 클릭:', {
-                                      companyName,
-                                      company
-                                    })
-                                    if (company) {
-                                      handleMemberDialogOpen(
-                                        company.id,
-                                        company.name,
-                                        'client'
-                                      )
-                                    } else {
-                                      console.error(
-                                        '회사 정보를 찾을 수 없음:',
-                                        companyName
-                                      )
-                                    }
-                                  }}
-                                  sx={{
-                                    borderColor: '#E2E8F0',
-                                    color: '#64748B',
-                                    '&:hover': {
-                                      borderColor: '#94A3B8',
-                                      backgroundColor:
-                                        'rgba(226, 232, 240, 0.1)'
-                                    }
-                                  }}>
-                                  멤버 관리
-                                </Button>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<User size={16} />}
+                                    onClick={() => {
+                                      console.log('멤버 관리 버튼 클릭:', {
+                                        companyName,
+                                        company
+                                      })
+                                      if (company) {
+                                        handleMemberDialogOpen(
+                                          company.id,
+                                          company.name,
+                                          'client'
+                                        )
+                                      } else {
+                                        console.error(
+                                          '회사 정보를 찾을 수 없음:',
+                                          companyName
+                                        )
+                                      }
+                                    }}
+                                    sx={{
+                                      borderColor: '#E2E8F0',
+                                      color: '#64748B',
+                                      '&:hover': {
+                                        borderColor: '#94A3B8',
+                                        backgroundColor:
+                                          'rgba(226, 232, 240, 0.1)'
+                                      }
+                                    }}>
+                                    멤버 관리
+                                  </Button>
+                                  {project.clientCompanyNames.length > 1 && (
+                                    <Button
+                                      variant="outlined"
+                                      size="small"
+                                      startIcon={<X size={16} />}
+                                      onClick={() => {
+                                        if (company) {
+                                          setCompanyToDelete({
+                                            id: company.id,
+                                            name: company.name,
+                                            type: 'client'
+                                          })
+                                          setShowDeleteCompanyDialog(true)
+                                        }
+                                      }}
+                                      sx={{
+                                        borderColor: '#EF4444',
+                                        color: '#EF4444',
+                                        '&:hover': {
+                                          borderColor: '#DC2626',
+                                          backgroundColor:
+                                            'rgba(239, 68, 68, 0.1)'
+                                        }
+                                      }}>
+                                      회사 삭제
+                                    </Button>
+                                  )}
+                                </Box>
                               </Box>
                             }
                           />
@@ -1737,39 +1892,66 @@ const ProjectDetail = () => {
                                   }}>
                                   {companyName}
                                 </Typography>
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  startIcon={<User size={16} />}
-                                  onClick={() => {
-                                    console.log('멤버 관리 버튼 클릭:', {
-                                      companyName,
-                                      company
-                                    })
-                                    if (company) {
-                                      handleMemberDialogOpen(
-                                        company.id,
-                                        company.name,
-                                        'dev'
-                                      )
-                                    } else {
-                                      console.error(
-                                        '회사 정보를 찾을 수 없음:',
-                                        companyName
-                                      )
-                                    }
-                                  }}
-                                  sx={{
-                                    borderColor: '#E2E8F0',
-                                    color: '#64748B',
-                                    '&:hover': {
-                                      borderColor: '#94A3B8',
-                                      backgroundColor:
-                                        'rgba(226, 232, 240, 0.1)'
-                                    }
-                                  }}>
-                                  멤버 관리
-                                </Button>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<User size={16} />}
+                                    onClick={() => {
+                                      console.log('멤버 관리 버튼 클릭:', {
+                                        companyName,
+                                        company
+                                      })
+                                      if (company) {
+                                        handleMemberDialogOpen(
+                                          company.id,
+                                          company.name,
+                                          'dev'
+                                        )
+                                      } else {
+                                        console.error(
+                                          '회사 정보를 찾을 수 없음:',
+                                          companyName
+                                        )
+                                      }
+                                    }}
+                                    sx={{
+                                      borderColor: '#E2E8F0',
+                                      color: '#64748B',
+                                      '&:hover': {
+                                        borderColor: '#94A3B8',
+                                        backgroundColor:
+                                          'rgba(226, 232, 240, 0.1)'
+                                      }
+                                    }}>
+                                    멤버 관리
+                                  </Button>
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<X size={16} />}
+                                    onClick={() => {
+                                      if (company) {
+                                        setCompanyToDelete({
+                                          id: company.id,
+                                          name: company.name,
+                                          type: 'dev'
+                                        })
+                                        setShowDeleteCompanyDialog(true)
+                                      }
+                                    }}
+                                    sx={{
+                                      borderColor: '#EF4444',
+                                      color: '#EF4444',
+                                      '&:hover': {
+                                        borderColor: '#DC2626',
+                                        backgroundColor:
+                                          'rgba(239, 68, 68, 0.1)'
+                                      }
+                                    }}>
+                                    회사 삭제
+                                  </Button>
+                                </Box>
                               </Box>
                             }
                           />
@@ -1895,7 +2077,7 @@ const ProjectDetail = () => {
                   backgroundColor: 'rgba(226, 232, 240, 0.1)'
                 }
               }}>
-              수정
+              멤버 추가
             </Button>
           </Box>
         </DialogTitle>
@@ -2669,12 +2851,71 @@ const ProjectDetail = () => {
           <Button
             variant="contained"
             color="primary"
-            onClick={handleAddNewCompany}
+            onClick={handleAddNewMembers}
             disabled={
               selectedCompanyManagers.length === 0 &&
-              selectedCompanyMembers.members.length === 0
+              selectedRegularMembers.length === 0
             }>
             추가
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Member Confirmation Dialog */}
+      <Dialog
+        open={showDeleteMemberDialog}
+        onClose={() => {
+          setShowDeleteMemberDialog(false)
+          setMemberToDelete(null)
+        }}>
+        <DialogTitle>멤버 삭제 확인</DialogTitle>
+        <DialogContent>
+          <Typography>정말로 이 멤버를 삭제하시겠습니까?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowDeleteMemberDialog(false)
+              setMemberToDelete(null)
+            }}
+            color="primary">
+            취소
+          </Button>
+          <Button
+            onClick={confirmMemberDelete}
+            color="error">
+            삭제
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Company Confirmation Dialog */}
+      <Dialog
+        open={showDeleteCompanyDialog}
+        onClose={() => {
+          setShowDeleteCompanyDialog(false)
+          setCompanyToDelete(null)
+        }}>
+        <DialogTitle>회사 삭제 확인</DialogTitle>
+        <DialogContent>
+          <Typography>
+            정말 해당 프로젝트에서 {companyToDelete?.name} 회사를
+            제외시키겠습니까?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowDeleteCompanyDialog(false)
+              setCompanyToDelete(null)
+            }}
+            color="primary">
+            취소
+          </Button>
+          <Button
+            onClick={handleCompanyDelete}
+            color="error">
+            삭제
           </Button>
         </DialogActions>
       </Dialog>

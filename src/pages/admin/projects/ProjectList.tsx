@@ -11,9 +11,9 @@ import {
   Stack,
   Paper
 } from '@mui/material'
-import { LayoutDashboard, Search, Plus } from 'lucide-react'
+import { LayoutDashboard, Search, PlusCircle } from 'lucide-react'
 import { projectService } from '../../../services/projectService'
-import { Project, ProjectStatus } from '../../../types/project'
+import { Project } from '../../../types/project'
 import dayjs from 'dayjs'
 import DataTable from '../../../components/common/DataTable'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
@@ -181,13 +181,16 @@ const ProjectList: React.FC = () => {
       label: '대시보드',
       render: (row: Project) => (
         <Button
-          variant="contained"
-          startIcon={<LayoutDashboard size={20} />}
+          variant="outlined"
+          startIcon={<LayoutDashboard size={14} />}
           onClick={() => navigate(`/user/projects/${row.id}`)}
           sx={{
-            bgcolor: '#FFB800',
+            color: '#1E293B',
+            bgcolor: 'white',
+            border: '1px solid #E2E8F0',
             '&:hover': {
-              bgcolor: '#E5A600'
+              bgcolor: '#FFF8E6',
+              border: '1px solid #E2E8F0'
             },
             fontSize: '0.875rem',
             py: 0.5,
@@ -206,12 +209,78 @@ const ProjectList: React.FC = () => {
     <Box sx={{ p: 3 }}>
       <Box sx={{ mb: 3 }}>
         <Stack spacing={3}>
+          {/* 상태 필터 버튼 */}
+          <Stack
+            direction="row"
+            spacing={2}
+            alignItems="center"
+            sx={{ mb: 2, width: '100%' }}>
+            {PROJECT_STATUSES.map(status => {
+              const count =
+                status.value === ''
+                  ? projects.length
+                  : projects.filter(p => p.status === status.value).length
+              const statusColor =
+                status.value === '' ? '#64748B' : getStatusColor(status.value)
+
+              return (
+                <Paper
+                  key={status.value}
+                  elevation={0}
+                  onClick={() => handleStatusChange(status.value)}
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    flex: 1,
+                    bgcolor:
+                      selectedStatus === status.value
+                        ? `${statusColor}10`
+                        : 'white',
+                    border: '1px solid',
+                    borderColor:
+                      selectedStatus === status.value ? statusColor : '#E2E8F0',
+                    borderLeft: `4px solid ${statusColor}`,
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: `${statusColor}10`,
+                      borderColor: statusColor
+                    }
+                  }}>
+                  <Box sx={{ p: 2 }}>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: selectedStatus === status.value ? 600 : 400,
+                        color: '#1E293B',
+                        mb: 0.5
+                      }}>
+                      {status.label}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        color: statusColor
+                      }}>
+                      {count}건
+                    </Typography>
+                  </Box>
+                </Paper>
+              )
+            })}
+          </Stack>
+
           <Box
             sx={{
               display: 'flex',
-              justifyContent: 'space-between',
+              justifyContent: 'flex-end',
               alignItems: 'center',
-              gap: 6
+              gap: 2
             }}>
             <TextField
               size="small"
@@ -224,58 +293,42 @@ const ProjectList: React.FC = () => {
                   <InputAdornment position="end">
                     <Button
                       onClick={handleSearch}
-                      sx={{ minWidth: 'auto' }}>
+                      sx={{
+                        minWidth: 'auto',
+                        color: '#1E293B'
+                      }}>
                       <Search size={20} />
                     </Button>
                   </InputAdornment>
-                )
+                ),
+                sx: {
+                  height: '38px'
+                }
               }}
-              sx={{ flex: 1 }}
+              sx={{
+                width: '400px',
+                '& .MuiOutlinedInput-root': {
+                  height: '38px'
+                }
+              }}
             />
             <Button
               variant="contained"
-              startIcon={<Plus size={20} />}
+              startIcon={<PlusCircle size={18} />}
               onClick={() => navigate('/admin/projects/create')}
               sx={{
                 bgcolor: 'primary.main', // 테마 기본 색상 사용 또는 원하는 색상 지정
                 '&:hover': {
                   bgcolor: 'primary.dark' // 호버 시 약간 어둡게
                 },
-                minWidth: '200px'
+                color: 'white',
+                minWidth: '140px',
+                height: '38px',
+                fontSize: '0.875rem'
               }}>
-              프로젝트 추가하기
+              프로젝트 추가
             </Button>
           </Box>
-
-          {/* 상태 필터 버튼 */}
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ mb: 2, justifyContent: 'flex-start' }}>
-            {PROJECT_STATUSES.map(status => (
-              <Button
-                key={status.value}
-                variant="outlined"
-                onClick={() => handleStatusChange(status.value)}
-                sx={{
-                  bgcolor: 'white',
-                  color: '#666',
-                  border: '1px solid',
-                  borderColor:
-                    selectedStatus === status.value ? '#FFB800' : '#E0E0E0',
-                  '&:hover': {
-                    bgcolor: '#f5f5f5',
-                    borderColor:
-                      selectedStatus === status.value ? '#FFB800' : '#E0E0E0'
-                  },
-                  px: 3,
-                  py: 1.5,
-                  fontSize: '0.875rem'
-                }}>
-                {status.label}
-              </Button>
-            ))}
-          </Stack>
         </Stack>
       </Box>
 
