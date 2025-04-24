@@ -37,12 +37,13 @@ import TaskDetailPage from './pages/tasks/TaskDetailPage'
 import CreateRequest from './pages/user/projects/CreateRequest'
 import UserDashboard from './pages/user/UserDashboard'
 import RequestList from './pages/user/RequestList'
-import RecentPosts from './pages/user/RecentPosts'
+import RecentPosts from './pages/user/MyArticles'
 import Projects from './pages/user/Projects'
 import RequestDetail from './pages/user/projects/RequestDetail'
 import DataManagement from './pages/admin/DataManagement'
 import ReapplyRequest from './pages/user/projects/ReapplyRequest'
 import UserRequests from './pages/user/UserRequests'
+import MyArticles from './pages/user/MyArticles'
 
 const App: React.FC = () => {
   return (
@@ -164,8 +165,8 @@ const App: React.FC = () => {
                 element={<UserRequests />}
               />
               <Route
-                path="recent-posts"
-                element={<RecentPosts />}
+                path="articles"
+                element={<MyArticles />}
               />
               <Route
                 path="projects"
