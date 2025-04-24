@@ -320,24 +320,25 @@ const ProjectDetail = () => {
 
       // 추가 가능한 회사만 필터링
       const filteredCompanies = response.filter(company => {
-        if (companyType === 'client') {
-          return !project.clientCompanyNames.some(name => {
+        // 이미 프로젝트에 할당된 회사인지 확인
+        const isAssigned =
+          project.clientCompanyNames.some(name => {
+            const existingCompany = allCompanies.find(c => c.name === name)
+            return existingCompany?.id === company.id
+          }) ||
+          project.devCompanyNames.some(name => {
             const existingCompany = allCompanies.find(c => c.name === name)
             return existingCompany?.id === company.id
           })
-        } else {
-          return !project.devCompanyNames.some(name => {
-            const existingCompany = allCompanies.find(c => c.name === name)
-            return existingCompany?.id === company.id
-          })
-        }
+
+        return !isAssigned
       })
 
       const formattedCompanies = filteredCompanies.map(company => ({
         id: company.id,
         name: company.name,
         address: company.address,
-        type: companyType
+        type: companyType // companyType 유지
       }))
 
       setAvailableCompanies(formattedCompanies)
@@ -615,11 +616,12 @@ const ProjectDetail = () => {
   }
 
   const handleCompanySelect = (company: Company) => {
+    console.log('회사 선택:', { company, companyType })
     setSelectedNewCompany({
       id: company.id,
       name: company.name
     })
-    setCompanyType(company.type)
+    // companyType을 유지
     setShowAddCompanyDialog(false)
     setShowAddCompanyMemberDialog(true)
   }
@@ -628,14 +630,51 @@ const ProjectDetail = () => {
     if (!selectedNewCompany) return
 
     try {
-      const response = await projectService.addProjectCompany(Number(id), {
-        companyId: selectedNewCompany.id,
-        role: companyType === 'client' ? 'CLIENT_COMPANY' : 'DEV_COMPANY',
-        managerIds: selectedCompanyManagers,
-        memberIds: selectedRegularMembers
-      })
+      // 개발사와 고객사 추가 로직 분리
+      if (companyType === 'dev') {
+        console.log('개발사 추가 요청:', {
+          devAssignments: [
+            {
+              companyId: selectedNewCompany.id,
+              managerIds: selectedCompanyManagers,
+              memberIds: selectedRegularMembers
+            }
+          ]
+        })
 
-      showToast('회사가 추가되었습니다', 'success')
+        // 개발사 추가 API 호출
+        const response = await projectService.addProjectDevCompanies(
+          Number(id),
+          {
+            devAssignments: [
+              {
+                companyId: selectedNewCompany.id,
+                managerIds: selectedCompanyManagers,
+                memberIds: selectedRegularMembers
+              }
+            ]
+          }
+        )
+
+        if (response.status === 'success') {
+          showToast('개발사가 추가되었습니다', 'success')
+          // 프로젝트 상태를 진행중으로 업데이트
+          await projectService.updateProjectStatus(Number(id), 'IN_PROGRESS')
+          // 프로젝트 정보 새로고침
+          await fetchProjectDetail()
+        }
+      } else {
+        // 고객사 추가 로직
+        await projectService.addProjectCompany(Number(id), {
+          companyId: selectedNewCompany.id,
+          role: 'CLIENT_COMPANY',
+          managerIds: selectedCompanyManagers,
+          memberIds: selectedRegularMembers
+        })
+        showToast('고객사가 추가되었습니다', 'success')
+      }
+
+      // 멤버 목록 새로고침
       fetchMembers()
       setShowAddCompanyMemberDialog(false)
       setSelectedNewCompany(null)

@@ -144,6 +144,16 @@ interface VoteResult {
   closed: boolean
 }
 
+interface DevAssignment {
+  companyId: number
+  managerIds: number[]
+  memberIds: number[]
+}
+
+interface DevAssignmentRequest {
+  devAssignments: DevAssignment[]
+}
+
 export const projectService = {
   // 프로젝트 목록 조회
   async getAllProjects(status?: string, keyword?: string): Promise<Project[]> {
@@ -606,6 +616,22 @@ export const projectService = {
     const response = await client.post(`/articles/${articleId}/vote/items`, {
       itemText
     })
+    return response.data
+  },
+
+  async addProjectDevCompanies(
+    projectId: number,
+    request: DevAssignmentRequest
+  ) {
+    console.log('개발사 추가 API 호출:', {
+      url: `/projects/${projectId}/dev-companies`,
+      request
+    })
+
+    const response = await client.post(
+      `/projects/${projectId}/dev-companies`,
+      request
+    )
     return response.data
   }
 }
