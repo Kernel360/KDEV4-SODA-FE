@@ -649,5 +649,17 @@ export const projectService = {
       request
     )
     return response.data
+  },
+
+  deleteProjectCompany: async (
+    projectId: number,
+    companyId: number
+  ): Promise<void> => {
+    try {
+      await client.delete(`/projects/${projectId}/companies/${companyId}`)
+    } catch (error) {
+      console.error('프로젝트 회사 삭제 실패:', error)
+      throw error
+    }
   }
 }
