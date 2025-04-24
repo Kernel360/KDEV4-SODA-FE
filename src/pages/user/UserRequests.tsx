@@ -12,12 +12,16 @@ import {
   TableRow,
   Chip,
   Pagination,
-  CircularProgress
+  CircularProgress,
+  TextField,
+  InputAdornment,
+  Button
 } from '@mui/material'
 import { client } from '../../api/client'
 import { useUserStore } from '../../stores/userStore'
 import { useToast } from '../../contexts/ToastContext'
 import dayjs from 'dayjs'
+import { Search } from 'lucide-react'
 
 interface Request {
   requestId: number
@@ -35,12 +39,14 @@ const UserRequests: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [activeSearchTerm, setActiveSearchTerm] = useState('')
 
   useEffect(() => {
     if (user?.memberId) {
       fetchRequests()
     }
-  }, [user?.memberId, page])
+  }, [user?.memberId, page, activeSearchTerm])
 
   const fetchRequests = async () => {
     try {
@@ -48,7 +54,8 @@ const UserRequests: React.FC = () => {
       const response = await client.get(`/members/${user.memberId}/requests`, {
         params: {
           page: page - 1,
-          size: 10
+          size: 10,
+          keyword: activeSearchTerm.trim() || undefined
         }
       })
       if (response.data.status === 'success') {
@@ -61,6 +68,11 @@ const UserRequests: React.FC = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSearch = () => {
+    setPage(1)
+    setActiveSearchTerm(searchTerm)
   }
 
   const getStatusText = (status: string) => {
@@ -120,6 +132,35 @@ const UserRequests: React.FC = () => {
       <Typography variant="h5" gutterBottom>
         요청사항 목록
       </Typography>
+
+      <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+        <TextField
+          size="small"
+          placeholder="검색어를 입력하세요"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              handleSearch()
+            }
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search size={20} />
+              </InputAdornment>
+            )
+          }}
+          sx={{ flex: 1 }}
+        />
+        <Button
+          variant="contained"
+          onClick={handleSearch}
+        >
+          검색
+        </Button>
+      </Box>
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
