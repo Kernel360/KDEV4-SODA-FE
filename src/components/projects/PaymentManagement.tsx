@@ -76,7 +76,52 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
   )
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL')
 
-  const fetchRequests = async () => {
+  const fetchRequestCounts = async () => {
+    try {
+      const totalQueryParams = new URLSearchParams({
+        page: '0',
+        size: '100'
+      })
+      if (selectedStatus !== 'ALL') {
+        totalQueryParams.append('status', selectedStatus)
+      }
+
+      const stagePromises = stages.map(stage => {
+        const stageQueryParams = new URLSearchParams({
+          stageId: stage.id.toString(),
+          page: '0',
+          size: '100'
+        })
+        if (selectedStatus !== 'ALL') {
+          stageQueryParams.append('status', selectedStatus)
+        }
+        return client.get(
+          `/projects/${projectId}/requests?${stageQueryParams.toString()}`
+        )
+      })
+
+      const [totalResponse, ...stageResponses] = await Promise.all([
+        client.get(`/projects/${projectId}/requests?${totalQueryParams.toString()}`),
+        ...stagePromises
+      ])
+
+      if (totalResponse.data.status === 'success' && totalResponse.data.data) {
+        setTotalRequests(totalResponse.data.data.page.totalElements)
+      }
+
+      const stageCounts: { [key: number]: number } = {}
+      stageResponses.forEach((response, index) => {
+        if (response.data.status === 'success' && response.data.data) {
+          stageCounts[stages[index].id] = response.data.data.page.totalElements
+        }
+      })
+      setStageRequests(stageCounts)
+    } catch (error) {
+      console.error('Failed to fetch request counts:', error)
+    }
+  }
+
+  const fetchCurrentPageRequests = async () => {
     try {
       setLoading(true)
       setError(null)
@@ -94,44 +139,18 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
         queryParams.append('stageId', selectedStage.toString())
       }
 
-      const stagePromises = stages.map(stage => {
-        const stageQueryParams = new URLSearchParams({
-          stageId: stage.id.toString(),
-          page: '0',
-          size: '100'
-        })
-        if (selectedStatus !== 'ALL') {
-          stageQueryParams.append('status', selectedStatus)
-        }
-        return client.get(
-          `/projects/${projectId}/requests?${stageQueryParams.toString()}`
-        )
-      })
-
-      const totalQueryParams = new URLSearchParams({
-        page: '0',
-        size: '100'
-      })
-      if (selectedStatus !== 'ALL') {
-        totalQueryParams.append('status', selectedStatus)
+      if (searchTerm.trim()) {
+        queryParams.append('keyword', searchTerm.trim())
       }
-      const totalPromise = client.get(
-        `/projects/${projectId}/requests?${totalQueryParams.toString()}`
+
+      const response = await client.get(
+        `/projects/${projectId}/requests?${queryParams.toString()}`
       )
 
-      const [pageResponse, totalResponse, ...stageResponses] =
-        await Promise.all([
-          client.get(
-            `/projects/${projectId}/requests?${queryParams.toString()}`
-          ),
-          totalPromise,
-          ...stagePromises
-        ])
+      if (response.data.status === 'success' && response.data.data) {
+        const currentPageRequests = response.data.data.content
 
-      if (pageResponse.data.status === 'success' && pageResponse.data.data) {
-        const currentPageRequests = pageResponse.data.data.content
-
-        // 현재 페이지의 요청들 중 parentId가 있는 요청들의 부모 요청 ID 수집
+        // 부모-자식 요청 그룹화 로직
         const parentIds = currentPageRequests
           .filter((req: Request) => req.parentId && req.parentId !== -1)
           .map((req: Request) => req.parentId)
@@ -140,7 +159,6 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
               self.indexOf(id) === index
           )
 
-        // 부모 요청들이 있다면 추가로 가져오기
         if (parentIds.length > 0) {
           const parentPromises = parentIds.map((id: number) =>
             client.get(`/requests/${id}`)
@@ -150,7 +168,6 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
             .filter(res => res.data.status === 'success')
             .map(res => res.data.data)
 
-          // 부모-자식 요청 그룹화
           const groups: RequestGroup[] = []
           currentPageRequests.forEach((request: Request) => {
             if (request.parentId && request.parentId !== -1) {
@@ -171,7 +188,6 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
                 }
               }
             } else {
-              // 부모가 없는 요청은 단독 그룹으로 처리
               groups.push({
                 parent: request,
                 children: []
@@ -181,7 +197,6 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
 
           setRequestGroups(groups)
         } else {
-          // 부모 요청이 없는 경우 각 요청을 단독 그룹으로 처리
           setRequestGroups(
             currentPageRequests.map((request: Request) => ({
               parent: request,
@@ -190,20 +205,8 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
           )
         }
 
-        setTotalPages(pageResponse.data.data.page.totalPages)
+        setTotalPages(response.data.data.page.totalPages)
       }
-
-      if (totalResponse.data.status === 'success' && totalResponse.data.data) {
-        setTotalRequests(totalResponse.data.data.page.totalElements)
-      }
-
-      const stageCounts: { [key: number]: number } = {}
-      stageResponses.forEach((response, index) => {
-        if (response.data.status === 'success' && response.data.data) {
-          stageCounts[stages[index].id] = response.data.data.page.totalElements
-        }
-      })
-      setStageRequests(stageCounts)
     } catch (error) {
       console.error('Failed to fetch requests:', error)
       setError('요청 목록을 불러오는데 실패했습니다.')
@@ -213,8 +216,12 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
   }
 
   useEffect(() => {
-    fetchRequests()
-  }, [projectId, selectedStage, page, selectedStatus])
+    fetchRequestCounts()
+  }, [projectId, selectedStatus])
+
+  useEffect(() => {
+    fetchCurrentPageRequests()
+  }, [projectId, selectedStage, page, selectedStatus, searchTerm])
 
   const handleStatusChange = (event: SelectChangeEvent) => {
     setSelectedStatus(event.target.value)
@@ -253,6 +260,11 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
       default:
         return status
     }
+  }
+
+  const handleSearch = () => {
+    setPage(0)
+    fetchCurrentPageRequests()
   }
 
   return (
@@ -365,7 +377,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
           size="small"
           placeholder="검색어를 입력하세요"
           value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
+          onChange={(e) => setSearchTerm(e.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -373,8 +385,21 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
               </InputAdornment>
             )
           }}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              handleSearch()
+            }
+          }}
           sx={{ flex: 1 }}
         />
+
+        <Button
+          variant="contained"
+          onClick={handleSearch}
+          size="small"
+        >
+          검색
+        </Button>
 
         <FormControl sx={{ minWidth: 120 }}>
           <InputLabel id="status-select-label">상태</InputLabel>

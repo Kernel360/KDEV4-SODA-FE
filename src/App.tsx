@@ -42,6 +42,7 @@ import Projects from './pages/user/Projects'
 import RequestDetail from './pages/user/projects/RequestDetail'
 import DataManagement from './pages/admin/DataManagement'
 import ReapplyRequest from './pages/user/projects/ReapplyRequest'
+import UserRequests from './pages/user/UserRequests'
 
 const App: React.FC = () => {
   return (
@@ -160,7 +161,7 @@ const App: React.FC = () => {
               />
               <Route
                 path="requests"
-                element={<RequestList />}
+                element={<UserRequests />}
               />
               <Route
                 path="recent-posts"

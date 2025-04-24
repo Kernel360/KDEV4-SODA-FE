@@ -93,6 +93,57 @@ export interface ProjectMemberSearchCondition {
   memberRole?: string
 }
 
+interface CreateVoteRequest {
+  title: string
+  voteItems: string[]
+  allowMultipleSelection: boolean
+  allowTextAnswer: boolean
+  deadLine?: string
+}
+
+interface CreateVoteResponse {
+  voteId: number
+  articleId: number
+  title: string
+  deadLine?: string
+  allowMultipleSelection: boolean
+  allowTextAnswer: boolean
+}
+
+interface VoteInfo {
+  voteId: number
+  title: string
+  deadLine: string
+  closed: boolean
+  items: {
+    itemId: number
+    content: string
+  }[]
+  multipleSelection: boolean
+}
+
+interface VoteSubmission {
+  selectedItemIds?: number[]
+  textAnswer?: string
+}
+
+interface VoteResult {
+  voteId: number
+  title: string
+  allowMultipleSelection: boolean
+  allowTextAnswer: boolean
+  deadLine: string
+  totalParticipants: number
+  itemResults: {
+    itemId: number
+    itemText: string
+    count: number
+    percentage: number
+  }[]
+  textAnswers: string[]
+  closed: boolean
+}
+
 export const projectService = {
   // 프로젝트 목록 조회
   async getAllProjects(status?: string, keyword?: string): Promise<Project[]> {
@@ -185,7 +236,7 @@ export const projectService = {
   // 프로젝트 단계 조회
   async getProjectStages(projectId: number): Promise<ApiStage[]> {
     const response = await client.get(
-      `http://localhost:8080/projects/${projectId}/stages`
+      `https://api.s0da.co.kr/projects/${projectId}/stages`
     )
     return response.data.data
   },
@@ -336,36 +387,38 @@ export const projectService = {
   async uploadArticleFiles(articleId: number, files: File[]): Promise<void> {
     try {
       // 1. presigned URL 요청
-      const presignedResponse = await client.post(`/articles/${articleId}/files/presigned-urls`, 
+      const presignedResponse = await client.post(
+        `/articles/${articleId}/files/presigned-urls`,
         files.map(file => ({
           fileName: file.name,
           contentType: file.type
         }))
-      );
+      )
 
       if (presignedResponse.data.status === 'success') {
-        const { entries } = presignedResponse.data.data;
+        const { entries } = presignedResponse.data.data
 
         // 2. S3에 파일 업로드
         await Promise.all(
           entries.map((entry, i) =>
             axios.put(entry.presignedUrl, files[i], {
-              headers: { 'Content-Type': files[i].type },
+              headers: { 'Content-Type': files[i].type }
             })
           )
-        );
+        )
 
         // 3. 업로드 완료 확인
-        await client.post(`/articles/${articleId}/files/confirm-upload`,
+        await client.post(
+          `/articles/${articleId}/files/confirm-upload`,
           entries.map(entry => ({
             fileName: entry.fileName,
             url: entry.fileUrl
           }))
-        );
+        )
       }
     } catch (error) {
-      console.error('Failed to upload article files:', error);
-      throw error;
+      console.error('Failed to upload article files:', error)
+      throw error
     }
   },
 
@@ -521,5 +574,38 @@ export const projectService = {
   async getUserRole(): Promise<string> {
     const response = await client.get('/projects/my/role')
     return response.data.data
+  },
+
+  async createVote(
+    articleId: number,
+    data: CreateVoteRequest
+  ): Promise<CreateVoteResponse> {
+    const response = await client.post(`/articles/${articleId}/vote`, data)
+    return response.data.data
+  },
+
+  async getVoteInfo(articleId: number): Promise<VoteInfo> {
+    const response = await client.get(`/articles/${articleId}/vote`)
+    return response.data.data
+  },
+
+  async submitVote(articleId: number, voteSubmission: VoteSubmission) {
+    const response = await client.post(
+      `/articles/${articleId}/vote/submit`,
+      voteSubmission
+    )
+    return response.data
+  },
+
+  async getVoteResult(articleId: number): Promise<VoteResult> {
+    const response = await client.get(`/articles/${articleId}/vote-results`)
+    return response.data.data
+  },
+
+  async addVoteItem(articleId: number, itemText: string) {
+    const response = await client.post(`/articles/${articleId}/vote/items`, {
+      itemText
+    })
+    return response.data
   }
 }

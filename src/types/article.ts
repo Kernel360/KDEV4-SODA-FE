@@ -18,6 +18,22 @@ export interface Author {
   email: string
 }
 
+export interface VoteItem {
+  itemId: number
+  content: string
+  voteCount?: number
+}
+
+export interface Vote {
+  id: number
+  title: string
+  deadLine?: string
+  closed: boolean
+  items: VoteItem[]
+  allowMultipleSelection: boolean
+  allowTextAnswer: boolean
+}
+
 export interface Article {
   id: number
   title: string
@@ -36,6 +52,8 @@ export interface Article {
   parentArticleId?: number
   stageId?: number
   deleted?: boolean
+  voteList?: VoteItem[]
+  vote?: Vote
 }
 
 export interface ArticleFile {

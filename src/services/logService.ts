@@ -11,6 +11,7 @@ export const logService = {
     if (params.to) queryParams.append('to', params.to)
     if (params.page !== undefined) queryParams.append('page', params.page.toString())
     if (params.size !== undefined) queryParams.append('size', params.size.toString())
+    if (params.keyword) queryParams.append('keyword', params.keyword)
 
     const response = await client.get(`/logs?${queryParams.toString()}`)
     return response.data
