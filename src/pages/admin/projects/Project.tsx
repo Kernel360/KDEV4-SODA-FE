@@ -100,6 +100,43 @@ const getStatusText = (status: ProjectStatus): string => {
   }
 }
 
+const getArticleStatusText = (status: string): string => {
+  switch (status) {
+    case 'COMMENTED':
+      return '답변완료'
+    case 'PENDING':
+      return '답변대기'
+    default:
+      return status
+  }
+}
+
+const getPriorityText = (priority: string): string => {
+  switch (priority) {
+    case 'LOW':
+      return '낮음'
+    case 'MEDIUM':
+      return '중간'
+    case 'HIGH':
+      return '높음'
+    default:
+      return priority
+  }
+}
+
+const getPriorityColor = (priority: string): string => {
+  switch (priority) {
+    case 'LOW':
+      return '#22C55E' // Green
+    case 'MEDIUM':
+      return '#F59E0B' // Yellow
+    case 'HIGH':
+      return '#EF4444' // Red
+    default:
+      return '#64748B' // Gray
+  }
+}
+
 const getStatusValue = (status: string): ProjectStatus => {
   switch (status) {
     case '계약':
@@ -216,12 +253,15 @@ const ProjectDetail = () => {
   const [expandedMemberSections, setExpandedMemberSections] = useState<{
     [key: number]: { managers: boolean; members: boolean }
   }>({})
+  const [articles, setArticles] = useState<any[]>([])
+  const [loadingArticles, setLoadingArticles] = useState(false)
 
   // 3. Effect hooks
   useEffect(() => {
     if (id) {
       fetchProjectDetail()
       fetchCompanies()
+      fetchArticles()
     }
   }, [id])
 
@@ -305,7 +345,7 @@ const ProjectDetail = () => {
       console.error('Failed to fetch companies:', error)
       showToast('회사 목록을 불러오는데 실패했습니다.', 'error')
       setAvailableCompanies([])
-      } finally {
+    } finally {
       setLoadingCompanies(false)
     }
   }
@@ -413,6 +453,25 @@ const ProjectDetail = () => {
       showToast('멤버 정보를 불러오는데 실패했습니다.', 'error')
     } finally {
       setLoadingMembers(false)
+    }
+  }
+
+  const fetchArticles = async () => {
+    try {
+      setLoadingArticles(true)
+      const response = await projectService.getProjectArticles(
+        Number(id),
+        null,
+        undefined,
+        undefined,
+        0,
+        3
+      )
+      setArticles(response.data)
+    } catch (error) {
+      console.error('Failed to fetch articles:', error)
+    } finally {
+      setLoadingArticles(false)
     }
   }
 
@@ -744,11 +803,11 @@ const ProjectDetail = () => {
             목록으로
           </Button>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-          <Typography
-            variant="h4"
-            sx={{ fontWeight: 600 }}>
-            {project.title}
-          </Typography>
+            <Typography
+              variant="h4"
+              sx={{ fontWeight: 600 }}>
+              {project.title}
+            </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography
                 variant="body1"
@@ -831,23 +890,23 @@ const ProjectDetail = () => {
                     </List>
                   </Paper>
                 )}
-        </Box>
+              </Box>
             </Box>
           </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            variant="contained"
-            startIcon={<LayoutDashboard size={20} />}
-            onClick={() => navigate(`/user/projects/${id}`)}
-            sx={{
-              backgroundColor: '#FBBF24',
-              '&:hover': {
-                backgroundColor: '#FCD34D'
-              },
-              color: '#ffffff'
-            }}>
-            대시보드 바로가기
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="contained"
+              startIcon={<LayoutDashboard size={20} />}
+              onClick={() => navigate(`/user/projects/${id}`)}
+              sx={{
+                backgroundColor: '#FBBF24',
+                '&:hover': {
+                  backgroundColor: '#FCD34D'
+                },
+                color: '#ffffff'
+              }}>
+              대시보드 바로가기
+            </Button>
           </Box>
         </Box>
 
@@ -902,32 +961,32 @@ const ProjectDetail = () => {
                       <Stack
                         direction="row"
                         spacing={1}>
-          <Button
-            variant="contained"
-            startIcon={<Edit size={20} />}
-            onClick={() => navigate(`/admin/projects/${id}/edit`)}
-            sx={{
+                        <Button
+                          variant="contained"
+                          startIcon={<Edit size={20} />}
+                          onClick={() => navigate(`/admin/projects/${id}/edit`)}
+                          sx={{
                             backgroundColor: '#F59E0B',
-              '&:hover': {
-                backgroundColor: '#FCD34D'
-              }
-            }}>
-            수정
-          </Button>
-          <Button
-            variant="outlined"
-            color="error"
-            sx={{
-              borderColor: '#ef5350',
-              color: '#ef5350',
-              '&:hover': {
-                borderColor: '#d32f2f',
-                backgroundColor: 'transparent'
-              }
-            }}
-            onClick={() => setOpenDeleteDialog(true)}>
-            삭제
-          </Button>
+                            '&:hover': {
+                              backgroundColor: '#FCD34D'
+                            }
+                          }}>
+                          수정
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          sx={{
+                            borderColor: '#ef5350',
+                            color: '#ef5350',
+                            '&:hover': {
+                              borderColor: '#d32f2f',
+                              backgroundColor: 'transparent'
+                            }
+                          }}
+                          onClick={() => setOpenDeleteDialog(true)}>
+                          삭제
+                        </Button>
                       </Stack>
                     </Stack>
                   </Grid>
@@ -945,11 +1004,11 @@ const ProjectDetail = () => {
                           color="#64748b"
                         />
                         <Stack>
-        <Typography
+                          <Typography
                             color="text.secondary"
                             variant="caption">
                             고객사
-        </Typography>
+                          </Typography>
                           <Stack
                             direction="row"
                             spacing={1}
@@ -991,7 +1050,7 @@ const ProjectDetail = () => {
                     </Stack>
                   </Grid>
 
-        <Grid
+                  <Grid
                     item
                     xs={6}>
                     <Stack spacing={3}>
@@ -1050,8 +1109,8 @@ const ProjectDetail = () => {
                     </Stack>
                   </Grid>
 
-          <Grid
-            item
+                  <Grid
+                    item
                     xs={12}>
                     <Stack spacing={3}>
                       <Stack
@@ -1063,17 +1122,17 @@ const ProjectDetail = () => {
                           color="#64748b"
                         />
                         <Stack>
-              <Typography
-                color="text.secondary"
+                          <Typography
+                            color="text.secondary"
                             variant="caption">
                             프로젝트 기간
-              </Typography>
-              <Typography
-                variant="body1"
+                          </Typography>
+                          <Typography
+                            variant="body1"
                             sx={{ fontSize: '1rem', fontWeight: 500 }}>
                             {formatDate(project.startDate)} -{' '}
                             {formatDate(project.endDate)}
-              </Typography>
+                          </Typography>
                         </Stack>
                       </Stack>
                     </Stack>
@@ -1137,157 +1196,7 @@ const ProjectDetail = () => {
                         <ListItem sx={{ px: 0, py: 2 }}>
                           <ListItemText
                             primary={
-              <Typography
-                                sx={{
-                                  fontSize: '0.875rem',
-                                  color: theme.palette.primary.main,
-                                  cursor: 'pointer',
-                                  '&:hover': {
-                                    textDecoration: 'underline'
-                                  }
-                                }}>
-                                {item.title}
-              </Typography>
-                            }
-                            secondary={
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: 0.5
-                                }}>
-              <Typography
-                                  variant="body2"
-                                  sx={{
-                                    color: 'text.secondary',
-                                    lineHeight: 1.4
-                                  }}>
-                                  {item.content}
-              </Typography>
-                                <Box
-                                  sx={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center'
-                                  }}>
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      gap: 1,
-                                      alignItems: 'center'
-                                    }}>
-              <Typography
-                                      variant="caption"
-                                      color="text.secondary">
-                                      {item.author}
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                color="text.secondary"
-                                      sx={{ opacity: 0.5 }}>
-                                      |
-              </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary">
-                                      {item.date}
-                                    </Typography>
-                                  </Box>
-                                  <Typography
-                                    variant="caption"
-                                    sx={{
-                                      px: 1,
-                                      py: 0.5,
-                                      borderRadius: 1,
-                                      backgroundColor:
-                                        item.status === '승인'
-                                          ? '#dcfce7'
-                                          : item.status === '반려'
-                                            ? '#fee2e2'
-                                            : '#f3f4f6',
-                                      color:
-                                        item.status === '승인'
-                                          ? '#16a34a'
-                                          : item.status === '반려'
-                                            ? '#dc2626'
-                                            : '#4b5563',
-                                      fontSize: '0.75rem'
-                                    }}>
-                                    {item.status}
-                                  </Typography>
-                                </Box>
-                              </Box>
-                            }
-                            sx={{
-                              '& .MuiListItemText-secondary': {
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 0.5
-                              }
-                            }}
-                          />
-                  </ListItem>
-                        {index < array.length - 1 && <Divider sx={{ my: 1 }} />}
-                      </Fragment>
-                ))}
-              </List>
-                </Paper>
-          </Grid>
-          <Grid
-            item
-                xs={6}>
-                <Paper sx={{ p: 3 }}>
-                  <Stack
-                    direction="row"
-                    spacing={2}
-                    alignItems="center"
-                    sx={{ mb: 3 }}>
-                    <MessageCircle
-                      size={24}
-                      color="#64748b"
-                    />
-                    <Typography variant="h6">
-                      최근 질문사항 (더미 데이터)
-                    </Typography>
-                  </Stack>
-                  <List>
-                    {[
-                      {
-                        id: 1,
-                        title: 'API 연동 관련 문의',
-                        content:
-                          '새로 추가된 API 엔드포인트의 인증 방식이 변경되었다고 들었습니다. 자세한 내용을 알려주실 수 있을까요?',
-                        date: '2024-03-20',
-                        author: '김고객',
-                        hasReply: true,
-                        comments: 3
-                      },
-                      {
-                        id: 2,
-                        title: '데이터베이스 구조 문의',
-                        content:
-                          '사용자 테이블에 새로운 컬럼을 추가하려고 하는데, 기존 데이터 마이그레이션은 어떻게 진행하면 될까요?',
-                        date: '2024-03-19',
-                        author: '이고객',
-                        hasReply: false,
-                        comments: 0
-                      },
-                      {
-                        id: 3,
-                        title: '배포 관련 문의',
-                        content:
-                          '다음 주에 예정된 배포 일정이 변경될 수 있다고 하셨는데, 구체적인 일정을 알려주실 수 있을까요?',
-                        date: '2024-03-18',
-                        author: '박고객',
-                        hasReply: true,
-                        comments: 5
-                      }
-                    ].map((item, index, array) => (
-                      <Fragment key={item.id}>
-                        <ListItem sx={{ px: 0, py: 2 }}>
-                          <ListItemText
-                            primary={
-              <Typography
+                              <Typography
                                 sx={{
                                   fontSize: '0.875rem',
                                   color: theme.palette.primary.main,
@@ -1333,61 +1242,38 @@ const ProjectDetail = () => {
                                     </Typography>
                                     <Typography
                                       variant="caption"
-                color="text.secondary"
+                                      color="text.secondary"
                                       sx={{ opacity: 0.5 }}>
                                       |
-              </Typography>
-              <Typography
+                                    </Typography>
+                                    <Typography
                                       variant="caption"
                                       color="text.secondary">
                                       {item.date}
-              </Typography>
+                                    </Typography>
                                   </Box>
-                                  <Box
+                                  <Typography
+                                    variant="caption"
                                     sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 1
+                                      px: 1,
+                                      py: 0.5,
+                                      borderRadius: 1,
+                                      backgroundColor:
+                                        item.status === '승인'
+                                          ? '#dcfce7'
+                                          : item.status === '반려'
+                                            ? '#fee2e2'
+                                            : '#f3f4f6',
+                                      color:
+                                        item.status === '승인'
+                                          ? '#16a34a'
+                                          : item.status === '반려'
+                                            ? '#dc2626'
+                                            : '#4b5563',
+                                      fontSize: '0.75rem'
                                     }}>
-                                    {item.hasReply && (
-                                      <Box
-                                        sx={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: 0.5,
-                                          px: 1,
-                                          py: 0.5,
-                                          borderRadius: 1,
-                                          backgroundColor: '#dcfce7',
-                                          color: '#16a34a',
-                                          fontSize: '0.75rem'
-                                        }}>
-                                        <Reply size={14} />
-                                        <Typography variant="caption">
-                                          답변완료
-                                        </Typography>
-                                      </Box>
-                                    )}
-                                    {item.comments > 0 && (
-                                      <Box
-                                        sx={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: 0.5,
-                                          px: 1,
-                                          py: 0.5,
-                                          borderRadius: 1,
-                                          backgroundColor: '#f3f4f6',
-                                          color: '#4b5563',
-                                          fontSize: '0.75rem'
-                                        }}>
-                                        <MessageCircle size={14} />
-                                        <Typography variant="caption">
-                                          {item.comments}
-                                        </Typography>
-                                      </Box>
-                                    )}
-                                  </Box>
+                                    {item.status}
+                                  </Typography>
                                 </Box>
                               </Box>
                             }
@@ -1404,6 +1290,176 @@ const ProjectDetail = () => {
                       </Fragment>
                     ))}
                   </List>
+                </Paper>
+              </Grid>
+              <Grid
+                item
+                xs={6}>
+                <Paper sx={{ p: 3 }}>
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                    sx={{ mb: 3 }}>
+                    <MessageCircle
+                      size={24}
+                      color="#64748b"
+                    />
+                    <Typography variant="h6">최근 질문사항</Typography>
+                  </Stack>
+                  {loadingArticles ? (
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                      <CircularProgress />
+                    </Box>
+                  ) : articles.length === 0 ? (
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                      <Typography color="text.secondary">
+                        등록된 질문사항이 없습니다.
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <List>
+                      {articles.map((article, index, array) => (
+                        <Fragment key={article.id}>
+                          <ListItem sx={{ px: 0, py: 2 }}>
+                            <ListItemText
+                              primary={
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1
+                                  }}>
+                                  <Typography
+                                    sx={{
+                                      fontSize: '0.875rem',
+                                      color: theme.palette.primary.main,
+                                      cursor: 'pointer',
+                                      '&:hover': {
+                                        textDecoration: 'underline'
+                                      }
+                                    }}
+                                    onClick={() =>
+                                      navigate(
+                                        `/user/projects/${id}/articles/${article.id}`
+                                      )
+                                    }>
+                                    {article.title}
+                                  </Typography>
+                                  <Chip
+                                    label={getPriorityText(article.priority)}
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: `${getPriorityColor(article.priority)}20`,
+                                      color: getPriorityColor(article.priority),
+                                      fontSize: '0.75rem',
+                                      height: '20px',
+                                      '& .MuiChip-label': {
+                                        px: 1
+                                      }
+                                    }}
+                                  />
+                                </Box>
+                              }
+                              secondary={
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 0.5
+                                  }}>
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center'
+                                    }}>
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        gap: 1,
+                                        alignItems: 'center'
+                                      }}>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary">
+                                        {article.userName}
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{ opacity: 0.5 }}>
+                                        |
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary">
+                                        {formatDate(article.createdAt)}
+                                      </Typography>
+                                    </Box>
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1
+                                      }}>
+                                      <Chip
+                                        label={getArticleStatusText(
+                                          article.status
+                                        )}
+                                        size="small"
+                                        sx={{
+                                          backgroundColor:
+                                            article.status === 'COMMENTED'
+                                              ? '#F3F4F6'
+                                              : '#FEF2F2',
+                                          color:
+                                            article.status === 'COMMENTED'
+                                              ? '#4B5563'
+                                              : '#DC2626',
+                                          fontSize: '0.75rem',
+                                          height: '20px',
+                                          '& .MuiChip-label': {
+                                            px: 1
+                                          }
+                                        }}
+                                      />
+                                      {article.endDate && (
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            px: 1,
+                                            py: 0.5,
+                                            borderRadius: 1,
+                                            backgroundColor: '#f3f4f6',
+                                            color: '#4b5563',
+                                            fontSize: '0.75rem'
+                                          }}>
+                                          마감: {formatDate(article.endDate)}
+                                        </Typography>
+                                      )}
+                                    </Box>
+                                  </Box>
+                                </Box>
+                              }
+                              sx={{
+                                '& .MuiListItemText-secondary': {
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 0.5
+                                }
+                              }}
+                            />
+                          </ListItem>
+                          {index < array.length - 1 && (
+                            <Divider sx={{ my: 1 }} />
+                          )}
+                        </Fragment>
+                      ))}
+                    </List>
+                  )}
                 </Paper>
               </Grid>
             </Grid>
@@ -1451,11 +1507,11 @@ const ProjectDetail = () => {
                     p: 4,
                     gap: 2
                   }}>
-              <Typography
+                  <Typography
                     variant="body1"
                     color="text.secondary">
                     등록된 고객사가 없습니다.
-              </Typography>
+                  </Typography>
                   <Button
                     variant="contained"
                     startIcon={<Building2 size={20} />}
@@ -1552,12 +1608,12 @@ const ProjectDetail = () => {
                                       alignItems: 'center',
                                       gap: 1
                                     }}>
-              <Typography
-                variant="body1"
+                                    <Typography
+                                      variant="body1"
                                       component="span"
                                       sx={{ color: '#1F2937' }}>
                                       {member.memberName}
-              </Typography>
+                                    </Typography>
                                     <Chip
                                       label={
                                         member.role.includes('MANAGER')
@@ -1637,11 +1693,11 @@ const ProjectDetail = () => {
                     p: 4,
                     gap: 2
                   }}>
-              <Typography
+                  <Typography
                     variant="body1"
                     color="text.secondary">
                     등록된 개발사가 없습니다.
-              </Typography>
+                  </Typography>
                   <Button
                     variant="contained"
                     startIcon={<Building2 size={20} />}
@@ -1769,16 +1825,16 @@ const ProjectDetail = () => {
                                   </Box>
                                 }
                               />
-                  </ListItem>
-                ))}
+                            </ListItem>
+                          ))}
                         <Box sx={{ height: 16 }} />
                       </Box>
                     )
                   })}
-              </List>
+                </List>
               )}
             </Card>
-            </Box>
+          </Box>
         )}
       </Box>
 
@@ -1857,11 +1913,11 @@ const ProjectDetail = () => {
                   spacing={2}
                   alignItems="center"
                   sx={{ mb: 1 }}>
-              <Typography
-                variant="subtitle2"
+                  <Typography
+                    variant="subtitle2"
                     sx={{ color: theme.palette.primary.main }}>
                     담당자
-              </Typography>
+                  </Typography>
                   <IconButton
                     size="small"
                     onClick={() =>
@@ -1895,7 +1951,7 @@ const ProjectDetail = () => {
                     {selectedCompanyMembers.members
                       .filter(member => member.role.includes('MANAGER'))
                       .map(member => (
-                  <ListItem
+                        <ListItem
                           key={member.memberId}
                           secondaryAction={
                             <IconButton
@@ -1928,8 +1984,7 @@ const ProjectDetail = () => {
                                 }}>
                                 <Typography
                                   variant="body1"
-                                  component="span"
-                                  sx={{ color: '#1F2937' }}>
+                                  component="span">
                                   {member.memberName}
                                 </Typography>
                                 <Chip
@@ -1958,24 +2013,24 @@ const ProjectDetail = () => {
                               </Box>
                             }
                           />
-                  </ListItem>
-                ))}
-              </List>
+                        </ListItem>
+                      ))}
+                  </List>
                 </Collapse>
-            </Box>
+              </Box>
 
               {/* Regular Members Section */}
-            <Box>
+              <Box>
                 <Stack
                   direction="row"
                   spacing={2}
                   alignItems="center"
                   sx={{ mb: 1 }}>
-              <Typography
-                variant="subtitle2"
+                  <Typography
+                    variant="subtitle2"
                     sx={{ color: '#64748b' }}>
                     일반 멤버
-              </Typography>
+                  </Typography>
                   <IconButton
                     size="small"
                     onClick={() =>
@@ -2042,8 +2097,7 @@ const ProjectDetail = () => {
                                 }}>
                                 <Typography
                                   variant="body1"
-                                  component="span"
-                                  sx={{ color: '#1F2937' }}>
+                                  component="span">
                                   {member.memberName}
                                 </Typography>
                                 <Chip
@@ -2137,7 +2191,7 @@ const ProjectDetail = () => {
               </Box>
             ) : (
               <Box sx={{ maxHeight: '300px', overflow: 'auto' }}>
-              <List
+                <List
                   sx={{
                     '& .MuiListItem-root': {
                       borderBottom: '1px solid',
@@ -2154,7 +2208,7 @@ const ProjectDetail = () => {
                         .includes(companySearch.toLowerCase())
                     )
                     .map(company => (
-                  <ListItem
+                      <ListItem
                         key={company.id}
                         button
                         onClick={() => {
@@ -2183,10 +2237,10 @@ const ProjectDetail = () => {
                             </Typography>
                           }
                         />
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
+                      </ListItem>
+                    ))}
+                </List>
+              </Box>
             )}
           </Box>
         </DialogContent>

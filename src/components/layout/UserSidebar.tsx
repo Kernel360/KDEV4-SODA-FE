@@ -40,9 +40,9 @@ const UserSidebar: React.FC<UserSidebarProps> = ({ isOpen }) => {
       text: '요청사항 목록'
     },
     {
-      path: '/user/recent-posts',
+      path: '/user/articles',
       icon: <FileText size={24} />,
-      text: '최근 게시글'
+      text: '작성한 질문 목록'
     },
     {
       path: '/user/projects',
