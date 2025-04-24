@@ -144,6 +144,16 @@ interface VoteResult {
   closed: boolean
 }
 
+interface DevAssignment {
+  companyId: number
+  managerIds: number[]
+  memberIds: number[]
+}
+
+interface DevAssignmentRequest {
+  devAssignments: DevAssignment[]
+}
+
 export const projectService = {
   // 프로젝트 목록 조회
   async getAllProjects(status?: string, keyword?: string): Promise<Project[]> {
@@ -607,5 +617,49 @@ export const projectService = {
       itemText
     })
     return response.data
+  },
+
+  async addProjectDevCompanies(
+    projectId: number,
+    request: DevAssignmentRequest
+  ) {
+    console.log('개발사 추가 API 호출:', {
+      url: `/projects/${projectId}/dev-companies`,
+      request
+    })
+
+    const response = await client.post(
+      `/projects/${projectId}/dev-companies`,
+      request
+    )
+    return response.data
+  },
+
+  addProjectMembers: async (
+    projectId: number,
+    request: {
+      companyId: number
+      managerIds: number[]
+      memberIds: number[]
+    }
+  ) => {
+    console.log('Adding project members:', { projectId, request })
+    const response = await client.post(
+      `/projects/${projectId}/members`,
+      request
+    )
+    return response.data
+  },
+
+  deleteProjectCompany: async (
+    projectId: number,
+    companyId: number
+  ): Promise<void> => {
+    try {
+      await client.delete(`/projects/${projectId}/companies/${companyId}`)
+    } catch (error) {
+      console.error('프로젝트 회사 삭제 실패:', error)
+      throw error
+    }
   }
 }

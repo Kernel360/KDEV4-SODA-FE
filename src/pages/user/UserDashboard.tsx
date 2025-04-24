@@ -44,21 +44,67 @@ interface Request {
   createdAt: string
 }
 
+interface Article {
+  id: number
+  articleId: number
+  title: string
+  status: string
+  priority: string
+  createdAt: string
+  endDate: string | null
+  projectId: number
+  projectName: string
+}
+
+const projectColors = [
+  { bg: '#fee2e2', color: '#dc2626' }, // red
+  { bg: '#fef3c7', color: '#d97706' }, // amber
+  { bg: '#ecfccb', color: '#65a30d' }, // lime
+  { bg: '#dcfce7', color: '#16a34a' }, // green
+  { bg: '#cffafe', color: '#0891b2' }, // cyan
+  { bg: '#dbeafe', color: '#2563eb' }, // blue
+  { bg: '#f3e8ff', color: '#9333ea' }, // purple
+  { bg: '#fae8ff', color: '#c026d3' }, // fuchsia
+  { bg: '#ffe4e6', color: '#e11d48' }, // rose
+  { bg: '#f1f5f9', color: '#475569' } // slate
+]
+
 const UserDashboard: React.FC = () => {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const { user } = useUserStore()
   const [projects, setProjects] = useState<Project[]>([])
   const [recentRequests, setRecentRequests] = useState<Request[]>([])
+  const [recentArticles, setRecentArticles] = useState<Article[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [projectColorMap, setProjectColorMap] = useState<
+    Map<number, { bg: string; color: string }>
+  >(new Map())
 
   useEffect(() => {
     fetchUserProjects()
     if (user?.memberId) {
       fetchRecentRequests()
+      fetchRecentArticles()
     }
   }, [user?.memberId])
+
+  useEffect(() => {
+    if (recentArticles.length > 0) {
+      const uniqueProjects = Array.from(
+        new Set(recentArticles.map(a => a.projectId))
+      )
+      const newProjectColorMap = new Map()
+      uniqueProjects.forEach((projectId, index) => {
+        newProjectColorMap.set(
+          projectId,
+          projectColors[index % projectColors.length]
+        )
+      })
+      setProjectColorMap(newProjectColorMap)
+    }
+  }, [recentArticles])
 
   const fetchUserProjects = async () => {
     try {
@@ -92,6 +138,24 @@ const UserDashboard: React.FC = () => {
     } catch (error) {
       console.error('최근 요청사항 조회 중 오류:', error)
       showToast('최근 요청사항을 불러오는데 실패했습니다.', 'error')
+    }
+  }
+
+  const fetchRecentArticles = async () => {
+    try {
+      const response = await client.get('/articles/my', {
+        params: {
+          page: 0,
+          size: 3,
+          sort: 'createdAt,desc'
+        }
+      })
+      if (response.data.status === 'success') {
+        setRecentArticles(response.data.data.content)
+      }
+    } catch (error) {
+      console.error('최근 게시글 조회 중 오류:', error)
+      showToast('최근 게시글을 불러오는데 실패했습니다.', 'error')
     }
   }
 
@@ -141,16 +205,22 @@ const UserDashboard: React.FC = () => {
         }
     }
   }
-
-  const handleItemClick = (type: string, id: number, projectId?: number) => {
+  const handleItemClick = (
+    type: string,
+    id: number,
+    projectId?: number,
+    articleId?: number
+  ) => {
     switch (type) {
       case 'request':
         if (projectId) {
           navigate(`/user/projects/${projectId}/requests/${id}`)
         }
         break
-      case 'question':
-        navigate(`/questions/${id}`)
+      case 'article':
+        if (projectId && articleId) {
+          navigate(`/user/projects/${projectId}/articles/${articleId}`)
+        }
         break
       case 'project':
         navigate(`/user/projects/${id}`)
@@ -195,7 +265,9 @@ const UserDashboard: React.FC = () => {
             <React.Fragment key={request.requestId}>
               <ListItem
                 button
-                onClick={() => handleItemClick(type, request.requestId, request.projectId)}
+                onClick={() =>
+                  handleItemClick(type, request.requestId, request.projectId)
+                }
                 sx={{
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -203,10 +275,14 @@ const UserDashboard: React.FC = () => {
                   py: 2
                 }}>
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="body1" sx={{ mb: 1 }}>
+                  <Typography
+                    variant="body1"
+                    sx={{ mb: 1 }}>
                     {request.title}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography
+                    variant="body2"
+                    color="text.secondary">
                     {dayjs(request.createdAt).format('YYYY-MM-DD HH:mm')}
                   </Typography>
                 </Box>
@@ -228,6 +304,120 @@ const UserDashboard: React.FC = () => {
               )}
             </React.Fragment>
           ))
+        ) : type === 'article' ? (
+          recentArticles.length === 0 ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <Typography color="text.secondary">
+                작성한 질문이 없습니다.
+              </Typography>
+            </Box>
+          ) : (
+            recentArticles.map((article, index) => (
+              <React.Fragment key={article.id}>
+                <ListItem
+                  button
+                  onClick={() =>
+                    handleItemClick(
+                      type,
+                      article.id,
+                      article.projectId,
+                      article.articleId
+                    )
+                  }
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    py: 2
+                  }}>
+                  <Box
+                    sx={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 1
+                    }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        width: '100%'
+                      }}>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          flex: 1,
+                          fontWeight: 500
+                        }}>
+                        {article.title}
+                      </Typography>
+                      <Box
+                        sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                        <Chip
+                          label={article.projectName}
+                          size="small"
+                          sx={{
+                            fontSize: '0.75rem',
+                            height: '24px',
+                            backgroundColor:
+                              projectColorMap.get(article.projectId)?.bg ||
+                              '#e2e8f0',
+                            color:
+                              projectColorMap.get(article.projectId)?.color ||
+                              '#475569',
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s ease-in-out',
+                            '&:hover': {
+                              backgroundColor:
+                                projectColorMap.get(article.projectId)?.bg ||
+                                '#e2e8f0'
+                            }
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary">
+                        {dayjs(article.createdAt).format('YYYY-MM-DD HH:mm')}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        {article.endDate && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              px: 1,
+                              py: 0.5,
+                              borderRadius: 1,
+                              backgroundColor: '#f3f4f6',
+                              color: '#4b5563',
+                              fontSize: '0.75rem'
+                            }}>
+                            마감: {dayjs(article.endDate).format('YYYY-MM-DD')}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  </Box>
+                </ListItem>
+                {index < recentArticles.length - 1 && (
+                  <Box
+                    sx={{
+                      borderBottom: '1px solid',
+                      borderColor: 'divider'
+                    }}
+                  />
+                )}
+              </React.Fragment>
+            ))
+          )
         ) : (
           items.map((item, index) => (
             <React.Fragment key={item.id}>
@@ -241,10 +431,14 @@ const UserDashboard: React.FC = () => {
                   py: 2
                 }}>
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="body1" sx={{ mb: 1 }}>
+                  <Typography
+                    variant="body1"
+                    sx={{ mb: 1 }}>
                     {item.title}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography
+                    variant="body2"
+                    color="text.secondary">
                     {dayjs(item.date).format('YYYY-MM-DD HH:mm')}
                   </Typography>
                 </Box>
@@ -314,12 +508,7 @@ const UserDashboard: React.FC = () => {
           item
           xs={12}
           md={6}>
-          {renderDashboardSection(
-            '최근 질문',
-            recentQuestions,
-            'question',
-            '/user/recent-posts'
-          )}
+          {renderDashboardSection('최근 질문', [], 'article', '/user/articles')}
         </Grid>
         <Grid
           item

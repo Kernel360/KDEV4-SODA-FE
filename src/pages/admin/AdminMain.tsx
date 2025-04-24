@@ -21,18 +21,34 @@ import ErrorMessage from '../../components/common/ErrorMessage'
 import { useTheme } from '@mui/material/styles'
 import { LayoutDashboard } from 'lucide-react'
 import { companyService } from '../../services/companyService'
+import { client } from '../../api/client'
 import dayjs from 'dayjs'
+
+interface ActiveProject {
+  id: number
+  title: string
+  status: string
+  startDate: string
+  endDate: string
+  weeklyRequestCount: number
+  weeklyArticleCount: number
+  weeklyActivity: number
+  recentActivityDate: string | null
+}
 
 export default function AdminMain() {
   const navigate = useNavigate()
   const { projects, isLoading, error, fetchAllProjects } = useProjectStore()
   const theme = useTheme()
   const [totalCompanies, setTotalCompanies] = useState<number>(0)
+  const [activeProjects, setActiveProjects] = useState<ActiveProject[]>([])
+  const [loadingActiveProjects, setLoadingActiveProjects] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
       await fetchAllProjects()
       await fetchCompanies()
+      await fetchActiveProjects()
     }
     fetchData()
   }, [fetchAllProjects])
@@ -58,6 +74,27 @@ export default function AdminMain() {
       setTotalCompanies(companies.length)
     } catch (error) {
       console.error('회사 목록을 불러오는데 실패했습니다:', error)
+    }
+  }
+
+  const fetchActiveProjects = async () => {
+    try {
+      setLoadingActiveProjects(true)
+      const response = await client.get('/projects', {
+        params: {
+          sort: 'weeklyActivity'
+        }
+      })
+      if (response.data.status === 'success') {
+        setActiveProjects(response.data.data.content)
+      }
+    } catch (error) {
+      console.error(
+        '활동이 많은 프로젝트 목록을 불러오는데 실패했습니다:',
+        error
+      )
+    } finally {
+      setLoadingActiveProjects(false)
     }
   }
 
@@ -322,7 +359,7 @@ export default function AdminMain() {
           {/* 마감 임박 프로젝트 */}
           <Grid
             item
-            xs={6}>
+            xs={5.5}>
             <Paper
               elevation={0}
               sx={{
@@ -377,7 +414,7 @@ export default function AdminMain() {
                           color: '#1a1a1a',
                           borderBottom: '2px solid #e5e7eb'
                         }}>
-                        프로젝트명
+                        프로젝트
                       </TableCell>
                       <TableCell
                         sx={{
@@ -418,7 +455,7 @@ export default function AdminMain() {
                           <TableRow
                             key={project.id}
                             hover>
-                            <TableCell>
+                            <TableCell sx={{ maxWidth: '200px' }}>
                               <Typography
                                 onClick={() =>
                                   handleProjectManageClick(project.id)
@@ -430,7 +467,10 @@ export default function AdminMain() {
                                   '&:hover': {
                                     color: '#FBBF24',
                                     textDecoration: 'underline'
-                                  }
+                                  },
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
                                 }}>
                                 {project.title}
                               </Typography>
@@ -461,20 +501,20 @@ export default function AdminMain() {
                             </TableCell>
                             <TableCell>
                               <Button
-                                variant="contained"
+                                variant="outlined"
                                 size="small"
-                                startIcon={<LayoutDashboard size={16} />}
+                                startIcon={<LayoutDashboard size={14} />}
                                 onClick={() => handleProjectClick(project.id)}
                                 sx={{
-                                  minWidth: 'auto',
-                                  px: 1.5,
-                                  py: 0.5,
-                                  fontSize: '0.75rem',
-                                  backgroundColor: '#FBBF24',
+                                  color: '#1E293B',
+                                  bgcolor: 'white',
+                                  border: '1px solid #E2E8F0',
                                   '&:hover': {
-                                    backgroundColor: '#FCD34D'
+                                    bgcolor: '#FFF8E6'
                                   },
-                                  color: '#ffffff'
+                                  fontSize: '0.875rem',
+                                  py: 0.5,
+                                  px: 1.5
                                 }}>
                                 대시보드
                               </Button>
@@ -491,7 +531,7 @@ export default function AdminMain() {
           {/* 최근 활동이 많은 프로젝트 */}
           <Grid
             item
-            xs={6}>
+            xs={6.5}>
             <Paper
               elevation={0}
               sx={{
@@ -546,7 +586,7 @@ export default function AdminMain() {
                           color: '#1a1a1a',
                           borderBottom: '2px solid #e5e7eb'
                         }}>
-                        프로젝트명
+                        프로젝트
                       </TableCell>
                       <TableCell
                         sx={{
@@ -555,7 +595,7 @@ export default function AdminMain() {
                           color: '#1a1a1a',
                           borderBottom: '2px solid #e5e7eb'
                         }}>
-                        승인요청 수
+                        승인요청
                       </TableCell>
                       <TableCell
                         sx={{
@@ -564,7 +604,7 @@ export default function AdminMain() {
                           color: '#1a1a1a',
                           borderBottom: '2px solid #e5e7eb'
                         }}>
-                        질문 수
+                        질문
                       </TableCell>
                       <TableCell
                         sx={{
@@ -582,112 +622,100 @@ export default function AdminMain() {
                           color: '#1a1a1a',
                           borderBottom: '2px solid #e5e7eb'
                         }}>
-                        대시보드 바로가기
+                        대시보드
                       </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {[
-                      {
-                        id: 1,
-                        title: '프로젝트 A',
-                        requestCount: 15,
-                        questionCount: 9,
-                        lastActivity: '2024-03-20',
-                        devCompanyName: '개발사 A',
-                        clientCompanyName: '고객사 A',
-                        status: '진행 중'
-                      },
-                      {
-                        id: 2,
-                        title: '프로젝트 B',
-                        requestCount: 12,
-                        questionCount: 6,
-                        lastActivity: '2024-03-19',
-                        devCompanyName: '개발사 B',
-                        clientCompanyName: '고객사 B',
-                        status: '진행 중'
-                      },
-                      {
-                        id: 3,
-                        title: '프로젝트 C',
-                        requestCount: 8,
-                        questionCount: 7,
-                        lastActivity: '2024-03-18',
-                        devCompanyName: '개발사 C',
-                        clientCompanyName: '고객사 C',
-                        status: '진행 중'
-                      }
-                    ].map((project, index) => (
-                      <TableRow
-                        key={index}
-                        hover>
-                        <TableCell>
-                          <Typography
-                            onClick={() => handleProjectManageClick(project.id)}
-                            sx={{
-                              fontSize: '0.875rem',
-                              cursor: 'pointer',
-                              color: '#1a1a1a',
-                              '&:hover': {
-                                color: '#FBBF24',
-                                textDecoration: 'underline'
-                              }
-                            }}>
-                            {project.title}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Box
-                            sx={{
-                              fontSize: '0.813rem',
-                              color: theme.palette.success.main,
-                              fontWeight: 500
-                            }}>
-                            {project.requestCount}건
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Box
-                            sx={{
-                              fontSize: '0.813rem',
-                              color: theme.palette.success.main,
-                              fontWeight: 500
-                            }}>
-                            {project.questionCount}건
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Typography
-                            sx={{
-                              fontSize: '0.875rem',
-                              color: '#4b5563'
-                            }}>
-                            {project.lastActivity}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={<LayoutDashboard size={16} />}
-                            onClick={() => handleProjectClick(project.id)}
-                            sx={{
-                              minWidth: 'auto',
-                              px: 1.5,
-                              py: 0.5,
-                              fontSize: '0.75rem',
-                              backgroundColor: '#FBBF24',
-                              '&:hover': {
-                                backgroundColor: '#FCD34D'
-                              },
-                              color: '#ffffff'
-                            }}>
-                            대시보드
-                          </Button>
+                    {loadingActiveProjects ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={5}
+                          align="center">
+                          <LoadingSpinner />
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      activeProjects.slice(0, 3).map(project => (
+                        <TableRow
+                          key={project.id}
+                          hover>
+                          <TableCell sx={{ maxWidth: '250px' }}>
+                            <Typography
+                              onClick={() =>
+                                handleProjectManageClick(project.id)
+                              }
+                              sx={{
+                                fontSize: '0.875rem',
+                                cursor: 'pointer',
+                                color: '#1a1a1a',
+                                '&:hover': {
+                                  color: '#FBBF24',
+                                  textDecoration: 'underline'
+                                },
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                              {project.title}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Box
+                              sx={{
+                                fontSize: '0.813rem',
+                                color: theme.palette.success.main,
+                                fontWeight: 500
+                              }}>
+                              {project.weeklyRequestCount}건
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Box
+                              sx={{
+                                fontSize: '0.813rem',
+                                color: theme.palette.success.main,
+                                fontWeight: 500
+                              }}>
+                              {project.weeklyArticleCount}건
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Typography
+                              sx={{
+                                fontSize: '0.875rem',
+                                color: '#4b5563'
+                              }}>
+                              {project.recentActivityDate
+                                ? dayjs(project.recentActivityDate).format(
+                                    'YYYY년 M월 D일'
+                                  )
+                                : '-'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={<LayoutDashboard size={14} />}
+                              onClick={() => handleProjectClick(project.id)}
+                              sx={{
+                                color: '#1E293B',
+                                bgcolor: 'white',
+                                border: '1px solid #E2E8F0',
+                                '&:hover': {
+                                  bgcolor: '#FFF8E6'
+                                },
+                                fontSize: '0.875rem',
+                                py: 0.5,
+                                px: 1.5
+                              }}>
+                              대시보드
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>

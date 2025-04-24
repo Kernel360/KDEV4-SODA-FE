@@ -100,6 +100,43 @@ const getStatusText = (status: ProjectStatus): string => {
   }
 }
 
+const getArticleStatusText = (status: string): string => {
+  switch (status) {
+    case 'COMMENTED':
+      return '답변완료'
+    case 'PENDING':
+      return '답변대기'
+    default:
+      return status
+  }
+}
+
+const getPriorityText = (priority: string): string => {
+  switch (priority) {
+    case 'LOW':
+      return '낮음'
+    case 'MEDIUM':
+      return '중간'
+    case 'HIGH':
+      return '높음'
+    default:
+      return priority
+  }
+}
+
+const getPriorityColor = (priority: string): string => {
+  switch (priority) {
+    case 'LOW':
+      return '#22C55E' // Green
+    case 'MEDIUM':
+      return '#F59E0B' // Yellow
+    case 'HIGH':
+      return '#EF4444' // Red
+    default:
+      return '#64748B' // Gray
+  }
+}
+
 const getStatusValue = (status: string): ProjectStatus => {
   switch (status) {
     case '계약':
@@ -216,12 +253,23 @@ const ProjectDetail = () => {
   const [expandedMemberSections, setExpandedMemberSections] = useState<{
     [key: number]: { managers: boolean; members: boolean }
   }>({})
+  const [articles, setArticles] = useState<any[]>([])
+  const [loadingArticles, setLoadingArticles] = useState(false)
+  const [showDeleteMemberDialog, setShowDeleteMemberDialog] = useState(false)
+  const [memberToDelete, setMemberToDelete] = useState<number | null>(null)
+  const [showDeleteCompanyDialog, setShowDeleteCompanyDialog] = useState(false)
+  const [companyToDelete, setCompanyToDelete] = useState<{
+    id: number
+    name: string
+    type: 'client' | 'dev'
+  } | null>(null)
 
   // 3. Effect hooks
   useEffect(() => {
     if (id) {
       fetchProjectDetail()
       fetchCompanies()
+      fetchArticles()
     }
   }, [id])
 
@@ -280,24 +328,25 @@ const ProjectDetail = () => {
 
       // 추가 가능한 회사만 필터링
       const filteredCompanies = response.filter(company => {
-        if (companyType === 'client') {
-          return !project.clientCompanyNames.some(name => {
+        // 이미 프로젝트에 할당된 회사인지 확인
+        const isAssigned =
+          project.clientCompanyNames.some(name => {
+            const existingCompany = allCompanies.find(c => c.name === name)
+            return existingCompany?.id === company.id
+          }) ||
+          project.devCompanyNames.some(name => {
             const existingCompany = allCompanies.find(c => c.name === name)
             return existingCompany?.id === company.id
           })
-        } else {
-          return !project.devCompanyNames.some(name => {
-            const existingCompany = allCompanies.find(c => c.name === name)
-            return existingCompany?.id === company.id
-          })
-        }
+
+        return !isAssigned
       })
 
       const formattedCompanies = filteredCompanies.map(company => ({
         id: company.id,
         name: company.name,
         address: company.address,
-        type: companyType
+        type: companyType // companyType 유지
       }))
 
       setAvailableCompanies(formattedCompanies)
@@ -305,7 +354,7 @@ const ProjectDetail = () => {
       console.error('Failed to fetch companies:', error)
       showToast('회사 목록을 불러오는데 실패했습니다.', 'error')
       setAvailableCompanies([])
-      } finally {
+    } finally {
       setLoadingCompanies(false)
     }
   }
@@ -413,6 +462,25 @@ const ProjectDetail = () => {
       showToast('멤버 정보를 불러오는데 실패했습니다.', 'error')
     } finally {
       setLoadingMembers(false)
+    }
+  }
+
+  const fetchArticles = async () => {
+    try {
+      setLoadingArticles(true)
+      const response = await projectService.getProjectArticles(
+        Number(id),
+        null,
+        undefined,
+        undefined,
+        0,
+        3
+      )
+      setArticles(response.data)
+    } catch (error) {
+      console.error('Failed to fetch articles:', error)
+    } finally {
+      setLoadingArticles(false)
     }
   }
 
@@ -556,11 +624,12 @@ const ProjectDetail = () => {
   }
 
   const handleCompanySelect = (company: Company) => {
+    console.log('회사 선택:', { company, companyType })
     setSelectedNewCompany({
       id: company.id,
       name: company.name
     })
-    setCompanyType(company.type)
+    // companyType을 유지
     setShowAddCompanyDialog(false)
     setShowAddCompanyMemberDialog(true)
   }
@@ -569,14 +638,51 @@ const ProjectDetail = () => {
     if (!selectedNewCompany) return
 
     try {
-      const response = await projectService.addProjectCompany(Number(id), {
-        companyId: selectedNewCompany.id,
-        role: companyType === 'client' ? 'CLIENT_COMPANY' : 'DEV_COMPANY',
-        managerIds: selectedCompanyManagers,
-        memberIds: selectedRegularMembers
-      })
+      // 개발사와 고객사 추가 로직 분리
+      if (companyType === 'dev') {
+        console.log('개발사 추가 요청:', {
+          devAssignments: [
+            {
+              companyId: selectedNewCompany.id,
+              managerIds: selectedCompanyManagers,
+              memberIds: selectedRegularMembers
+            }
+          ]
+        })
 
-      showToast('회사가 추가되었습니다', 'success')
+        // 개발사 추가 API 호출
+        const response = await projectService.addProjectDevCompanies(
+          Number(id),
+          {
+            devAssignments: [
+              {
+                companyId: selectedNewCompany.id,
+                managerIds: selectedCompanyManagers,
+                memberIds: selectedRegularMembers
+              }
+            ]
+          }
+        )
+
+        if (response.status === 'success') {
+          showToast('개발사가 추가되었습니다', 'success')
+          // 프로젝트 상태를 진행중으로 업데이트
+          await projectService.updateProjectStatus(Number(id), 'IN_PROGRESS')
+          // 프로젝트 정보 새로고침
+          await fetchProjectDetail()
+        }
+      } else {
+        // 고객사 추가 로직
+        await projectService.addProjectCompany(Number(id), {
+          companyId: selectedNewCompany.id,
+          role: 'CLIENT_COMPANY',
+          managerIds: selectedCompanyManagers,
+          memberIds: selectedRegularMembers
+        })
+        showToast('고객사가 추가되었습니다', 'success')
+      }
+
+      // 멤버 목록 새로고침
       fetchMembers()
       setShowAddCompanyMemberDialog(false)
       setSelectedNewCompany(null)
@@ -633,27 +739,23 @@ const ProjectDetail = () => {
   }
 
   const handleMemberDelete = async (memberId: number) => {
+    setMemberToDelete(memberId)
+    setShowDeleteMemberDialog(true)
+  }
+
+  const confirmMemberDelete = async () => {
+    if (!memberToDelete) return
+
     try {
-      // 현재 선택된 회사의 멤버 중 담당자 수 확인
-      const managers = selectedCompanyMembers.members.filter(member =>
-        member.role.includes('MANAGER')
-      )
-
-      // 삭제하려는 멤버가 담당자인 경우, 담당자가 한 명이면 삭제 불가
-      const memberToDelete = selectedCompanyMembers.members.find(
-        member => member.memberId === memberId
-      )
-      if (memberToDelete?.role.includes('MANAGER') && managers.length === 1) {
-        showToast('담당자는 최소 한 명 이상이어야 합니다.', 'error')
-        return
-      }
-
-      await projectService.deleteProjectMember(Number(id), memberId)
+      await projectService.deleteProjectMember(Number(id), memberToDelete)
       showToast('멤버가 성공적으로 삭제되었습니다.', 'success')
 
       // 멤버 목록 새로고침
       const response = await projectService.getProjectMembers(Number(id), {
-        companyRole: tabValue === 1 ? 'CLIENT_COMPANY' : 'DEV_COMPANY',
+        companyRole:
+          selectedCompanyMembers.companyType === 'client'
+            ? 'CLIENT_COMPANY'
+            : 'DEV_COMPANY',
         companyId: selectedCompanyMembers.companyId
       })
 
@@ -661,9 +763,15 @@ const ProjectDetail = () => {
         ...prev,
         members: response.content
       }))
+
+      // 프로젝트 멤버 목록도 새로고침
+      await fetchMembers()
     } catch (error) {
       console.error('멤버 삭제 실패:', error)
       showToast('멤버 삭제 중 오류가 발생했습니다.', 'error')
+    } finally {
+      setShowDeleteMemberDialog(false)
+      setMemberToDelete(null)
     }
   }
 
@@ -724,6 +832,63 @@ const ProjectDetail = () => {
     }
   }
 
+  const handleAddNewMembers = async () => {
+    try {
+      // 새로 선택된 멤버들만 필터링
+      const newManagers = selectedCompanyManagers.filter(
+        id =>
+          !selectedCompanyMembers.members.some(member => member.memberId === id)
+      )
+      const newMembers = selectedRegularMembers.filter(
+        id =>
+          !selectedCompanyMembers.members.some(member => member.memberId === id)
+      )
+
+      if (newManagers.length === 0 && newMembers.length === 0) {
+        showToast('추가할 멤버가 없습니다.', 'info')
+        return
+      }
+
+      const response = await projectService.addProjectMembers(Number(id), {
+        companyId: selectedCompanyMembers.companyId,
+        managerIds: newManagers,
+        memberIds: newMembers
+      })
+
+      if (response.status === 'success') {
+        showToast('멤버가 성공적으로 추가되었습니다.', 'success')
+
+        // 멤버 목록 새로고침
+        const updatedMembers = await projectService.getProjectMembers(
+          Number(id),
+          {
+            companyRole:
+              selectedCompanyMembers.companyType === 'client'
+                ? 'CLIENT_COMPANY'
+                : 'DEV_COMPANY',
+            companyId: selectedCompanyMembers.companyId
+          }
+        )
+
+        setSelectedCompanyMembers(prev => ({
+          ...prev,
+          members: updatedMembers.content
+        }))
+
+        // 프로젝트 멤버 목록도 새로고침
+        await fetchMembers()
+
+        setShowAddCompanyMemberDialog(false)
+        setSelectedCompanyManagers([])
+        setSelectedRegularMembers([])
+        setMemberSearch('')
+      }
+    } catch (error) {
+      console.error('멤버 추가 실패:', error)
+      showToast('멤버 추가 중 오류가 발생했습니다.', 'error')
+    }
+  }
+
   // 멤버 선택 모달에서 일반 멤버 선택 처리
   const handleRegularMemberToggle = (memberId: number) => {
     setSelectedRegularMembers(prev =>
@@ -731,6 +896,26 @@ const ProjectDetail = () => {
         ? prev.filter(id => id !== memberId)
         : [...prev, memberId]
     )
+  }
+
+  const handleCompanyDelete = async () => {
+    if (!companyToDelete || !id) return
+
+    try {
+      await projectService.deleteProjectCompany(Number(id), companyToDelete.id)
+      showToast('회사가 성공적으로 삭제되었습니다.', 'success')
+
+      // 프로젝트 정보 새로고침
+      await fetchProjectDetail()
+      // 멤버 목록 새로고침
+      await fetchMembers()
+    } catch (error) {
+      console.error('회사 삭제 실패:', error)
+      showToast('회사 삭제 중 오류가 발생했습니다.', 'error')
+    } finally {
+      setShowDeleteCompanyDialog(false)
+      setCompanyToDelete(null)
+    }
   }
 
   return (
@@ -744,11 +929,11 @@ const ProjectDetail = () => {
             목록으로
           </Button>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-          <Typography
-            variant="h4"
-            sx={{ fontWeight: 600 }}>
-            {project.title}
-          </Typography>
+            <Typography
+              variant="h4"
+              sx={{ fontWeight: 600 }}>
+              {project.title}
+            </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography
                 variant="body1"
@@ -831,23 +1016,23 @@ const ProjectDetail = () => {
                     </List>
                   </Paper>
                 )}
-        </Box>
+              </Box>
             </Box>
           </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            variant="contained"
-            startIcon={<LayoutDashboard size={20} />}
-            onClick={() => navigate(`/user/projects/${id}`)}
-            sx={{
-              backgroundColor: '#FBBF24',
-              '&:hover': {
-                backgroundColor: '#FCD34D'
-              },
-              color: '#ffffff'
-            }}>
-            대시보드 바로가기
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="contained"
+              startIcon={<LayoutDashboard size={20} />}
+              onClick={() => navigate(`/user/projects/${id}`)}
+              sx={{
+                backgroundColor: '#FBBF24',
+                '&:hover': {
+                  backgroundColor: '#FCD34D'
+                },
+                color: '#ffffff'
+              }}>
+              대시보드 바로가기
+            </Button>
           </Box>
         </Box>
 
@@ -902,32 +1087,32 @@ const ProjectDetail = () => {
                       <Stack
                         direction="row"
                         spacing={1}>
-          <Button
-            variant="contained"
-            startIcon={<Edit size={20} />}
-            onClick={() => navigate(`/admin/projects/${id}/edit`)}
-            sx={{
+                        <Button
+                          variant="contained"
+                          startIcon={<Edit size={20} />}
+                          onClick={() => navigate(`/admin/projects/${id}/edit`)}
+                          sx={{
                             backgroundColor: '#F59E0B',
-              '&:hover': {
-                backgroundColor: '#FCD34D'
-              }
-            }}>
-            수정
-          </Button>
-          <Button
-            variant="outlined"
-            color="error"
-            sx={{
-              borderColor: '#ef5350',
-              color: '#ef5350',
-              '&:hover': {
-                borderColor: '#d32f2f',
-                backgroundColor: 'transparent'
-              }
-            }}
-            onClick={() => setOpenDeleteDialog(true)}>
-            삭제
-          </Button>
+                            '&:hover': {
+                              backgroundColor: '#FCD34D'
+                            }
+                          }}>
+                          수정
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          sx={{
+                            borderColor: '#ef5350',
+                            color: '#ef5350',
+                            '&:hover': {
+                              borderColor: '#d32f2f',
+                              backgroundColor: 'transparent'
+                            }
+                          }}
+                          onClick={() => setOpenDeleteDialog(true)}>
+                          삭제
+                        </Button>
                       </Stack>
                     </Stack>
                   </Grid>
@@ -945,11 +1130,11 @@ const ProjectDetail = () => {
                           color="#64748b"
                         />
                         <Stack>
-        <Typography
+                          <Typography
                             color="text.secondary"
                             variant="caption">
                             고객사
-        </Typography>
+                          </Typography>
                           <Stack
                             direction="row"
                             spacing={1}
@@ -991,7 +1176,7 @@ const ProjectDetail = () => {
                     </Stack>
                   </Grid>
 
-        <Grid
+                  <Grid
                     item
                     xs={6}>
                     <Stack spacing={3}>
@@ -1050,8 +1235,8 @@ const ProjectDetail = () => {
                     </Stack>
                   </Grid>
 
-          <Grid
-            item
+                  <Grid
+                    item
                     xs={12}>
                     <Stack spacing={3}>
                       <Stack
@@ -1063,17 +1248,17 @@ const ProjectDetail = () => {
                           color="#64748b"
                         />
                         <Stack>
-              <Typography
-                color="text.secondary"
+                          <Typography
+                            color="text.secondary"
                             variant="caption">
                             프로젝트 기간
-              </Typography>
-              <Typography
-                variant="body1"
+                          </Typography>
+                          <Typography
+                            variant="body1"
                             sx={{ fontSize: '1rem', fontWeight: 500 }}>
                             {formatDate(project.startDate)} -{' '}
                             {formatDate(project.endDate)}
-              </Typography>
+                          </Typography>
                         </Stack>
                       </Stack>
                     </Stack>
@@ -1137,157 +1322,7 @@ const ProjectDetail = () => {
                         <ListItem sx={{ px: 0, py: 2 }}>
                           <ListItemText
                             primary={
-              <Typography
-                                sx={{
-                                  fontSize: '0.875rem',
-                                  color: theme.palette.primary.main,
-                                  cursor: 'pointer',
-                                  '&:hover': {
-                                    textDecoration: 'underline'
-                                  }
-                                }}>
-                                {item.title}
-              </Typography>
-                            }
-                            secondary={
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: 0.5
-                                }}>
-              <Typography
-                                  variant="body2"
-                                  sx={{
-                                    color: 'text.secondary',
-                                    lineHeight: 1.4
-                                  }}>
-                                  {item.content}
-              </Typography>
-                                <Box
-                                  sx={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center'
-                                  }}>
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      gap: 1,
-                                      alignItems: 'center'
-                                    }}>
-              <Typography
-                                      variant="caption"
-                                      color="text.secondary">
-                                      {item.author}
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                color="text.secondary"
-                                      sx={{ opacity: 0.5 }}>
-                                      |
-              </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary">
-                                      {item.date}
-                                    </Typography>
-                                  </Box>
-                                  <Typography
-                                    variant="caption"
-                                    sx={{
-                                      px: 1,
-                                      py: 0.5,
-                                      borderRadius: 1,
-                                      backgroundColor:
-                                        item.status === '승인'
-                                          ? '#dcfce7'
-                                          : item.status === '반려'
-                                            ? '#fee2e2'
-                                            : '#f3f4f6',
-                                      color:
-                                        item.status === '승인'
-                                          ? '#16a34a'
-                                          : item.status === '반려'
-                                            ? '#dc2626'
-                                            : '#4b5563',
-                                      fontSize: '0.75rem'
-                                    }}>
-                                    {item.status}
-                                  </Typography>
-                                </Box>
-                              </Box>
-                            }
-                            sx={{
-                              '& .MuiListItemText-secondary': {
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 0.5
-                              }
-                            }}
-                          />
-                  </ListItem>
-                        {index < array.length - 1 && <Divider sx={{ my: 1 }} />}
-                      </Fragment>
-                ))}
-              </List>
-                </Paper>
-          </Grid>
-          <Grid
-            item
-                xs={6}>
-                <Paper sx={{ p: 3 }}>
-                  <Stack
-                    direction="row"
-                    spacing={2}
-                    alignItems="center"
-                    sx={{ mb: 3 }}>
-                    <MessageCircle
-                      size={24}
-                      color="#64748b"
-                    />
-                    <Typography variant="h6">
-                      최근 질문사항 (더미 데이터)
-                    </Typography>
-                  </Stack>
-                  <List>
-                    {[
-                      {
-                        id: 1,
-                        title: 'API 연동 관련 문의',
-                        content:
-                          '새로 추가된 API 엔드포인트의 인증 방식이 변경되었다고 들었습니다. 자세한 내용을 알려주실 수 있을까요?',
-                        date: '2024-03-20',
-                        author: '김고객',
-                        hasReply: true,
-                        comments: 3
-                      },
-                      {
-                        id: 2,
-                        title: '데이터베이스 구조 문의',
-                        content:
-                          '사용자 테이블에 새로운 컬럼을 추가하려고 하는데, 기존 데이터 마이그레이션은 어떻게 진행하면 될까요?',
-                        date: '2024-03-19',
-                        author: '이고객',
-                        hasReply: false,
-                        comments: 0
-                      },
-                      {
-                        id: 3,
-                        title: '배포 관련 문의',
-                        content:
-                          '다음 주에 예정된 배포 일정이 변경될 수 있다고 하셨는데, 구체적인 일정을 알려주실 수 있을까요?',
-                        date: '2024-03-18',
-                        author: '박고객',
-                        hasReply: true,
-                        comments: 5
-                      }
-                    ].map((item, index, array) => (
-                      <Fragment key={item.id}>
-                        <ListItem sx={{ px: 0, py: 2 }}>
-                          <ListItemText
-                            primary={
-              <Typography
+                              <Typography
                                 sx={{
                                   fontSize: '0.875rem',
                                   color: theme.palette.primary.main,
@@ -1333,61 +1368,38 @@ const ProjectDetail = () => {
                                     </Typography>
                                     <Typography
                                       variant="caption"
-                color="text.secondary"
+                                      color="text.secondary"
                                       sx={{ opacity: 0.5 }}>
                                       |
-              </Typography>
-              <Typography
+                                    </Typography>
+                                    <Typography
                                       variant="caption"
                                       color="text.secondary">
                                       {item.date}
-              </Typography>
+                                    </Typography>
                                   </Box>
-                                  <Box
+                                  <Typography
+                                    variant="caption"
                                     sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 1
+                                      px: 1,
+                                      py: 0.5,
+                                      borderRadius: 1,
+                                      backgroundColor:
+                                        item.status === '승인'
+                                          ? '#dcfce7'
+                                          : item.status === '반려'
+                                            ? '#fee2e2'
+                                            : '#f3f4f6',
+                                      color:
+                                        item.status === '승인'
+                                          ? '#16a34a'
+                                          : item.status === '반려'
+                                            ? '#dc2626'
+                                            : '#4b5563',
+                                      fontSize: '0.75rem'
                                     }}>
-                                    {item.hasReply && (
-                                      <Box
-                                        sx={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: 0.5,
-                                          px: 1,
-                                          py: 0.5,
-                                          borderRadius: 1,
-                                          backgroundColor: '#dcfce7',
-                                          color: '#16a34a',
-                                          fontSize: '0.75rem'
-                                        }}>
-                                        <Reply size={14} />
-                                        <Typography variant="caption">
-                                          답변완료
-                                        </Typography>
-                                      </Box>
-                                    )}
-                                    {item.comments > 0 && (
-                                      <Box
-                                        sx={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: 0.5,
-                                          px: 1,
-                                          py: 0.5,
-                                          borderRadius: 1,
-                                          backgroundColor: '#f3f4f6',
-                                          color: '#4b5563',
-                                          fontSize: '0.75rem'
-                                        }}>
-                                        <MessageCircle size={14} />
-                                        <Typography variant="caption">
-                                          {item.comments}
-                                        </Typography>
-                                      </Box>
-                                    )}
-                                  </Box>
+                                    {item.status}
+                                  </Typography>
                                 </Box>
                               </Box>
                             }
@@ -1404,6 +1416,176 @@ const ProjectDetail = () => {
                       </Fragment>
                     ))}
                   </List>
+                </Paper>
+              </Grid>
+              <Grid
+                item
+                xs={6}>
+                <Paper sx={{ p: 3 }}>
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                    sx={{ mb: 3 }}>
+                    <MessageCircle
+                      size={24}
+                      color="#64748b"
+                    />
+                    <Typography variant="h6">최근 질문사항</Typography>
+                  </Stack>
+                  {loadingArticles ? (
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                      <CircularProgress />
+                    </Box>
+                  ) : articles.length === 0 ? (
+                    <Box
+                      sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                      <Typography color="text.secondary">
+                        등록된 질문사항이 없습니다.
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <List>
+                      {articles.map((article, index, array) => (
+                        <Fragment key={article.id}>
+                          <ListItem sx={{ px: 0, py: 2 }}>
+                            <ListItemText
+                              primary={
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1
+                                  }}>
+                                  <Typography
+                                    sx={{
+                                      fontSize: '0.875rem',
+                                      color: theme.palette.primary.main,
+                                      cursor: 'pointer',
+                                      '&:hover': {
+                                        textDecoration: 'underline'
+                                      }
+                                    }}
+                                    onClick={() =>
+                                      navigate(
+                                        `/user/projects/${id}/articles/${article.id}`
+                                      )
+                                    }>
+                                    {article.title}
+                                  </Typography>
+                                  <Chip
+                                    label={getPriorityText(article.priority)}
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: `${getPriorityColor(article.priority)}20`,
+                                      color: getPriorityColor(article.priority),
+                                      fontSize: '0.75rem',
+                                      height: '20px',
+                                      '& .MuiChip-label': {
+                                        px: 1
+                                      }
+                                    }}
+                                  />
+                                </Box>
+                              }
+                              secondary={
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 0.5
+                                  }}>
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center'
+                                    }}>
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        gap: 1,
+                                        alignItems: 'center'
+                                      }}>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary">
+                                        {article.userName}
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{ opacity: 0.5 }}>
+                                        |
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary">
+                                        {formatDate(article.createdAt)}
+                                      </Typography>
+                                    </Box>
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1
+                                      }}>
+                                      <Chip
+                                        label={getArticleStatusText(
+                                          article.status
+                                        )}
+                                        size="small"
+                                        sx={{
+                                          backgroundColor:
+                                            article.status === 'COMMENTED'
+                                              ? '#F3F4F6'
+                                              : '#FEF2F2',
+                                          color:
+                                            article.status === 'COMMENTED'
+                                              ? '#4B5563'
+                                              : '#DC2626',
+                                          fontSize: '0.75rem',
+                                          height: '20px',
+                                          '& .MuiChip-label': {
+                                            px: 1
+                                          }
+                                        }}
+                                      />
+                                      {article.endDate && (
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            px: 1,
+                                            py: 0.5,
+                                            borderRadius: 1,
+                                            backgroundColor: '#f3f4f6',
+                                            color: '#4b5563',
+                                            fontSize: '0.75rem'
+                                          }}>
+                                          마감: {formatDate(article.endDate)}
+                                        </Typography>
+                                      )}
+                                    </Box>
+                                  </Box>
+                                </Box>
+                              }
+                              sx={{
+                                '& .MuiListItemText-secondary': {
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 0.5
+                                }
+                              }}
+                            />
+                          </ListItem>
+                          {index < array.length - 1 && (
+                            <Divider sx={{ my: 1 }} />
+                          )}
+                        </Fragment>
+                      ))}
+                    </List>
+                  )}
                 </Paper>
               </Grid>
             </Grid>
@@ -1451,11 +1633,11 @@ const ProjectDetail = () => {
                     p: 4,
                     gap: 2
                   }}>
-              <Typography
+                  <Typography
                     variant="body1"
                     color="text.secondary">
                     등록된 고객사가 없습니다.
-              </Typography>
+                  </Typography>
                   <Button
                     variant="contained"
                     startIcon={<Building2 size={20} />}
@@ -1496,39 +1678,68 @@ const ProjectDetail = () => {
                                   }}>
                                   {companyName}
                                 </Typography>
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  startIcon={<User size={16} />}
-                                  onClick={() => {
-                                    console.log('멤버 관리 버튼 클릭:', {
-                                      companyName,
-                                      company
-                                    })
-                                    if (company) {
-                                      handleMemberDialogOpen(
-                                        company.id,
-                                        company.name,
-                                        'client'
-                                      )
-                                    } else {
-                                      console.error(
-                                        '회사 정보를 찾을 수 없음:',
-                                        companyName
-                                      )
-                                    }
-                                  }}
-                                  sx={{
-                                    borderColor: '#E2E8F0',
-                                    color: '#64748B',
-                                    '&:hover': {
-                                      borderColor: '#94A3B8',
-                                      backgroundColor:
-                                        'rgba(226, 232, 240, 0.1)'
-                                    }
-                                  }}>
-                                  멤버 관리
-                                </Button>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<User size={16} />}
+                                    onClick={() => {
+                                      console.log('멤버 관리 버튼 클릭:', {
+                                        companyName,
+                                        company
+                                      })
+                                      if (company) {
+                                        handleMemberDialogOpen(
+                                          company.id,
+                                          company.name,
+                                          'client'
+                                        )
+                                      } else {
+                                        console.error(
+                                          '회사 정보를 찾을 수 없음:',
+                                          companyName
+                                        )
+                                      }
+                                    }}
+                                    sx={{
+                                      borderColor: '#E2E8F0',
+                                      color: '#64748B',
+                                      '&:hover': {
+                                        borderColor: '#94A3B8',
+                                        backgroundColor:
+                                          'rgba(226, 232, 240, 0.1)'
+                                      }
+                                    }}>
+                                    멤버 관리
+                                  </Button>
+                                  {project.clientCompanyNames.length > 1 && (
+                                    <Button
+                                      variant="outlined"
+                                      size="small"
+                                      startIcon={<X size={16} />}
+                                      onClick={() => {
+                                        if (company) {
+                                          setCompanyToDelete({
+                                            id: company.id,
+                                            name: company.name,
+                                            type: 'client'
+                                          })
+                                          setShowDeleteCompanyDialog(true)
+                                        }
+                                      }}
+                                      sx={{
+                                        borderColor: '#EF4444',
+                                        color: '#EF4444',
+                                        '&:hover': {
+                                          borderColor: '#DC2626',
+                                          backgroundColor:
+                                            'rgba(239, 68, 68, 0.1)'
+                                        }
+                                      }}>
+                                      회사 삭제
+                                    </Button>
+                                  )}
+                                </Box>
                               </Box>
                             }
                           />
@@ -1552,12 +1763,12 @@ const ProjectDetail = () => {
                                       alignItems: 'center',
                                       gap: 1
                                     }}>
-              <Typography
-                variant="body1"
+                                    <Typography
+                                      variant="body1"
                                       component="span"
                                       sx={{ color: '#1F2937' }}>
                                       {member.memberName}
-              </Typography>
+                                    </Typography>
                                     <Chip
                                       label={
                                         member.role.includes('MANAGER')
@@ -1637,11 +1848,11 @@ const ProjectDetail = () => {
                     p: 4,
                     gap: 2
                   }}>
-              <Typography
+                  <Typography
                     variant="body1"
                     color="text.secondary">
                     등록된 개발사가 없습니다.
-              </Typography>
+                  </Typography>
                   <Button
                     variant="contained"
                     startIcon={<Building2 size={20} />}
@@ -1681,39 +1892,66 @@ const ProjectDetail = () => {
                                   }}>
                                   {companyName}
                                 </Typography>
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  startIcon={<User size={16} />}
-                                  onClick={() => {
-                                    console.log('멤버 관리 버튼 클릭:', {
-                                      companyName,
-                                      company
-                                    })
-                                    if (company) {
-                                      handleMemberDialogOpen(
-                                        company.id,
-                                        company.name,
-                                        'dev'
-                                      )
-                                    } else {
-                                      console.error(
-                                        '회사 정보를 찾을 수 없음:',
-                                        companyName
-                                      )
-                                    }
-                                  }}
-                                  sx={{
-                                    borderColor: '#E2E8F0',
-                                    color: '#64748B',
-                                    '&:hover': {
-                                      borderColor: '#94A3B8',
-                                      backgroundColor:
-                                        'rgba(226, 232, 240, 0.1)'
-                                    }
-                                  }}>
-                                  멤버 관리
-                                </Button>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<User size={16} />}
+                                    onClick={() => {
+                                      console.log('멤버 관리 버튼 클릭:', {
+                                        companyName,
+                                        company
+                                      })
+                                      if (company) {
+                                        handleMemberDialogOpen(
+                                          company.id,
+                                          company.name,
+                                          'dev'
+                                        )
+                                      } else {
+                                        console.error(
+                                          '회사 정보를 찾을 수 없음:',
+                                          companyName
+                                        )
+                                      }
+                                    }}
+                                    sx={{
+                                      borderColor: '#E2E8F0',
+                                      color: '#64748B',
+                                      '&:hover': {
+                                        borderColor: '#94A3B8',
+                                        backgroundColor:
+                                          'rgba(226, 232, 240, 0.1)'
+                                      }
+                                    }}>
+                                    멤버 관리
+                                  </Button>
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<X size={16} />}
+                                    onClick={() => {
+                                      if (company) {
+                                        setCompanyToDelete({
+                                          id: company.id,
+                                          name: company.name,
+                                          type: 'dev'
+                                        })
+                                        setShowDeleteCompanyDialog(true)
+                                      }
+                                    }}
+                                    sx={{
+                                      borderColor: '#EF4444',
+                                      color: '#EF4444',
+                                      '&:hover': {
+                                        borderColor: '#DC2626',
+                                        backgroundColor:
+                                          'rgba(239, 68, 68, 0.1)'
+                                      }
+                                    }}>
+                                    회사 삭제
+                                  </Button>
+                                </Box>
                               </Box>
                             }
                           />
@@ -1769,16 +2007,16 @@ const ProjectDetail = () => {
                                   </Box>
                                 }
                               />
-                  </ListItem>
-                ))}
+                            </ListItem>
+                          ))}
                         <Box sx={{ height: 16 }} />
                       </Box>
                     )
                   })}
-              </List>
+                </List>
               )}
             </Card>
-            </Box>
+          </Box>
         )}
       </Box>
 
@@ -1839,7 +2077,7 @@ const ProjectDetail = () => {
                   backgroundColor: 'rgba(226, 232, 240, 0.1)'
                 }
               }}>
-              수정
+              멤버 추가
             </Button>
           </Box>
         </DialogTitle>
@@ -1857,11 +2095,11 @@ const ProjectDetail = () => {
                   spacing={2}
                   alignItems="center"
                   sx={{ mb: 1 }}>
-              <Typography
-                variant="subtitle2"
+                  <Typography
+                    variant="subtitle2"
                     sx={{ color: theme.palette.primary.main }}>
                     담당자
-              </Typography>
+                  </Typography>
                   <IconButton
                     size="small"
                     onClick={() =>
@@ -1895,7 +2133,7 @@ const ProjectDetail = () => {
                     {selectedCompanyMembers.members
                       .filter(member => member.role.includes('MANAGER'))
                       .map(member => (
-                  <ListItem
+                        <ListItem
                           key={member.memberId}
                           secondaryAction={
                             <IconButton
@@ -1928,8 +2166,7 @@ const ProjectDetail = () => {
                                 }}>
                                 <Typography
                                   variant="body1"
-                                  component="span"
-                                  sx={{ color: '#1F2937' }}>
+                                  component="span">
                                   {member.memberName}
                                 </Typography>
                                 <Chip
@@ -1958,24 +2195,24 @@ const ProjectDetail = () => {
                               </Box>
                             }
                           />
-                  </ListItem>
-                ))}
-              </List>
+                        </ListItem>
+                      ))}
+                  </List>
                 </Collapse>
-            </Box>
+              </Box>
 
               {/* Regular Members Section */}
-            <Box>
+              <Box>
                 <Stack
                   direction="row"
                   spacing={2}
                   alignItems="center"
                   sx={{ mb: 1 }}>
-              <Typography
-                variant="subtitle2"
+                  <Typography
+                    variant="subtitle2"
                     sx={{ color: '#64748b' }}>
                     일반 멤버
-              </Typography>
+                  </Typography>
                   <IconButton
                     size="small"
                     onClick={() =>
@@ -2042,8 +2279,7 @@ const ProjectDetail = () => {
                                 }}>
                                 <Typography
                                   variant="body1"
-                                  component="span"
-                                  sx={{ color: '#1F2937' }}>
+                                  component="span">
                                   {member.memberName}
                                 </Typography>
                                 <Chip
@@ -2137,7 +2373,7 @@ const ProjectDetail = () => {
               </Box>
             ) : (
               <Box sx={{ maxHeight: '300px', overflow: 'auto' }}>
-              <List
+                <List
                   sx={{
                     '& .MuiListItem-root': {
                       borderBottom: '1px solid',
@@ -2154,7 +2390,7 @@ const ProjectDetail = () => {
                         .includes(companySearch.toLowerCase())
                     )
                     .map(company => (
-                  <ListItem
+                      <ListItem
                         key={company.id}
                         button
                         onClick={() => {
@@ -2183,10 +2419,10 @@ const ProjectDetail = () => {
                             </Typography>
                           }
                         />
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
+                      </ListItem>
+                    ))}
+                </List>
+              </Box>
             )}
           </Box>
         </DialogContent>
@@ -2615,12 +2851,71 @@ const ProjectDetail = () => {
           <Button
             variant="contained"
             color="primary"
-            onClick={handleAddNewCompany}
+            onClick={handleAddNewMembers}
             disabled={
               selectedCompanyManagers.length === 0 &&
-              selectedCompanyMembers.members.length === 0
+              selectedRegularMembers.length === 0
             }>
             추가
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Member Confirmation Dialog */}
+      <Dialog
+        open={showDeleteMemberDialog}
+        onClose={() => {
+          setShowDeleteMemberDialog(false)
+          setMemberToDelete(null)
+        }}>
+        <DialogTitle>멤버 삭제 확인</DialogTitle>
+        <DialogContent>
+          <Typography>정말로 이 멤버를 삭제하시겠습니까?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowDeleteMemberDialog(false)
+              setMemberToDelete(null)
+            }}
+            color="primary">
+            취소
+          </Button>
+          <Button
+            onClick={confirmMemberDelete}
+            color="error">
+            삭제
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Company Confirmation Dialog */}
+      <Dialog
+        open={showDeleteCompanyDialog}
+        onClose={() => {
+          setShowDeleteCompanyDialog(false)
+          setCompanyToDelete(null)
+        }}>
+        <DialogTitle>회사 삭제 확인</DialogTitle>
+        <DialogContent>
+          <Typography>
+            정말 해당 프로젝트에서 {companyToDelete?.name} 회사를
+            제외시키겠습니까?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowDeleteCompanyDialog(false)
+              setCompanyToDelete(null)
+            }}
+            color="primary">
+            취소
+          </Button>
+          <Button
+            onClick={handleCompanyDelete}
+            color="error">
+            삭제
           </Button>
         </DialogActions>
       </Dialog>
