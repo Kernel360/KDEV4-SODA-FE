@@ -115,62 +115,183 @@ export default function AdminMain() {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: 1400, mx: 'auto', py: 4 }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 4,
+        maxWidth: 1400,
+        mx: 'auto',
+        py: 4
+      }}>
       {/* 프로젝트 섹션 */}
       <Box>
-        <Typography variant="h5" sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#1a1a1a', mb: 3 }}>
+        <Typography
+          variant="h5"
+          sx={{
+            fontSize: '1.75rem',
+            fontWeight: 700,
+            color: '#1a1a1a',
+            mb: 3
+          }}>
           프로젝트 현황
         </Typography>
 
         {/* 프로젝트 현황 카드 */}
-        <Grid container spacing={3}>
-          <Grid item xs={4}>
-            <Card sx={{ 
-              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-              '&:hover': {
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-              }
-            }}>
+        <Grid
+          container
+          spacing={3}>
+          <Grid
+            item
+            xs>
+            <Card
+              onClick={() => navigate('/admin/projects?status=CONTRACT')}
+              sx={{
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                borderLeft: '4px solid #64748B',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+                  transform: 'scale(1.02)'
+                }
+              }}>
               <CardContent>
-                <Typography sx={{ fontSize: '0.875rem', color: '#64748b', mb: 1 }}>
-                  계약 전 프로젝트
+                <Typography
+                  sx={{ fontSize: '1.25rem', color: '#1a1a1a', mb: 1 }}>
+                  계약
                 </Typography>
-                <Typography sx={{ fontSize: '2.5rem', fontWeight: 700, color: theme.palette.primary.main }}>
-                  {projects.filter(p => p.status === 'CONTRACT').length}
+                <Typography
+                  sx={{
+                    fontSize: '1.25rem',
+                    fontWeight: 700,
+                    color: '#64748B'
+                  }}>
+                  {projects.filter(p => p.status === 'CONTRACT').length}건
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={4}>
-            <Card sx={{ 
-              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-              '&:hover': {
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-              }
-            }}>
+          <Grid
+            item
+            xs>
+            <Card
+              onClick={() => navigate('/admin/projects?status=IN_PROGRESS')}
+              sx={{
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                borderLeft: '4px solid #FFB800',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+                  transform: 'scale(1.02)'
+                }
+              }}>
               <CardContent>
-                <Typography sx={{ fontSize: '0.875rem', color: '#64748b', mb: 1 }}>
-                  개발 중인 프로젝트
+                <Typography
+                  sx={{ fontSize: '1.25rem', color: '#1a1a1a', mb: 1 }}>
+                  진행중
                 </Typography>
-                <Typography sx={{ fontSize: '2.5rem', fontWeight: 700, color: theme.palette.primary.main }}>
-                  {projects.filter(p => p.status === 'IN_PROGRESS').length}
+                <Typography
+                  sx={{
+                    fontSize: '1.25rem',
+                    fontWeight: 700,
+                    color: '#FFB800'
+                  }}>
+                  {projects.filter(p => p.status === 'IN_PROGRESS').length}건
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={4}>
-            <Card sx={{ 
-              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-              '&:hover': {
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-              }
-            }}>
+          <Grid
+            item
+            xs>
+            <Card
+              onClick={() => navigate('/admin/projects?status=DELIVERED')}
+              sx={{
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                borderLeft: '4px solid #22C55E',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+                  transform: 'scale(1.02)'
+                }
+              }}>
               <CardContent>
-                <Typography sx={{ fontSize: '0.875rem', color: '#64748b', mb: 1 }}>
-                  하자보수 중인 프로젝트
+                <Typography
+                  sx={{ fontSize: '1.25rem', color: '#1a1a1a', mb: 1 }}>
+                  납품완료
                 </Typography>
-                <Typography sx={{ fontSize: '2.5rem', fontWeight: 700, color: theme.palette.info.main }}>
-                  {projects.filter(p => p.status === 'MAINTENANCE').length}
+                <Typography
+                  sx={{
+                    fontSize: '1.25rem',
+                    fontWeight: 700,
+                    color: '#22C55E'
+                  }}>
+                  {projects.filter(p => p.status === 'DELIVERED').length}건
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid
+            item
+            xs>
+            <Card
+              onClick={() => navigate('/admin/projects?status=MAINTENANCE')}
+              sx={{
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                borderLeft: '4px solid #8B5CF6',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+                  transform: 'scale(1.02)'
+                }
+              }}>
+              <CardContent>
+                <Typography
+                  sx={{ fontSize: '1.25rem', color: '#1a1a1a', mb: 1 }}>
+                  하자보수
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: '1.25rem',
+                    fontWeight: 700,
+                    color: '#8B5CF6'
+                  }}>
+                  {projects.filter(p => p.status === 'MAINTENANCE').length}건
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid
+            item
+            xs>
+            <Card
+              onClick={() => navigate('/admin/projects?status=ON_HOLD')}
+              sx={{
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                borderLeft: '4px solid #EF4444',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+                  transform: 'scale(1.02)'
+                }
+              }}>
+              <CardContent>
+                <Typography
+                  sx={{ fontSize: '1.25rem', color: '#1a1a1a', mb: 1 }}>
+                  일시중단
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: '1.25rem',
+                    fontWeight: 700,
+                    color: '#EF4444'
+                  }}>
+                  {projects.filter(p => p.status === 'ON_HOLD').length}건
                 </Typography>
               </CardContent>
             </Card>
@@ -178,8 +299,13 @@ export default function AdminMain() {
         </Grid>
 
         {/* 프로젝트 생성 추이 */}
-        <Grid container spacing={3} sx={{ mt: 2 }}>
-          <Grid item xs={12}>
+        <Grid
+          container
+          spacing={3}
+          sx={{ mt: 2 }}>
+          <Grid
+            item
+            xs={12}>
             <Paper
               elevation={0}
               sx={{
@@ -189,18 +315,31 @@ export default function AdminMain() {
                 bgcolor: '#fff',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
               }}>
-        <Typography
-          sx={{
+              <Typography
+                sx={{
                   fontSize: '1.25rem',
-            fontWeight: 600,
+                  fontWeight: 600,
                   color: '#1a1a1a',
                   mb: 3
                 }}>
                 최근 3개월간 프로젝트 생성 추이 (더미데이터)
               </Typography>
-              <Box sx={{ height: 300, display: 'flex', flexDirection: 'column', width: '100%', position: 'relative' }}>
+              <Box
+                sx={{
+                  height: 300,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  width: '100%',
+                  position: 'relative'
+                }}>
                 {/* 그래프 영역 */}
-                <Box sx={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'flex-end' }}>
+                <Box
+                  sx={{
+                    flex: 1,
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'flex-end'
+                  }}>
                   {/* 가로 그리드 라인 */}
                   {[0, 1, 2, 3, 4, 5].map(num => (
                     <Box
@@ -277,34 +416,51 @@ export default function AdminMain() {
                 </Box>
 
                 {/* X축 */}
-                <Box sx={{ height: 60, display: 'flex', alignItems: 'flex-start', mt: 2 }}>
+                <Box
+                  sx={{
+                    height: 60,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    mt: 2
+                  }}>
                   <Box sx={{ flex: 1, display: 'flex' }}>
-                    {['1월1주', '1월2주', '1월3주', '1월4주', '2월1주', '2월2주', '2월3주', '2월4주', '3월1주', '3월2주', '3월3주', '3월4주'].map(
-                      (week, index) => (
-                        <Box
-                          key={index}
+                    {[
+                      '1월1주',
+                      '1월2주',
+                      '1월3주',
+                      '1월4주',
+                      '2월1주',
+                      '2월2주',
+                      '2월3주',
+                      '2월4주',
+                      '3월1주',
+                      '3월2주',
+                      '3월3주',
+                      '3월4주'
+                    ].map((week, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          flex: 1,
+                          textAlign: 'center',
+                          position: 'relative',
+                          px: 1.5
+                        }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
                           sx={{
-                            flex: 1,
-                            textAlign: 'center',
-                            position: 'relative',
-                            px: 1.5
+                            display: 'block',
+                            whiteSpace: 'nowrap',
+                            position: 'absolute',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            fontSize: '0.75rem'
                           }}>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{
-                              display: 'block',
-                              whiteSpace: 'nowrap',
-                              position: 'absolute',
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              fontSize: '0.75rem'
-                            }}>
-                            {week}
-                          </Typography>
-                        </Box>
-                      )
-                    )}
+                          {week}
+                        </Typography>
+                      </Box>
+                    ))}
                   </Box>
                 </Box>
               </Box>
@@ -313,9 +469,14 @@ export default function AdminMain() {
         </Grid>
 
         {/* 프로젝트 목록 */}
-        <Grid container spacing={3} sx={{ mt: 2 }}>
+        <Grid
+          container
+          spacing={3}
+          sx={{ mt: 2 }}>
           {/* 진행중인 프로젝트 */}
-          <Grid item xs={6}>
+          <Grid
+            item
+            xs={6}>
             <Paper
               elevation={0}
               sx={{
@@ -328,20 +489,26 @@ export default function AdminMain() {
                 flexDirection: 'column',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
               }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 3
+                }}>
                 <Typography
                   sx={{
                     fontSize: '1.25rem',
                     fontWeight: 600,
                     color: '#1a1a1a'
-          }}>
-          진행중인 프로젝트
-        </Typography>
+                  }}>
+                  진행중인 프로젝트
+                </Typography>
                 <Button
                   variant="outlined"
                   onClick={handleViewMoreProjects}
                   size="small"
-                  sx={{ 
+                  sx={{
                     borderRadius: 2,
                     borderColor: '#e5e7eb',
                     color: '#666',
@@ -354,38 +521,84 @@ export default function AdminMain() {
                 </Button>
               </Box>
               <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>프로젝트명</TableCell>
-                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>개발사</TableCell>
-                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>고객사</TableCell>
-                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>상태</TableCell>
-                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>대시보드 바로가기</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-                    {projects
-                      .slice(0, 3)
-                      .map(project => (
-                      <TableRow key={project.id} hover>
-                  <TableCell>
-                    <Typography
-                      onClick={() => handleProjectManageClick(project.id)}
-                      sx={{
-                        fontSize: '0.875rem',
-                        cursor: 'pointer',
-                        color: theme.palette.primary.main,
-                        '&:hover': {
-                          color: theme.palette.primary.dark,
-                          textDecoration: 'underline'
-                        }
-                      }}>
-                      {project.title}
-                    </Typography>
-                  </TableCell>
-                        <TableCell sx={{ fontSize: '0.875rem', color: '#4b5563' }}>{project.devCompanyNames || '-'}</TableCell>
-                        <TableCell sx={{ fontSize: '0.875rem', color: '#4b5563' }}>{project.clientCompanyNames || '-'}</TableCell>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell
+                        sx={{
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                          color: '#1a1a1a',
+                          borderBottom: '2px solid #e5e7eb'
+                        }}>
+                        프로젝트명
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                          color: '#1a1a1a',
+                          borderBottom: '2px solid #e5e7eb'
+                        }}>
+                        개발사
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                          color: '#1a1a1a',
+                          borderBottom: '2px solid #e5e7eb'
+                        }}>
+                        고객사
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                          color: '#1a1a1a',
+                          borderBottom: '2px solid #e5e7eb'
+                        }}>
+                        상태
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                          color: '#1a1a1a',
+                          borderBottom: '2px solid #e5e7eb'
+                        }}>
+                        대시보드 바로가기
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {projects.slice(0, 3).map(project => (
+                      <TableRow
+                        key={project.id}
+                        hover>
+                        <TableCell>
+                          <Typography
+                            onClick={() => handleProjectManageClick(project.id)}
+                            sx={{
+                              fontSize: '0.875rem',
+                              cursor: 'pointer',
+                              color: theme.palette.primary.main,
+                              '&:hover': {
+                                color: theme.palette.primary.dark,
+                                textDecoration: 'underline'
+                              }
+                            }}>
+                            {project.title}
+                          </Typography>
+                        </TableCell>
+                        <TableCell
+                          sx={{ fontSize: '0.875rem', color: '#4b5563' }}>
+                          {project.devCompanyNames || '-'}
+                        </TableCell>
+                        <TableCell
+                          sx={{ fontSize: '0.875rem', color: '#4b5563' }}>
+                          {project.clientCompanyNames || '-'}
+                        </TableCell>
                         <TableCell>
                           <Box
                             sx={{
@@ -432,7 +645,9 @@ export default function AdminMain() {
           </Grid>
 
           {/* 최근 활동이 많은 프로젝트 */}
-          <Grid item xs={6}>
+          <Grid
+            item
+            xs={6}>
             <Paper
               elevation={0}
               sx={{
@@ -445,7 +660,13 @@ export default function AdminMain() {
                 flexDirection: 'column',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
               }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 3
+                }}>
                 <Typography
                   sx={{
                     fontSize: '1.25rem',
@@ -458,7 +679,7 @@ export default function AdminMain() {
                   variant="outlined"
                   onClick={handleViewMoreProjects}
                   size="small"
-                  sx={{ 
+                  sx={{
                     borderRadius: 2,
                     borderColor: '#e5e7eb',
                     color: '#666',
@@ -474,18 +695,58 @@ export default function AdminMain() {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>프로젝트명</TableCell>
-                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>승인요청 수</TableCell>
-                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>질문 수</TableCell>
-                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>마지막 활동</TableCell>
-                      <TableCell sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e5e7eb' }}>대시보드 바로가기</TableCell>
+                      <TableCell
+                        sx={{
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                          color: '#1a1a1a',
+                          borderBottom: '2px solid #e5e7eb'
+                        }}>
+                        프로젝트명
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                          color: '#1a1a1a',
+                          borderBottom: '2px solid #e5e7eb'
+                        }}>
+                        승인요청 수
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                          color: '#1a1a1a',
+                          borderBottom: '2px solid #e5e7eb'
+                        }}>
+                        질문 수
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                          color: '#1a1a1a',
+                          borderBottom: '2px solid #e5e7eb'
+                        }}>
+                        마지막 활동
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                          color: '#1a1a1a',
+                          borderBottom: '2px solid #e5e7eb'
+                        }}>
+                        대시보드 바로가기
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {[
-                      { 
+                      {
                         id: 1,
-                        title: '프로젝트 A', 
+                        title: '프로젝트 A',
                         requestCount: 15,
                         questionCount: 9,
                         lastActivity: '2024-03-20',
@@ -493,9 +754,9 @@ export default function AdminMain() {
                         clientCompanyName: '고객사 A',
                         status: '진행 중'
                       },
-                      { 
+                      {
                         id: 2,
-                        title: '프로젝트 B', 
+                        title: '프로젝트 B',
                         requestCount: 12,
                         questionCount: 6,
                         lastActivity: '2024-03-19',
@@ -503,9 +764,9 @@ export default function AdminMain() {
                         clientCompanyName: '고객사 B',
                         status: '진행 중'
                       },
-                      { 
+                      {
                         id: 3,
-                        title: '프로젝트 C', 
+                        title: '프로젝트 C',
                         requestCount: 8,
                         questionCount: 7,
                         lastActivity: '2024-03-18',
@@ -514,7 +775,9 @@ export default function AdminMain() {
                         status: '진행 중'
                       }
                     ].map((project, index) => (
-                      <TableRow key={index} hover>
+                      <TableRow
+                        key={index}
+                        hover>
                         <TableCell>
                           <Typography
                             onClick={() => handleProjectManageClick(project.id)}
@@ -550,7 +813,10 @@ export default function AdminMain() {
                             {project.questionCount}건
                           </Box>
                         </TableCell>
-                        <TableCell sx={{ fontSize: '0.875rem', color: '#4b5563' }}>{project.lastActivity}</TableCell>
+                        <TableCell
+                          sx={{ fontSize: '0.875rem', color: '#4b5563' }}>
+                          {project.lastActivity}
+                        </TableCell>
                         <TableCell>
                           <Button
                             variant="contained"
@@ -571,11 +837,11 @@ export default function AdminMain() {
                             대시보드
                           </Button>
                         </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </Paper>
           </Grid>
         </Grid>
@@ -583,24 +849,43 @@ export default function AdminMain() {
 
       {/* 회사 섹션 */}
       <Box>
-        <Typography variant="h5" sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#1a1a1a', mb: 3 }}>
+        <Typography
+          variant="h5"
+          sx={{
+            fontSize: '1.75rem',
+            fontWeight: 700,
+            color: '#1a1a1a',
+            mb: 3
+          }}>
           회사 현황
         </Typography>
 
         {/* 회사 현황 카드 */}
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Card sx={{ 
-              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-              '&:hover': {
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-              }
-            }}>
+        <Grid
+          container
+          spacing={3}>
+          <Grid
+            item
+            xs={12}
+            md={6}>
+            <Card
+              sx={{
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                '&:hover': {
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                }
+              }}>
               <CardContent>
-                <Typography sx={{ fontSize: '0.875rem', color: '#64748b', mb: 1 }}>
+                <Typography
+                  sx={{ fontSize: '0.875rem', color: '#64748b', mb: 1 }}>
                   전체 등록된 회사
                 </Typography>
-                <Typography sx={{ fontSize: '2.5rem', fontWeight: 700, color: theme.palette.primary.main }}>
+                <Typography
+                  sx={{
+                    fontSize: '2.5rem',
+                    fontWeight: 700,
+                    color: theme.palette.primary.main
+                  }}>
                   {totalCompanies}
                 </Typography>
               </CardContent>
@@ -609,12 +894,17 @@ export default function AdminMain() {
         </Grid>
 
         {/* 회사 생성 추이 */}
-        <Grid container spacing={3} sx={{ mt: 2 }}>
-          <Grid item xs={12}>
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
+        <Grid
+          container
+          spacing={3}
+          sx={{ mt: 2 }}>
+          <Grid
+            item
+            xs={12}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
                 border: '1px solid #e5e7eb',
                 borderRadius: 2,
                 bgcolor: '#fff',
@@ -629,9 +919,22 @@ export default function AdminMain() {
                 }}>
                 최근 3개월간 회사 생성 추이 (더미데이터)
               </Typography>
-              <Box sx={{ height: 300, display: 'flex', flexDirection: 'column', width: '100%', position: 'relative' }}>
+              <Box
+                sx={{
+                  height: 300,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  width: '100%',
+                  position: 'relative'
+                }}>
                 {/* 그래프 영역 */}
-                <Box sx={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'flex-end' }}>
+                <Box
+                  sx={{
+                    flex: 1,
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'flex-end'
+                  }}>
                   {/* 가로 그리드 라인 */}
                   {[0, 1, 2, 3, 4, 5].map(num => (
                     <Box
@@ -642,7 +945,7 @@ export default function AdminMain() {
                         right: 0,
                         bottom: `${(num / 5) * 100}%`,
                         borderBottom: '1px dashed',
-            borderColor: 'divider',
+                        borderColor: 'divider',
                         zIndex: 0
                       }}
                     />
@@ -708,38 +1011,55 @@ export default function AdminMain() {
                 </Box>
 
                 {/* X축 */}
-                <Box sx={{ height: 60, display: 'flex', alignItems: 'flex-start', mt: 2 }}>
+                <Box
+                  sx={{
+                    height: 60,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    mt: 2
+                  }}>
                   <Box sx={{ flex: 1, display: 'flex' }}>
-                    {['1월1주', '1월2주', '1월3주', '1월4주', '2월1주', '2월2주', '2월3주', '2월4주', '3월1주', '3월2주', '3월3주', '3월4주'].map(
-                      (week, index) => (
-                        <Box
-                          key={index}
+                    {[
+                      '1월1주',
+                      '1월2주',
+                      '1월3주',
+                      '1월4주',
+                      '2월1주',
+                      '2월2주',
+                      '2월3주',
+                      '2월4주',
+                      '3월1주',
+                      '3월2주',
+                      '3월3주',
+                      '3월4주'
+                    ].map((week, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          flex: 1,
+                          textAlign: 'center',
+                          position: 'relative',
+                          px: 1.5
+                        }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
                           sx={{
-                            flex: 1,
-                            textAlign: 'center',
-                            position: 'relative',
-                            px: 1.5
+                            display: 'block',
+                            whiteSpace: 'nowrap',
+                            position: 'absolute',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            fontSize: '0.75rem'
                           }}>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{
-                              display: 'block',
-                              whiteSpace: 'nowrap',
-                              position: 'absolute',
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              fontSize: '0.75rem'
-                            }}>
-                            {week}
-                          </Typography>
-                        </Box>
-                      )
-                    )}
+                          {week}
+                        </Typography>
+                      </Box>
+                    ))}
                   </Box>
                 </Box>
               </Box>
-        </Paper>
+            </Paper>
           </Grid>
         </Grid>
       </Box>
