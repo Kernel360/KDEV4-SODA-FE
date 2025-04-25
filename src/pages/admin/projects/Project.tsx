@@ -166,6 +166,7 @@ const ProjectDetail = () => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
   const [project, setProject] = useState<Project>({
     id: 0,
+    projectId: 0,
     title: '',
     projectName: '',
     name: '',
@@ -175,6 +176,8 @@ const ProjectDetail = () => {
     endDate: '',
     currentUserProjectRole: '',
     currentUserCompanyRole: '',
+    companyProjectRole: null,
+    memberProjectRole: null,
     clientCompanyNames: [],
     devCompanyNames: [],
     clientManagerNames: [],
@@ -187,7 +190,7 @@ const ProjectDetail = () => {
     devMembers: [],
     createdAt: '',
     updatedAt: '',
-    stages: [] // Added missing required stages property
+    stages: []
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
