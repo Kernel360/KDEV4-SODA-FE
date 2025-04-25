@@ -57,6 +57,7 @@ export interface Article {
   deadLine?: string
   fileList?: ArticleFileDTO[]
   linkList?: ArticleLinkDTO[]
+  parentId?: number | null
 }
 
 export interface ArticleFile {
