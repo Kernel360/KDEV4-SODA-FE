@@ -47,7 +47,7 @@ const UserSidebar: React.FC<UserSidebarProps> = ({ isOpen }) => {
     {
       path: '/user/projects',
       icon: <Briefcase size={24} />,
-      text: '참여 중인 프로젝트'
+      text: '프로젝트 목록'
     }
   ]
 
