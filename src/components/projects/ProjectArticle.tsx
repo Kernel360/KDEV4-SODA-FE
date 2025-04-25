@@ -16,9 +16,14 @@ import {
   Select,
   MenuItem,
   FormControl,
-  IconButton
+  IconButton,
+  Pagination
 } from '@mui/material'
-import { Article, ArticleStatus, PriorityType } from '../../types/article'
+import {
+  Article as ImportedArticle,
+  ArticleStatus,
+  PriorityType
+} from '../../types/article'
 import { Stage } from '../../types/project'
 import { projectService } from '../../services/projectService'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
@@ -38,6 +43,17 @@ enum SearchType {
 }
 
 const ITEMS_PER_PAGE = 5
+
+interface Article extends ImportedArticle {
+  deleted?: boolean
+  parentArticleId?: number
+  children: Article[]
+  status: ArticleStatus
+}
+
+interface ArticleResponse {
+  data: Article[]
+}
 
 const ArticleRow: React.FC<{
   article: Article
@@ -205,12 +221,60 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
   const [searchKeyword, setSearchKeyword] = useState('')
   const [totalPages, setTotalPages] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
+  const [totalArticles, setTotalArticles] = useState(0)
+  const [stageArticles, setStageArticles] = useState<{ [key: number]: number }>(
+    {}
+  )
+
+  const fetchArticleCounts = async () => {
+    try {
+      const totalResponse = await projectService.getProjectArticles(
+        projectId,
+        null,
+        searchType,
+        '',
+        0,
+        100
+      )
+      const totalCount = Array.isArray(totalResponse.data)
+        ? totalResponse.data.filter((article: Article) => !article.deleted)
+            .length
+        : 0
+      setTotalArticles(totalCount)
+
+      const stageCounts: { [key: number]: number } = {}
+      await Promise.all(
+        propStages.map(async stage => {
+          const response = await projectService.getProjectArticles(
+            projectId,
+            stage.id,
+            searchType,
+            '',
+            0,
+            100
+          )
+          const stageCount = Array.isArray(response.data)
+            ? response.data.filter((article: Article) => !article.deleted)
+                .length
+            : 0
+          stageCounts[stage.id] = stageCount
+        })
+      )
+      setStageArticles(stageCounts)
+    } catch (error) {
+      console.error('Error fetching article counts:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchArticleCounts()
+  }, [projectId])
 
   useEffect(() => {
     fetchArticles()
   }, [projectId, selectedStage, currentPage, searchType, searchTerm])
 
-  const fetchArticles = async (page: number = 0) => {
+  const fetchArticles = async () => {
     try {
       setLoading(true)
       const response = await projectService.getProjectArticles(
@@ -218,19 +282,14 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
         selectedStage,
         searchType,
         searchTerm,
-        page,
+        currentPage,
         ITEMS_PER_PAGE
       )
-      setArticles(Array.isArray(response.data) ? response.data : [])
-      setTotalPages(
-        Math.ceil(
-          (Array.isArray(response.data) ? response.data.length : 0) /
-            ITEMS_PER_PAGE
-        )
-      )
+      setArticles(response.data)
+      setTotalPages(Math.ceil(response.data.length / ITEMS_PER_PAGE))
       setLoading(false)
     } catch (error) {
-      console.error('Error fetching articles:', error)
+      console.error('Failed to fetch articles:', error)
       toast.error('게시글 목록을 불러오는데 실패했습니다.')
       setLoading(false)
       setError('게시글 목록을 불러오는데 실패했습니다.')
@@ -257,6 +316,10 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
       e.preventDefault()
       handleSearch()
     }
+  }
+
+  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
+    setCurrentPage(value - 1)
   }
 
   const getPriorityColor = (priority: PriorityType) => {
@@ -324,21 +387,35 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
     <Box>
       <Box
         sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 3,
-          mb: 3
+          mb: 4,
+          mt: 2,
+          width: '100%',
+          overflow: 'auto',
+          '&::-webkit-scrollbar': {
+            height: '6px',
+            backgroundColor: 'transparent'
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'transparent'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'transparent',
+            borderRadius: '3px'
+          },
+          '&:hover::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(0, 0, 0, 0.1)'
+          }
         }}>
         <Box
           sx={{
             display: 'flex',
             gap: 2,
+            minWidth: 'min-content',
             px: 1,
-            py: 1,
-            flexWrap: 'wrap'
+            py: 1
           }}>
           <Paper
-            onClick={() => handleStageChange(null)}
+            onClick={() => setSelectedStage(null)}
             sx={{
               p: 2,
               width: 150,
@@ -363,11 +440,18 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
               }}>
               전체
             </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: '#666'
+              }}>
+              {totalArticles}건
+            </Typography>
           </Paper>
           {propStages.map(stage => (
             <Paper
               key={stage.id}
-              onClick={() => handleStageChange(stage.id)}
+              onClick={() => setSelectedStage(stage.id)}
               sx={{
                 p: 2,
                 width: 150,
@@ -392,66 +476,15 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
                 }}>
                 {stage.name}
               </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: '#666'
+                }}>
+                {stageArticles[stage.id] || 0}건
+              </Typography>
             </Paper>
           ))}
-        </Box>
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 2,
-            alignItems: 'center',
-            width: '100%',
-            justifyContent: 'space-between'
-          }}>
-          <Box sx={{ display: 'flex', gap: 2, flex: 1 }}>
-            <FormControl
-              size="small"
-              sx={{
-                width: '150px',
-                flexShrink: 0
-              }}>
-              <Select
-                value={searchType}
-                onChange={e => setSearchType(e.target.value as SearchType)}>
-                <MenuItem value={SearchType.TITLE_CONTENT}>제목+내용</MenuItem>
-                <MenuItem value={SearchType.AUTHOR}>작성자</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField
-              size="small"
-              placeholder="검색어를 입력하세요"
-              value={searchKeyword}
-              onChange={handleSearchChange}
-              onKeyPress={handleKeyPress}
-              sx={{ flex: 1 }}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={handleSearch}>
-                      <Search />
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-            />
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={<Plus />}
-            onClick={() =>
-              navigate(
-                `/user/projects/${projectId}/articles/create?tab=articles`
-              )
-            }
-            sx={{
-              whiteSpace: 'nowrap',
-              bgcolor: '#FFB800',
-              '&:hover': {
-                bgcolor: '#E5A600'
-              }
-            }}>
-            글쓰기
-          </Button>
         </Box>
       </Box>
 
@@ -512,56 +545,26 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
           justifyContent: 'center',
           mt: 3,
           mb: 3,
-          gap: 0.5,
-          '& .MuiButton-root': {
-            minWidth: '32px',
-            height: '32px',
-            padding: 0,
-            fontSize: '0.875rem'
-          }
+          gap: 0.5
         }}>
-        <Button
-          onClick={() => setCurrentPage(prev => prev - 1)}
-          disabled={currentPage === 0}
+        <Pagination
+          count={totalPages}
+          page={currentPage + 1}
+          onChange={handlePageChange}
+          color="primary"
           sx={{
-            color: '#666',
-            '&:hover': {
-              bgcolor: '#f5f5f5'
-            },
-            '&.Mui-disabled': {}
-          }}>
-          {'<'}
-        </Button>
-        {[...Array(totalPages)].map((_, index) => (
-          <Button
-            key={index}
-            onClick={() => setCurrentPage(index)}
-            sx={{
-              color: currentPage === index ? '#fff' : '#666',
-              border: '1px solid',
-              borderColor: currentPage === index ? '#FFB800' : '#E0E0E0',
-              bgcolor: currentPage === index ? '#FFB800' : 'white',
-              '&:hover': {
-                bgcolor: currentPage === index ? '#E5A600' : '#f5f5f5',
-                borderColor: currentPage === index ? '#E5A600' : '#E0E0E0'
+            '& .MuiPaginationItem-root': {
+              color: '#666',
+              '&.Mui-selected': {
+                bgcolor: '#FFB800',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: '#E5A600'
+                }
               }
-            }}>
-            {index + 1}
-          </Button>
-        ))}
-        <Button
-          onClick={() => setCurrentPage(prev => prev + 1)}
-          disabled={currentPage >= totalPages - 1}
-          sx={{
-            color: '#666',
-            '&:hover': {
-              bgcolor: '#f5f5f5',
-              border: '1px solid #E0E0E0'
-            },
-            '&.Mui-disabled': {}
-          }}>
-          {'>'}
-        </Button>
+            }
+          }}
+        />
       </Box>
     </Box>
   )
