@@ -51,8 +51,16 @@ interface Article extends ImportedArticle {
   status: ArticleStatus
 }
 
-interface ArticleResponse {
-  data: Article[]
+interface PaginatedResponse<T> {
+  data: {
+    content: T[]
+    page: {
+      size: number
+      number: number
+      totalElements: number
+      totalPages: number
+    }
+  }
 }
 
 const ArticleRow: React.FC<{
@@ -236,31 +244,27 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
         0,
         100
       )
-      const totalCount = Array.isArray(totalResponse.data)
-        ? totalResponse.data.filter((article: Article) => !article.deleted)
-            .length
-        : 0
-      setTotalArticles(totalCount)
+      if (totalResponse.status === 'success') {
+        setTotalArticles(totalResponse.data.page.totalElements)
 
-      const stageCounts: { [key: number]: number } = {}
-      await Promise.all(
-        propStages.map(async stage => {
-          const response = await projectService.getProjectArticles(
-            projectId,
-            stage.id,
-            searchType,
-            '',
-            0,
-            100
-          )
-          const stageCount = Array.isArray(response.data)
-            ? response.data.filter((article: Article) => !article.deleted)
-                .length
-            : 0
-          stageCounts[stage.id] = stageCount
-        })
-      )
-      setStageArticles(stageCounts)
+        const stageCounts: { [key: number]: number } = {}
+        await Promise.all(
+          propStages.map(async stage => {
+            const response = await projectService.getProjectArticles(
+              projectId,
+              stage.id,
+              searchType,
+              '',
+              0,
+              100
+            )
+            if (response.status === 'success') {
+              stageCounts[stage.id] = response.data.page.totalElements
+            }
+          })
+        )
+        setStageArticles(stageCounts)
+      }
     } catch (error) {
       console.error('Error fetching article counts:', error)
     }
@@ -285,9 +289,18 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
         currentPage,
         ITEMS_PER_PAGE
       )
-      setArticles(response.data)
-      setTotalPages(Math.ceil(response.data.length / ITEMS_PER_PAGE))
-      setLoading(false)
+
+      if (response.status === 'success') {
+        setArticles(response.data.content)
+        setTotalPages(
+          Math.ceil(response.data.page.totalElements / ITEMS_PER_PAGE)
+        )
+        setLoading(false)
+      } else {
+        throw new Error(
+          response.message || '게시글 목록을 불러오는데 실패했습니다.'
+        )
+      }
     } catch (error) {
       console.error('Failed to fetch articles:', error)
       toast.error('게시글 목록을 불러오는데 실패했습니다.')
@@ -529,8 +542,8 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
                   sx={{ py: 8 }}>
                   <Typography color="text.secondary">
                     {selectedStage !== null
-                      ? '해당 단계의 게시글이 존재하지 않습니다.'
-                      : '게시글이 존재하지 않습니다.'}
+                      ? '해당 단계의 질문이 없습니다.'
+                      : '작성된 질문이 없습니다.'}
                   </Typography>
                 </TableCell>
               </TableRow>
