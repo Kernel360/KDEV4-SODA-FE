@@ -210,6 +210,7 @@ export const projectService = {
         const projectData = response.data.data
         return {
           id: projectData.id,
+          projectId: projectData.id,
           title: projectData.title,
           projectName: projectData.title,
           name: projectData.title,
@@ -226,6 +227,8 @@ export const projectService = {
           devMemberNames: projectData.devMemberNames || [],
           currentUserProjectRole: projectData.currentUserProjectRole,
           currentUserCompanyRole: projectData.currentUserCompanyRole,
+          companyProjectRole: projectData.companyProjectRole || null,
+          memberProjectRole: projectData.memberProjectRole || null,
           createdAt: projectData.createdAt || new Date().toISOString(),
           updatedAt: projectData.updatedAt || new Date().toISOString(),
           stages: projectData.stages || []

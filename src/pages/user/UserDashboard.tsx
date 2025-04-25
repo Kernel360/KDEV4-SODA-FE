@@ -159,13 +159,6 @@ const UserDashboard: React.FC = () => {
     }
   }
 
-  // 임시 데이터 (실제로는 API에서 가져올 예정)
-  const recentQuestions: DashboardItem[] = [
-    { id: 1, title: '질문 1', date: '2024-03-15' },
-    { id: 2, title: '질문 2', date: '2024-03-14' },
-    { id: 3, title: '질문 3', date: '2024-03-13' }
-  ]
-
   const getStatusText = (status: string) => {
     switch (status) {
       case 'APPROVED':
@@ -205,6 +198,71 @@ const UserDashboard: React.FC = () => {
         }
     }
   }
+
+  const getProjectStatusText = (status: string) => {
+    switch (status) {
+      case 'CONTRACT':
+        return '계약'
+      case 'IN_PROGRESS':
+        return '진행중'
+      case 'DELIVERED':
+        return '납품완료'
+      case 'MAINTENANCE':
+        return '하자보수'
+      case 'ON_HOLD':
+        return '일시중단'
+      default:
+        return status
+    }
+  }
+
+  const getProjectStatusColor = (status: string) => {
+    switch (status) {
+      case 'CONTRACT':
+        return { bg: '#ffffff', color: '#64748B', border: '1px solid #64748B' }
+      case 'IN_PROGRESS':
+        return { bg: '#ffffff', color: '#FFB800', border: '1px solid #FFB800' }
+      case 'DELIVERED':
+        return { bg: '#ffffff', color: '#22C55E', border: '1px solid #22C55E' }
+      case 'MAINTENANCE':
+        return { bg: '#ffffff', color: '#8B5CF6', border: '1px solid #8B5CF6' }
+      case 'ON_HOLD':
+        return { bg: '#ffffff', color: '#EF4444', border: '1px solid #EF4444' }
+      default:
+        return { bg: '#ffffff', color: '#FFB800', border: '1px solid #FFB800' }
+    }
+  }
+
+  const getMemberRoleText = (role: string) => {
+    switch (role) {
+      case 'DEV_MANAGER':
+        return '개발사 담당자'
+      case 'DEV_PARTICIPANT':
+        return '개발사 일반 참여자'
+      case 'CLI_MANAGER':
+        return '고객사 담당자'
+      case 'CLI_PARTICIPANT':
+        return '고객사 일반 참여자'
+      default:
+        return role
+    }
+  }
+
+  const getMemberRoleColor = (role: string) => {
+    switch (role) {
+      case 'DEV_MANAGER':
+        return { bg: '#ffffff', color: '#2563eb', border: '1px solid #2563eb' } // blue
+      case 'DEV_PARTICIPANT':
+        return { bg: '#ffffff', color: '#0284c7', border: '1px solid #0284c7' } // light blue
+      case 'CLI_MANAGER':
+        return { bg: '#ffffff', color: '#16a34a', border: '1px solid #16a34a' } // green
+      case 'CLI_PARTICIPANT':
+        return { bg: '#ffffff', color: '#65a30d', border: '1px solid #65a30d' } // light green
+      default:
+        return { bg: '#ffffff', color: '#4b5563', border: '1px solid #4b5563' }
+    }
+  }
+
   const handleItemClick = (
     type: string,
     id: number,
@@ -223,7 +281,7 @@ const UserDashboard: React.FC = () => {
         }
         break
       case 'project':
-        navigate(`/user/projects/${id}`)
+        navigate(`/user/projects/${projectId}`)
         break
       default:
         break
@@ -253,14 +311,101 @@ const UserDashboard: React.FC = () => {
         }}>
         <Typography variant="h6">{title}</Typography>
         <Button
-          variant="text"
+          variant="outlined"
           onClick={() => navigate(viewAllLink)}
-          sx={{ color: 'text.secondary' }}>
-          전체보기
+          size="small"
+          sx={{
+            borderRadius: 2,
+            borderColor: '#e5e7eb',
+            color: '#666',
+            '&:hover': {
+              borderColor: '#666',
+              bgcolor: 'transparent'
+            }
+          }}>
+          더보기
         </Button>
       </Box>
       <List>
-        {type === 'request' ? (
+        {type === 'project' ? (
+          projects.map((project, index) => (
+            <React.Fragment key={project.projectId}>
+              <ListItem
+                button
+                onClick={() =>
+                  handleItemClick(type, project.projectId, project.projectId)
+                }
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  py: 2
+                }}>
+                <Box sx={{ flex: 1 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      mb: 1
+                    }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2
+                      }}>
+                      <Typography
+                        variant="body1"
+                        sx={{ fontWeight: 500 }}>
+                        {project.title}
+                      </Typography>
+                      <Chip
+                        label={getProjectStatusText(project.status)}
+                        size="small"
+                        sx={{
+                          backgroundColor: getProjectStatusColor(project.status)
+                            .bg,
+                          color: getProjectStatusColor(project.status).color,
+                          border: getProjectStatusColor(project.status).border,
+                          height: '24px'
+                        }}
+                      />
+                    </Box>
+                    <Chip
+                      label={getMemberRoleText(project.memberProjectRole)}
+                      size="small"
+                      sx={{
+                        backgroundColor: getMemberRoleColor(
+                          project.memberProjectRole
+                        ).bg,
+                        color: getMemberRoleColor(project.memberProjectRole)
+                          .color,
+                        border: getMemberRoleColor(project.memberProjectRole)
+                          .border,
+                        height: '24px'
+                      }}
+                    />
+                  </Box>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary">
+                    {dayjs(project.startDate).format('YYYY년 M월 D일')} ~{' '}
+                    {dayjs(project.endDate).format('YYYY년 M월 D일')}
+                  </Typography>
+                </Box>
+              </ListItem>
+              {index < projects.length - 1 && (
+                <Box
+                  sx={{
+                    borderBottom: '1px solid',
+                    borderColor: 'divider'
+                  }}
+                />
+              )}
+            </React.Fragment>
+          ))
+        ) : type === 'request' ? (
           recentRequests.map((request, index) => (
             <React.Fragment key={request.requestId}>
               <ListItem
@@ -514,9 +659,9 @@ const UserDashboard: React.FC = () => {
           item
           xs={12}>
           {renderDashboardSection(
-            '진행 중인 프로젝트',
+            '참여 중인 프로젝트',
             projects.map(project => ({
-              id: project.id,
+              id: project.projectId,
               title: project.title,
               date: project.startDate,
               status: project.status
