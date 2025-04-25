@@ -55,6 +55,8 @@ export interface Article {
   stageId?: number
   stageName?: string
   deadLine?: string
+  fileList?: ArticleFileDTO[]
+  linkList?: ArticleLinkDTO[]
 }
 
 export interface ArticleFile {

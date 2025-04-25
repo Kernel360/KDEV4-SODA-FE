@@ -20,9 +20,10 @@ import {
   Pagination
 } from '@mui/material'
 import {
-  Article as ImportedArticle,
-  ArticleStatus,
-  PriorityType
+  Article,
+  PriorityType,
+  ArticleLink,
+  ArticleLinkDTO
 } from '../../types/article'
 import { Stage } from '../../types/project'
 import { projectService } from '../../services/projectService'
@@ -44,21 +45,14 @@ enum SearchType {
 
 const ITEMS_PER_PAGE = 5
 
-interface Article extends ImportedArticle {
-  deleted?: boolean
-  parentArticleId?: number
-  children: Article[]
-  status: ArticleStatus
-}
-
 interface PaginatedResponse<T> {
   data: {
     content: T[]
     page: {
+      totalPages: number
+      totalElements: number
       size: number
       number: number
-      totalElements: number
-      totalPages: number
     }
   }
 }
@@ -67,19 +61,19 @@ const ArticleRow: React.FC<{
   article: Article
   projectId: number
   level?: number
-  index?: number
-  totalCount?: number
+  index: number
+  totalCount: number
   articles: Article[]
-  getPriorityColor: (priority: PriorityType) => {
+  getPriorityColor: (priority: string) => {
     color: string
     backgroundColor: string
   }
-  getPriorityText: (priority: PriorityType) => string
-  getStatusColor: (status: ArticleStatus) => {
+  getPriorityText: (priority: string) => string
+  getStatusColor: (status: 'PENDING' | 'COMMENTED') => {
     color: string
     backgroundColor: string
   }
-  getStatusText: (status: ArticleStatus) => string
+  getStatusText: (status: 'PENDING' | 'COMMENTED') => string
 }> = ({
   article,
   projectId,
@@ -92,123 +86,116 @@ const ArticleRow: React.FC<{
   getStatusColor,
   getStatusText
 }) => {
+  const hasChildren = article.children && article.children.length > 0
+  const isLastItem = index === totalCount - 1
   const navigate = useNavigate()
-  const createdAt = new Date(article.createdAt)
 
-  if (article.deleted && !article.parentArticleId) {
-    return (
-      <>
-        <TableRow
-          sx={{
-            backgroundColor: level > 0 ? '#f8f9fa' : 'inherit',
-            '& > td:first-of-type': {
-              paddingLeft: level * 3 + 2 + 'rem'
-            }
-          }}>
-          <TableCell
-            colSpan={6}
-            align="center">
-            <Typography color="text.secondary">삭제된 게시물입니다</Typography>
-          </TableCell>
-        </TableRow>
-        {article.children &&
-          article.children.length > 0 &&
-          article.children
-            .filter((child: any) => !child.deleted)
-            .map((child: any) => (
-              <ArticleRow
-                key={child.id}
-                article={child}
-                projectId={projectId}
-                level={level + 1}
-                index={index}
-                totalCount={totalCount}
-                articles={articles}
-                getPriorityColor={getPriorityColor}
-                getPriorityText={getPriorityText}
-                getStatusColor={getStatusColor}
-                getStatusText={getStatusText}
-              />
-            ))}
-      </>
-    )
+  const handleArticleClick = () => {
+    navigate(`/projects/${projectId}/articles/${article.id}`)
   }
 
   return (
     <>
       <TableRow
-        hover
-        onClick={() =>
-          navigate(
-            `/user/projects/${projectId}/articles/${article.id}?tab=articles`
-          )
-        }
         sx={{
-          cursor: 'pointer',
-          backgroundColor: level > 0 ? '#f8f9fa' : 'inherit',
-          '& > td:first-of-type': {
-            paddingLeft: level * 3 + 2 + 'rem'
-          }
-        }}>
-        <TableCell align="center">
-          {level === 0 ? totalCount! - index! : ''}
+          '&:last-child td, &:last-child th': { border: 0 },
+          backgroundColor: level > 0 ? '#f8fafc' : 'inherit',
+          cursor: 'pointer'
+        }}
+        onClick={handleArticleClick}>
+        <TableCell
+          component="th"
+          scope="row"
+          sx={{
+            pl: 2 + level * 3,
+            py: 1,
+            minWidth: '300px'
+          }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {hasChildren && (
+              <Box
+                sx={{
+                  width: '20px',
+                  height: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary">
+                  +
+                </Typography>
+              </Box>
+            )}
+            <Typography
+              variant="body2"
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+              {article.title}
+            </Typography>
+          </Box>
         </TableCell>
-        <TableCell align="center">
+        <TableCell
+          align="center"
+          sx={{ py: 1 }}>
           <Chip
             label={getPriorityText(article.priority)}
             size="small"
             sx={getPriorityColor(article.priority)}
           />
         </TableCell>
-        <TableCell align="center">
+        <TableCell
+          align="center"
+          sx={{ py: 1 }}>
           <Chip
             label={getStatusText(article.status)}
             size="small"
             sx={getStatusColor(article.status)}
           />
         </TableCell>
-        <TableCell>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {level > 0 && (
-              <Box
-                component="span"
-                sx={{ color: 'text.secondary' }}>
-                └
-              </Box>
-            )}
-            {article.title}
-            {article.linkList && article.linkList.length > 0 && (
-              <Link2
-                size={16}
-                style={{ color: '#6b7280' }}
-              />
-            )}
-          </Box>
+        <TableCell
+          align="center"
+          sx={{ py: 1 }}>
+          {article.userName}
         </TableCell>
-        <TableCell align="center">{article.userName}</TableCell>
-        <TableCell align="center">
-          {createdAt.toLocaleDateString('ko-KR')}
+        <TableCell
+          align="center"
+          sx={{ py: 1 }}>
+          {article.stageName}
+        </TableCell>
+        <TableCell
+          align="center"
+          sx={{ py: 1 }}>
+          {article.deadLine
+            ? new Date(article.deadLine).toLocaleDateString()
+            : '-'}
+        </TableCell>
+        <TableCell
+          align="center"
+          sx={{ py: 1 }}>
+          {new Date(article.createdAt).toLocaleDateString()}
         </TableCell>
       </TableRow>
-      {article.children &&
-        article.children.length > 0 &&
-        article.children
-          .filter((child: any) => !child.deleted)
-          .map((child: any) => (
-            <ArticleRow
-              key={child.id}
-              article={child}
-              projectId={projectId}
-              level={level + 1}
-              index={index}
-              totalCount={totalCount}
-              articles={articles}
-              getPriorityColor={getPriorityColor}
-              getPriorityText={getPriorityText}
-              getStatusColor={getStatusColor}
-              getStatusText={getStatusText}
-            />
-          ))}
+      {hasChildren &&
+        article.children.map((child, childIndex) => (
+          <ArticleRow
+            key={child.id}
+            article={child}
+            projectId={projectId}
+            level={level + 1}
+            index={childIndex}
+            totalCount={article.children?.length || 0}
+            articles={articles}
+            getPriorityColor={getPriorityColor}
+            getPriorityText={getPriorityText}
+            getStatusColor={getStatusColor}
+            getStatusText={getStatusText}
+          />
+        ))}
     </>
   )
 }
@@ -335,20 +322,20 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
     setCurrentPage(value - 1)
   }
 
-  const getPriorityColor = (priority: PriorityType) => {
+  const getPriorityColor = (priority: string) => {
     switch (priority) {
       case PriorityType.HIGH:
-        return { color: '#ef4444', backgroundColor: '#fef2f2' }
+        return { color: '#dc2626', backgroundColor: '#fee2e2' }
       case PriorityType.MEDIUM:
-        return { color: '#f59e0b', backgroundColor: '#fffbeb' }
+        return { color: '#f59e0b', backgroundColor: '#fef3c7' }
       case PriorityType.LOW:
-        return { color: '#3b82f6', backgroundColor: '#eff6ff' }
+        return { color: '#22c55e', backgroundColor: '#dcfce7' }
       default:
         return { color: 'text.secondary', backgroundColor: 'grey.100' }
     }
   }
 
-  const getPriorityText = (priority: PriorityType) => {
+  const getPriorityText = (priority: string) => {
     switch (priority) {
       case PriorityType.HIGH:
         return '높음'
@@ -361,33 +348,23 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
     }
   }
 
-  const getStatusColor = (status: ArticleStatus) => {
+  const getStatusColor = (status: 'PENDING' | 'COMMENTED') => {
     switch (status) {
-      case ArticleStatus.COMPLETED:
-        return { color: '#22c55e', backgroundColor: '#f0fdf4' }
-      case ArticleStatus.IN_PROGRESS:
-        return { color: '#f59e0b', backgroundColor: '#fffbeb' }
-      case ArticleStatus.PENDING:
+      case 'PENDING':
         return { color: '#6b7280', backgroundColor: '#f3f4f6' }
-      case ArticleStatus.REJECTED:
-        return { color: '#ef4444', backgroundColor: '#fef2f2' }
+      case 'COMMENTED':
+        return { color: '#3b82f6', backgroundColor: '#eff6ff' }
       default:
         return { color: 'text.secondary', backgroundColor: 'grey.100' }
     }
   }
 
-  const getStatusText = (status: ArticleStatus) => {
+  const getStatusText = (status: 'PENDING' | 'COMMENTED') => {
     switch (status) {
-      case ArticleStatus.PENDING:
+      case 'PENDING':
         return '답변대기'
-      case ArticleStatus.COMMENTED:
+      case 'COMMENTED':
         return '답변완료'
-      case ArticleStatus.IN_PROGRESS:
-        return '진행중'
-      case ArticleStatus.COMPLETED:
-        return '완료'
-      case ArticleStatus.REJECTED:
-        return '거절'
       default:
         return status
     }

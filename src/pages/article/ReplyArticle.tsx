@@ -88,7 +88,7 @@ const ReplyArticle: React.FC = () => {
           stageId: String(
             articleResponse.stageId || transformedStages[0]?.id || ''
           ),
-          priority: articleResponse.priority, // 원본 게시글의 우선순위를 상속
+          priority: articleResponse.priority as unknown as PriorityType, // Double cast to ensure type safety
           deadLine: null,
           files: [],
           links: []
