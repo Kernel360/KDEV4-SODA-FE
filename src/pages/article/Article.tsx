@@ -23,7 +23,10 @@ import {
   TextField,
   LinearProgress,
   Alert,
-  Snackbar
+  Snackbar,
+  Select,
+  MenuItem,
+  FormControl
 } from '@mui/material'
 import type { Article as ArticleType } from '../../types/article'
 import { projectService } from '../../services/projectService'
@@ -39,7 +42,8 @@ import {
   Pencil,
   Trash2,
   MessageSquarePlus,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown
 } from 'lucide-react'
 import dayjs from 'dayjs'
 import { toast } from 'react-hot-toast'
@@ -56,7 +60,6 @@ const Article: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleted, setIsDeleted] = useState(false)
   const [currentUser, setCurrentUser] = useState<string | null>(null)
-  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
   const [voteInfo, setVoteInfo] = useState<any>(null)
   const [voteResult, setVoteResult] = useState<any>(null)
   const [selectedItems, setSelectedItems] = useState<number[]>([])
@@ -65,6 +68,9 @@ const Article: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [showAddItem, setShowAddItem] = useState(false)
   const [newItemText, setNewItemText] = useState('')
+  const [articleStatus, setArticleStatus] = useState<'PENDING' | 'COMMENTED'>(
+    'PENDING'
+  )
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -72,11 +78,9 @@ const Article: React.FC = () => {
       try {
         const user = JSON.parse(userData)
         setCurrentUser(user.name)
-        setCurrentUserRole(user.role)
       } catch (error) {
         console.error('Error parsing user data:', error)
         setCurrentUser(null)
-        setCurrentUserRole(null)
       }
     }
   }, [])
@@ -99,6 +103,7 @@ const Article: React.FC = () => {
           throw new Error('No article data received')
         }
         setArticle(data)
+        setArticleStatus(data.status)
       } catch (err) {
         console.error('Error fetching article:', err)
         setError(
@@ -219,6 +224,18 @@ const Article: React.FC = () => {
     }
   }
 
+  const handleStatusChange = async (newStatus: 'PENDING' | 'COMMENTED') => {
+    if (!articleId) return
+    try {
+      await projectService.updateArticleStatus(Number(articleId), newStatus)
+      setArticleStatus(newStatus)
+      toast.success('상태가 변경되었습니다.')
+    } catch (error) {
+      console.error('Error updating article status:', error)
+      toast.error('상태 변경에 실패했습니다.')
+    }
+  }
+
   const renderFileList = () => {
     if (!article?.fileList || article.fileList.length === 0) return null
 
@@ -236,12 +253,12 @@ const Article: React.FC = () => {
                 <FileText size={20} />
               </ListItemIcon>
               <ListItemText
-                primary={file.fileName}
-                secondary={file.fileUrl}
+                primary={file.name}
+                secondary={file.url}
               />
               <Button
                 component="a"
-                href={file.fileUrl}
+                href={file.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 size="small">
@@ -337,8 +354,7 @@ const Article: React.FC = () => {
     )
   }
 
-  const isAuthor = currentUser === article.userName
-  const isAdmin = currentUserRole === 'ADMIN'
+  const isAuthor = currentUser === article.memberName
 
   return (
     <Box sx={{ mt: 3 }}>
@@ -366,17 +382,45 @@ const Article: React.FC = () => {
           <ArrowLeft size={24} />
         </IconButton>
 
-        <Chip
-          label={article.stageName}
-          color="primary"
-          size="small"
-          sx={{ height: 24 }}
-        />
         <Typography
           variant="h5"
           sx={{ flex: 1 }}>
           {article.title}
         </Typography>
+
+        {isAuthor && (
+          <FormControl
+            size="small"
+            sx={{ minWidth: 100 }}>
+            <Select
+              value={articleStatus}
+              onChange={e =>
+                handleStatusChange(e.target.value as 'COMMENTED' | 'PENDING')
+              }
+              displayEmpty
+              IconComponent={() => (
+                <span style={{ marginRight: '8px' }}>⏷</span>
+              )}
+              sx={{
+                height: 28,
+                fontSize: '0.875rem',
+                '& .MuiSelect-select': {
+                  py: 0,
+                  pl: 1,
+                  pr: 3,
+                  display: 'flex',
+                  alignItems: 'center'
+                },
+                '& .MuiSelect-icon': {
+                  right: 4,
+                  top: 'calc(50% - 8px)'
+                }
+              }}>
+              <MenuItem value="PENDING">답변대기</MenuItem>
+              <MenuItem value="COMMENTED">답변완료</MenuItem>
+            </Select>
+          </FormControl>
+        )}
       </Box>
 
       <Paper sx={{ p: 3 }}>
@@ -389,22 +433,20 @@ const Article: React.FC = () => {
               direction="row"
               alignItems="center"
               spacing={2}>
-              <Typography variant="body2">{article.userName}</Typography>
-              {(isAuthor || isAdmin) && (
+              <Typography variant="body2">{article.memberName}</Typography>
+              {isAuthor && (
                 <Stack
                   direction="row"
                   spacing={1}>
-                  {isAuthor && (
-                    <IconButton
-                      size="small"
-                      onClick={() =>
-                        navigate(
-                          `/user/projects/${projectId}/articles/${articleId}/edit`
-                        )
-                      }>
-                      <Pencil size={16} />
-                    </IconButton>
-                  )}
+                  <IconButton
+                    size="small"
+                    onClick={() =>
+                      navigate(
+                        `/user/projects/${projectId}/articles/${articleId}/edit`
+                      )
+                    }>
+                    <Pencil size={16} />
+                  </IconButton>
                   <IconButton
                     size="small"
                     onClick={() => setDeleteDialogOpen(true)}>
@@ -652,9 +694,88 @@ const Article: React.FC = () => {
 
           <Divider />
 
-          {renderFileList()}
+          <Stack
+            direction="row"
+            spacing={4}>
+            <Box sx={{ flex: 1 }}>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                sx={{ mb: 1 }}>
+                첨부파일
+              </Typography>
+              {article.fileList && article.fileList.length > 0 ? (
+                <Stack spacing={1}>
+                  {article.fileList
+                    .filter(file => !file.deleted)
+                    .map(file => (
+                      <Stack
+                        key={file.id}
+                        direction="row"
+                        alignItems="center"
+                        spacing={1}>
+                        <FileText size={16} />
+                        <MuiLink
+                          href={file.url}
+                          target="_blank"
+                          rel="noopener noreferrer">
+                          {file.name}
+                        </MuiLink>
+                      </Stack>
+                    ))}
+                </Stack>
+              ) : (
+                <Typography
+                  variant="body2"
+                  color="text.secondary">
+                  없음
+                </Typography>
+              )}
+            </Box>
 
-          {renderLinkList()}
+            <Box sx={{ flex: 1 }}>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                sx={{ mb: 1 }}>
+                첨부링크
+              </Typography>
+              {article.linkList && article.linkList.length > 0 ? (
+                <Stack spacing={1}>
+                  {article.linkList
+                    .filter(link => !link.deleted)
+                    .map((link, index) => {
+                      const url =
+                        link.urlAddress.startsWith('http://') ||
+                        link.urlAddress.startsWith('https://')
+                          ? link.urlAddress
+                          : `https://${link.urlAddress}`
+                      return (
+                        <Stack
+                          key={index}
+                          direction="row"
+                          alignItems="center"
+                          spacing={1}>
+                          <Link2 size={16} />
+                          <MuiLink
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer">
+                            {link.urlDescription || link.urlAddress}
+                          </MuiLink>
+                        </Stack>
+                      )
+                    })}
+                </Stack>
+              ) : (
+                <Typography
+                  variant="body2"
+                  color="text.secondary">
+                  없음
+                </Typography>
+              )}
+            </Box>
+          </Stack>
         </Stack>
       </Paper>
 
@@ -706,7 +827,6 @@ const Article: React.FC = () => {
           <CommentSection
             projectId={Number(projectId)}
             articleId={Number(articleId)}
-            isAdmin={isAdmin}
           />
         </Box>
       )}

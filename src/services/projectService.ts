@@ -690,5 +690,15 @@ export const projectService = {
   getProjectRequests: async (projectId: number) => {
     const response = await client.get(`/projects/${projectId}/requests`)
     return response.data
+  },
+
+  async updateArticleStatus(
+    articleId: number,
+    status: 'COMMENTED' | 'PENDING'
+  ) {
+    const response = await client.patch(`/articles/${articleId}/status`, {
+      status
+    })
+    return response.data
   }
 }
