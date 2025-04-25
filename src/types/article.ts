@@ -1,15 +1,20 @@
 export enum ArticleStatus {
+  DRAFT = 'DRAFT',
   PENDING = 'PENDING',
-  IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED',
-  REJECTED = 'REJECTED',
-  COMMENTED = 'COMMENTED'
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED'
 }
 
 export enum PriorityType {
   HIGH = 'HIGH',
   MEDIUM = 'MEDIUM',
   LOW = 'LOW'
+}
+
+export enum SearchType {
+  TITLE_CONTENT = 'TITLE_CONTENT',
+  TITLE = 'TITLE',
+  CONTENT = 'CONTENT'
 }
 
 export interface Author {
@@ -38,22 +43,20 @@ export interface Article {
   id: number
   title: string
   content: string
-  priority: PriorityType
-  deadLine: string | null
-  userName: string
-  memberName: string
-  stageName: string
-  fileList: ArticleFile[]
-  linkList: ArticleLink[]
+  status: 'PENDING' | 'COMMENTED'
+  priority: string
   createdAt: string
   updatedAt: string
-  status: ArticleStatus
-  children: Article[]
-  parentArticleId?: number
+  userName: string
+  children?: Article[]
+  deleted: boolean
+  projectId?: number
+  projectName?: string
   stageId?: number
-  deleted?: boolean
-  voteList?: VoteItem[]
-  vote?: Vote
+  stageName?: string
+  deadLine?: string
+  fileList?: ArticleFileDTO[]
+  linkList?: ArticleLinkDTO[]
 }
 
 export interface ArticleFile {

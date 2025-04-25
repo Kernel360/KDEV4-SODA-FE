@@ -263,6 +263,9 @@ const ProjectDetail = () => {
     name: string
     type: 'client' | 'dev'
   } | null>(null)
+  const [showAddDevCompanyDialog, setShowAddDevCompanyDialog] = useState(false)
+  const [showAddClientCompanyDialog, setShowAddClientCompanyDialog] =
+    useState(false)
 
   // 3. Effect hooks
   useEffect(() => {
@@ -476,7 +479,7 @@ const ProjectDetail = () => {
         0,
         3
       )
-      setArticles(response.data)
+      setArticles(response.data.content)
     } catch (error) {
       console.error('Failed to fetch articles:', error)
     } finally {
@@ -638,53 +641,20 @@ const ProjectDetail = () => {
     if (!selectedNewCompany) return
 
     try {
-      // 개발사와 고객사 추가 로직 분리
-      if (companyType === 'dev') {
-        console.log('개발사 추가 요청:', {
-          devAssignments: [
-            {
-              companyId: selectedNewCompany.id,
-              managerIds: selectedCompanyManagers,
-              memberIds: selectedRegularMembers
-            }
-          ]
-        })
+      await projectService.addProjectCompany(Number(id), {
+        companyId: selectedNewCompany.id,
+        role: companyType === 'dev' ? 'DEV_COMPANY' : 'CLIENT_COMPANY',
+        managerIds: selectedCompanyManagers,
+        memberIds: selectedRegularMembers
+      })
 
-        // 개발사 추가 API 호출
-        const response = await projectService.addProjectDevCompanies(
-          Number(id),
-          {
-            devAssignments: [
-              {
-                companyId: selectedNewCompany.id,
-                managerIds: selectedCompanyManagers,
-                memberIds: selectedRegularMembers
-              }
-            ]
-          }
-        )
-
-        if (response.status === 'success') {
-          showToast('개발사가 추가되었습니다', 'success')
-          // 프로젝트 상태를 진행중으로 업데이트
-          await projectService.updateProjectStatus(Number(id), 'IN_PROGRESS')
-          // 프로젝트 정보 새로고침
-          await fetchProjectDetail()
-        }
-      } else {
-        // 고객사 추가 로직
-        await projectService.addProjectCompany(Number(id), {
-          companyId: selectedNewCompany.id,
-          role: 'CLIENT_COMPANY',
-          managerIds: selectedCompanyManagers,
-          memberIds: selectedRegularMembers
-        })
-        showToast('고객사가 추가되었습니다', 'success')
-      }
-
-      // 멤버 목록 새로고침
-      fetchMembers()
-      setShowAddCompanyMemberDialog(false)
+      showToast(
+        `${companyType === 'dev' ? '개발사' : '고객사'}가 추가되었습니다`,
+        'success'
+      )
+      await fetchProjectDetail()
+      await fetchMembers()
+      setShowAddClientCompanyDialog(false)
       setSelectedNewCompany(null)
       setSelectedCompanyManagers([])
       setSelectedRegularMembers([])
@@ -915,6 +885,58 @@ const ProjectDetail = () => {
     } finally {
       setShowDeleteCompanyDialog(false)
       setCompanyToDelete(null)
+    }
+  }
+
+  // 개발사 추가 버튼 클릭 핸들러 (개발사가 없을 때 표시되는 버튼)
+  const handleDevCompanyAddClick = () => {
+    setCompanyType('dev')
+    setShowAddDevCompanyDialog(true)
+  }
+
+  // 고객사/개발사 탭의 상단 추가 버튼 클릭 핸들러
+  const handleCompanyAddClick = (type: 'client' | 'dev') => {
+    setCompanyType(type)
+    setShowAddClientCompanyDialog(true)
+  }
+
+  const handleDevCompanySelect = (company: Company) => {
+    setSelectedNewCompany({
+      id: company.id,
+      name: company.name
+    })
+    setShowAddDevCompanyDialog(false)
+    setShowAddCompanyMemberDialog(true)
+  }
+
+  const handleAddDevCompany = async () => {
+    if (!selectedNewCompany) return
+
+    try {
+      const response = await projectService.addProjectDevCompanies(Number(id), {
+        devAssignments: [
+          {
+            companyId: selectedNewCompany.id,
+            managerIds: selectedCompanyManagers,
+            memberIds: selectedRegularMembers
+          }
+        ]
+      })
+
+      if (response.status === 'success') {
+        showToast('개발사가 추가되었습니다', 'success')
+        await projectService.updateProjectStatus(Number(id), 'IN_PROGRESS')
+        await fetchProjectDetail()
+        await fetchMembers()
+        setShowAddCompanyMemberDialog(false)
+        setSelectedNewCompany(null)
+        setSelectedCompanyManagers([])
+        setSelectedRegularMembers([])
+        setMemberSearch('')
+      }
+    } catch (error) {
+      console.error('개발사 추가 실패:', error)
+      showToast('개발사 추가에 실패했습니다', 'error')
     }
   }
 
@@ -1817,21 +1839,33 @@ const ProjectDetail = () => {
                 mb: 2
               }}>
               <Typography variant="h6">개발사 멤버 관리</Typography>
-              <Button
-                variant="contained"
-                startIcon={<Building2 size={20} />}
-                onClick={() => {
-                  setCompanyType('dev')
-                  setShowAddCompanyDialog(true)
-                }}
-                sx={{
-                  backgroundColor: '#F59E0B',
-                  '&:hover': {
-                    backgroundColor: '#FCD34D'
-                  }
-                }}>
-                회사 추가
-              </Button>
+              {devMembers.length === 0 ? (
+                <Button
+                  variant="contained"
+                  startIcon={<Building2 size={20} />}
+                  onClick={handleDevCompanyAddClick}
+                  sx={{
+                    backgroundColor: '#F59E0B',
+                    '&:hover': {
+                      backgroundColor: '#FCD34D'
+                    }
+                  }}>
+                  개발사 추가
+                </Button>
+              ) : (
+                <Button
+                  variant="contained"
+                  startIcon={<Building2 size={20} />}
+                  onClick={() => handleCompanyAddClick('dev')}
+                  sx={{
+                    backgroundColor: '#F59E0B',
+                    '&:hover': {
+                      backgroundColor: '#FCD34D'
+                    }
+                  }}>
+                  회사 추가
+                </Button>
+              )}
             </Box>
             <Card>
               {loadingMembers ? (
@@ -1856,7 +1890,7 @@ const ProjectDetail = () => {
                   <Button
                     variant="contained"
                     startIcon={<Building2 size={20} />}
-                    onClick={() => setShowAddCompanyDialog(true)}
+                    onClick={handleDevCompanyAddClick}
                     sx={{
                       backgroundColor: '#F59E0B',
                       '&:hover': {
@@ -2343,13 +2377,13 @@ const ProjectDetail = () => {
         maxWidth="sm"
         fullWidth>
         <DialogTitle>
-          {companyType === 'client' ? '고객사' : '개발사'} 추가
+          {companyType === 'dev' ? '개발사 추가' : '고객사 추가'}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
             <TextField
               fullWidth
-              label="회사 검색"
+              label={`${companyType === 'dev' ? '개발사' : '고객사'} 검색`}
               value={companySearch}
               onChange={e => setCompanySearch(e.target.value)}
               InputProps={{
@@ -2368,21 +2402,13 @@ const ProjectDetail = () => {
             ) : availableCompanies.length === 0 ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                 <Typography color="text.secondary">
-                  추가 가능한 회사가 없습니다.
+                  추가 가능한 {companyType === 'dev' ? '개발사' : '고객사'}가
+                  없습니다.
                 </Typography>
               </Box>
             ) : (
               <Box sx={{ maxHeight: '300px', overflow: 'auto' }}>
-                <List
-                  sx={{
-                    '& .MuiListItem-root': {
-                      borderBottom: '1px solid',
-                      borderColor: 'divider',
-                      '&:last-child': {
-                        borderBottom: 'none'
-                      }
-                    }
-                  }}>
+                <List>
                   {availableCompanies
                     .filter(company =>
                       company.name
@@ -2393,9 +2419,7 @@ const ProjectDetail = () => {
                       <ListItem
                         key={company.id}
                         button
-                        onClick={() => {
-                          handleCompanySelect(company)
-                        }}
+                        onClick={() => handleCompanySelect(company)}
                         sx={{
                           py: 2,
                           '&:hover': {
@@ -2444,13 +2468,8 @@ const ProjectDetail = () => {
         onClose={() => {
           setShowAddCompanyMemberDialog(false)
           setSelectedNewCompany(null)
-          setSelectedCompanyMembers({
-            companyId: 0,
-            companyName: '',
-            companyType: 'client',
-            members: []
-          })
           setSelectedCompanyManagers([])
+          setSelectedRegularMembers([])
           setMemberSearch('')
         }}
         maxWidth="sm"
@@ -2837,13 +2856,8 @@ const ProjectDetail = () => {
             onClick={() => {
               setShowAddCompanyMemberDialog(false)
               setSelectedNewCompany(null)
-              setSelectedCompanyMembers({
-                companyId: 0,
-                companyName: '',
-                companyType: 'client',
-                members: []
-              })
               setSelectedCompanyManagers([])
+              setSelectedRegularMembers([])
               setMemberSearch('')
             }}>
             취소
@@ -2851,7 +2865,9 @@ const ProjectDetail = () => {
           <Button
             variant="contained"
             color="primary"
-            onClick={handleAddNewMembers}
+            onClick={
+              companyType === 'dev' ? handleAddDevCompany : handleAddNewMembers
+            }
             disabled={
               selectedCompanyManagers.length === 0 &&
               selectedRegularMembers.length === 0
@@ -2916,6 +2932,202 @@ const ProjectDetail = () => {
             onClick={handleCompanyDelete}
             color="error">
             삭제
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 개발사 추가 전용 다이얼로그 */}
+      <Dialog
+        open={showAddDevCompanyDialog}
+        onClose={() => {
+          setShowAddDevCompanyDialog(false)
+          setSelectedCompany(null)
+          setSelectedMembers([])
+        }}
+        maxWidth="sm"
+        fullWidth>
+        <DialogTitle>개발사 추가</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="개발사 검색"
+              value={companySearch}
+              onChange={e => setCompanySearch(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                )
+              }}
+              sx={{ mb: 2 }}
+            />
+            {loadingCompanies ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <CircularProgress />
+              </Box>
+            ) : availableCompanies.length === 0 ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <Typography color="text.secondary">
+                  추가 가능한 개발사가 없습니다.
+                </Typography>
+              </Box>
+            ) : (
+              <Box sx={{ maxHeight: '300px', overflow: 'auto' }}>
+                <List>
+                  {availableCompanies
+                    .filter(company =>
+                      company.name
+                        .toLowerCase()
+                        .includes(companySearch.toLowerCase())
+                    )
+                    .map(company => (
+                      <ListItem
+                        key={company.id}
+                        button
+                        onClick={() => handleDevCompanySelect(company)}
+                        sx={{
+                          py: 2,
+                          '&:hover': {
+                            backgroundColor: 'action.hover'
+                          }
+                        }}>
+                        <ListItemText
+                          primary={
+                            <Typography
+                              variant="subtitle1"
+                              sx={{ fontWeight: 500, color: 'primary.main' }}>
+                              {company.name}
+                            </Typography>
+                          }
+                          secondary={
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              component="span">
+                              {company.address || '주소 정보 없음'}
+                            </Typography>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                </List>
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowAddDevCompanyDialog(false)
+              setSelectedCompany(null)
+              setSelectedMembers([])
+            }}>
+            취소
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 고객사 추가 다이얼로그 */}
+      <Dialog
+        open={showAddClientCompanyDialog}
+        onClose={() => {
+          setShowAddClientCompanyDialog(false)
+          setSelectedCompany(null)
+          setSelectedMembers([])
+        }}
+        maxWidth="sm"
+        fullWidth>
+        <DialogTitle>
+          {companyType === 'dev' ? '개발사' : '고객사'} 추가
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label={`${companyType === 'dev' ? '개발사' : '고객사'} 검색`}
+              value={companySearch}
+              onChange={e => setCompanySearch(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                )
+              }}
+              sx={{ mb: 2 }}
+            />
+            {loadingCompanies ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <CircularProgress />
+              </Box>
+            ) : availableCompanies.length === 0 ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <Typography color="text.secondary">
+                  추가 가능한 {companyType === 'dev' ? '개발사' : '고객사'}가
+                  없습니다.
+                </Typography>
+              </Box>
+            ) : (
+              <Box sx={{ maxHeight: '300px', overflow: 'auto' }}>
+                <List>
+                  {availableCompanies
+                    .filter(company =>
+                      company.name
+                        .toLowerCase()
+                        .includes(companySearch.toLowerCase())
+                    )
+                    .map(company => (
+                      <ListItem
+                        key={company.id}
+                        button
+                        onClick={() => {
+                          setSelectedNewCompany({
+                            id: company.id,
+                            name: company.name
+                          })
+                          setShowAddClientCompanyDialog(false)
+                          setShowAddCompanyMemberDialog(true)
+                        }}
+                        sx={{
+                          py: 2,
+                          '&:hover': {
+                            backgroundColor: 'action.hover'
+                          }
+                        }}>
+                        <ListItemText
+                          primary={
+                            <Typography
+                              variant="subtitle1"
+                              sx={{ fontWeight: 500, color: 'primary.main' }}>
+                              {company.name}
+                            </Typography>
+                          }
+                          secondary={
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              component="span">
+                              {company.address || '주소 정보 없음'}
+                            </Typography>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                </List>
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowAddClientCompanyDialog(false)
+              setSelectedCompany(null)
+              setSelectedMembers([])
+            }}>
+            취소
           </Button>
         </DialogActions>
       </Dialog>

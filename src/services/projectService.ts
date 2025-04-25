@@ -351,21 +351,31 @@ export const projectService = {
     keyword?: string,
     page?: number,
     size?: number
-  ): Promise<{ data: Article[] }> {
+  ): Promise<{
+    status: string
+    code: string
+    message: string
+    data: {
+      content: Article[]
+      page: {
+        size: number
+        number: number
+        totalElements: number
+        totalPages: number
+      }
+    }
+  }> {
     const response = await client.get(`/projects/${projectId}/articles`, {
       params: {
         stageId: stageId || undefined,
         searchType: searchType || undefined,
         keyword: keyword || undefined,
         page: page || 0,
-        size: size || 10,
+        size: size || 5,
         sort: []
       }
     })
-    // API 응답 구조에 맞게 데이터 추출
-    return {
-      data: response.data.data?.content || []
-    }
+    return response.data
   },
 
   async createArticle(
