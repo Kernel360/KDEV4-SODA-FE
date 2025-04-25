@@ -1,5 +1,5 @@
 import React from 'react'
-import { Routes, Route, Outlet } from 'react-router-dom'
+import { Routes, Route, Outlet, Navigate } from 'react-router-dom'
 import Layout from './components/layout/Layout'
 import {
   Login,
@@ -44,6 +44,7 @@ import DataManagement from './pages/admin/DataManagement'
 import ReapplyRequest from './pages/user/projects/ReapplyRequest'
 import UserRequests from './pages/user/UserRequests'
 import MyArticles from './pages/user/MyArticles'
+import PrivateRoute from './components/auth/PrivateRoute'
 
 const App: React.FC = () => {
   return (
@@ -52,7 +53,7 @@ const App: React.FC = () => {
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <ToastProvider>
           <Routes>
-            {/* Auth routes without layout */}
+            {/* Public routes */}
             <Route
               path="/"
               element={<Login />}
@@ -82,9 +83,11 @@ const App: React.FC = () => {
             <Route
               path="/admin"
               element={
-                <Layout>
-                  <Outlet />
-                </Layout>
+                <PrivateRoute requireAdmin>
+                  <Layout>
+                    <Outlet />
+                  </Layout>
+                </PrivateRoute>
               }>
               <Route
                 index
@@ -148,9 +151,11 @@ const App: React.FC = () => {
             <Route
               path="/user"
               element={
-                <Layout>
-                  <Outlet />
-                </Layout>
+                <PrivateRoute>
+                  <Layout>
+                    <Outlet />
+                  </Layout>
+                </PrivateRoute>
               }>
               <Route
                 index
@@ -217,6 +222,17 @@ const App: React.FC = () => {
             <Route
               path="/projects/:projectId/tasks/:taskId"
               element={<TaskDetailPage />}
+            />
+
+            {/* Catch all route */}
+            <Route
+              path="*"
+              element={
+                <Navigate
+                  to="/user"
+                  replace
+                />
+              }
             />
           </Routes>
         </ToastProvider>
