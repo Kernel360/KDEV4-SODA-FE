@@ -41,6 +41,9 @@ export interface Project {
   createdAt: string
   updatedAt: string
   stages: Stage[]
+  projectId: number
+  companyProjectRole: string
+  memberProjectRole: string
 }
 
 export type ProjectStatus =
