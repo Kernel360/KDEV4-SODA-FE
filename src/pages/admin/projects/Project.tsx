@@ -269,6 +269,8 @@ const ProjectDetail = () => {
   const [showAddDevCompanyDialog, setShowAddDevCompanyDialog] = useState(false)
   const [showAddClientCompanyDialog, setShowAddClientCompanyDialog] =
     useState(false)
+  const [requests, setRequests] = useState<any[]>([])
+  const [loadingRequests, setLoadingRequests] = useState(false)
 
   // 3. Effect hooks
   useEffect(() => {
@@ -276,6 +278,7 @@ const ProjectDetail = () => {
       fetchProjectDetail()
       fetchCompanies()
       fetchArticles()
+      fetchRequests()
     }
   }, [id])
 
@@ -487,6 +490,53 @@ const ProjectDetail = () => {
       console.error('Failed to fetch articles:', error)
     } finally {
       setLoadingArticles(false)
+    }
+  }
+
+  const fetchRequests = async () => {
+    try {
+      setLoadingRequests(true)
+      const response = await projectService.getProjectRequests(Number(id))
+      // Get only the first 3 requests
+      setRequests((response.data?.content || []).slice(0, 3))
+    } catch (error) {
+      console.error('Failed to fetch requests:', error)
+      showToast('승인 요청 목록을 불러오는데 실패했습니다.', 'error')
+      setRequests([])
+    } finally {
+      setLoadingRequests(false)
+    }
+  }
+
+  const getRequestStatusText = (status: string): string => {
+    switch (status) {
+      case 'APPROVED':
+        return '승인됨'
+      case 'APPROVING':
+        return '승인중'
+      case 'PENDING':
+        return '대기중'
+      case 'REJECTED':
+        return '거절됨'
+      default:
+        return status
+    }
+  }
+
+  const getRequestStatusColor = (
+    status: string
+  ): { bgColor: string; textColor: string } => {
+    switch (status) {
+      case 'APPROVED':
+        return { bgColor: '#dcfce7', textColor: '#16a34a' }
+      case 'APPROVING':
+        return { bgColor: '#fef3c7', textColor: '#d97706' }
+      case 'PENDING':
+        return { bgColor: '#f3f4f6', textColor: '#4b5563' }
+      case 'REJECTED':
+        return { bgColor: '#fee2e2', textColor: '#dc2626' }
+      default:
+        return { bgColor: '#f3f4f6', textColor: '#4b5563' }
     }
   }
 
@@ -1299,7 +1349,7 @@ const ProjectDetail = () => {
               <Grid
                 item
                 xs={6}>
-                <Paper sx={{ p: 3 }}>
+                <Paper sx={{ p: 3, minHeight: '300px' }}>
                   <Stack
                     direction="row"
                     spacing={2}
@@ -1309,144 +1359,142 @@ const ProjectDetail = () => {
                       size={24}
                       color="#64748b"
                     />
-                    <Typography variant="h6">
-                      최근 승인요청 (더미 데이터)
-                    </Typography>
+                    <Typography variant="h6">최근 승인요청</Typography>
                   </Stack>
-                  <List>
-                    {[
-                      {
-                        id: 1,
-                        title: 'UI 디자인 변경 승인요청',
-                        content:
-                          '메인 페이지 배너 디자인 변경 작업이 완료되었습니다. 변경된 디자인에 대한 승인을 요청드립니다.',
-                        date: '2024-03-20',
-                        author: '김개발',
-                        status: '대기'
-                      },
-                      {
-                        id: 2,
-                        title: '프로필 이미지 업로드 기능 개발 완료',
-                        content:
-                          '사용자 프로필 이미지 업로드 기능 개발이 완료되었습니다. 테스트를 완료했으니 승인 부탁드립니다.',
-                        date: '2024-03-19',
-                        author: '이개발',
-                        status: '승인'
-                      },
-                      {
-                        id: 3,
-                        title: '모바일 메뉴 반응형 수정 완료',
-                        content:
-                          '모바일 환경에서 메뉴가 제대로 표시되지 않는 문제를 수정했습니다. 변경사항에 대한 승인을 요청드립니다.',
-                        date: '2024-03-18',
-                        author: '박개발',
-                        status: '반려'
-                      }
-                    ].map((item, index, array) => (
-                      <Fragment key={item.id}>
-                        <ListItem sx={{ px: 0, py: 2 }}>
-                          <ListItemText
-                            primary={
-                              <Typography
-                                sx={{
-                                  fontSize: '0.875rem',
-                                  color: theme.palette.primary.main,
-                                  cursor: 'pointer',
-                                  '&:hover': {
-                                    textDecoration: 'underline'
-                                  }
-                                }}>
-                                {item.title}
-                              </Typography>
-                            }
-                            secondary={
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: 0.5
-                                }}>
-                                <Typography
-                                  variant="body2"
-                                  sx={{
-                                    color: 'text.secondary',
-                                    lineHeight: 1.4
-                                  }}>
-                                  {item.content}
-                                </Typography>
-                                <Box
-                                  sx={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center'
-                                  }}>
+                  {loadingRequests ? (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: '200px'
+                      }}>
+                      <CircularProgress />
+                    </Box>
+                  ) : requests.length === 0 ? (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: '200px'
+                      }}>
+                      <Typography color="text.secondary">
+                        등록된 요청이 없습니다.
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <List>
+                      {requests.map((request, index, array) => {
+                        const statusColors = getRequestStatusColor(
+                          request.status
+                        )
+                        return (
+                          <Fragment key={request.requestId}>
+                            <ListItem sx={{ px: 0, py: 2 }}>
+                              <ListItemText
+                                primary={
+                                  <Typography
+                                    onClick={() =>
+                                      navigate(
+                                        `/user/projects/${id}/requests/${request.requestId}`
+                                      )
+                                    }
+                                    sx={{
+                                      fontSize: '1rem',
+                                      fontWeight: 600,
+                                      color: theme.palette.primary.main,
+                                      cursor: 'pointer',
+                                      '&:hover': {
+                                        textDecoration: 'underline'
+                                      }
+                                    }}>
+                                    {request.title}
+                                  </Typography>
+                                }
+                                secondary={
                                   <Box
                                     sx={{
                                       display: 'flex',
-                                      gap: 1,
-                                      alignItems: 'center'
+                                      flexDirection: 'column',
+                                      gap: 0.5
                                     }}>
                                     <Typography
-                                      variant="caption"
-                                      color="text.secondary">
-                                      {item.author}
+                                      variant="body2"
+                                      sx={{
+                                        color: 'text.secondary',
+                                        lineHeight: 1.4,
+                                        fontSize: '0.875rem'
+                                      }}>
+                                      {request.content}
                                     </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                      sx={{ opacity: 0.5 }}>
-                                      |
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary">
-                                      {item.date}
-                                    </Typography>
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                      }}>
+                                      <Box
+                                        sx={{
+                                          display: 'flex',
+                                          gap: 1,
+                                          alignItems: 'center'
+                                        }}>
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary">
+                                          {request.memberName}
+                                        </Typography>
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          sx={{ opacity: 0.5 }}>
+                                          |
+                                        </Typography>
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary">
+                                          {formatDate(request.createdAt)}
+                                        </Typography>
+                                      </Box>
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          px: 1,
+                                          py: 0.5,
+                                          borderRadius: 1,
+                                          backgroundColor: statusColors.bgColor,
+                                          color: statusColors.textColor,
+                                          fontSize: '0.75rem'
+                                        }}>
+                                        {getRequestStatusText(request.status)}
+                                      </Typography>
+                                    </Box>
                                   </Box>
-                                  <Typography
-                                    variant="caption"
-                                    sx={{
-                                      px: 1,
-                                      py: 0.5,
-                                      borderRadius: 1,
-                                      backgroundColor:
-                                        item.status === '승인'
-                                          ? '#dcfce7'
-                                          : item.status === '반려'
-                                            ? '#fee2e2'
-                                            : '#f3f4f6',
-                                      color:
-                                        item.status === '승인'
-                                          ? '#16a34a'
-                                          : item.status === '반려'
-                                            ? '#dc2626'
-                                            : '#4b5563',
-                                      fontSize: '0.75rem'
-                                    }}>
-                                    {item.status}
-                                  </Typography>
-                                </Box>
-                              </Box>
-                            }
-                            sx={{
-                              '& .MuiListItemText-secondary': {
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 0.5
-                              }
-                            }}
-                          />
-                        </ListItem>
-                        {index < array.length - 1 && <Divider sx={{ my: 1 }} />}
-                      </Fragment>
-                    ))}
-                  </List>
+                                }
+                                sx={{
+                                  '& .MuiListItemText-secondary': {
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 0.5
+                                  }
+                                }}
+                              />
+                            </ListItem>
+                            {index < array.length - 1 && (
+                              <Divider sx={{ my: 1 }} />
+                            )}
+                          </Fragment>
+                        )
+                      })}
+                    </List>
+                  )}
                 </Paper>
               </Grid>
               <Grid
                 item
                 xs={6}>
-                <Paper sx={{ p: 3 }}>
+                <Paper sx={{ p: 3, minHeight: '300px' }}>
                   <Stack
                     direction="row"
                     spacing={2}
@@ -1460,12 +1508,22 @@ const ProjectDetail = () => {
                   </Stack>
                   {loadingArticles ? (
                     <Box
-                      sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: '200px'
+                      }}>
                       <CircularProgress />
                     </Box>
                   ) : articles.length === 0 ? (
                     <Box
-                      sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: '200px'
+                      }}>
                       <Typography color="text.secondary">
                         등록된 질문사항이 없습니다.
                       </Typography>

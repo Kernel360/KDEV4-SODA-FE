@@ -685,5 +685,10 @@ export const projectService = {
       `/projects/${projectId}/articles/${articleId}/comments/${commentId}`
     )
     return response.data
+  },
+
+  getProjectRequests: async (projectId: number) => {
+    const response = await client.get(`/projects/${projectId}/requests`)
+    return response.data
   }
 }
