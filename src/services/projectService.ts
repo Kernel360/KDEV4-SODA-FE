@@ -674,5 +674,16 @@ export const projectService = {
       console.error('프로젝트 회사 삭제 실패:', error)
       throw error
     }
+  },
+
+  deleteComment: async (
+    projectId: number,
+    articleId: number,
+    commentId: number
+  ) => {
+    const response = await client.delete(
+      `/projects/${projectId}/articles/${articleId}/comments/${commentId}`
+    )
+    return response.data
   }
 }

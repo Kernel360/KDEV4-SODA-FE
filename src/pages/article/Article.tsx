@@ -56,6 +56,7 @@ const Article: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleted, setIsDeleted] = useState(false)
   const [currentUser, setCurrentUser] = useState<string | null>(null)
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
   const [voteInfo, setVoteInfo] = useState<any>(null)
   const [voteResult, setVoteResult] = useState<any>(null)
   const [selectedItems, setSelectedItems] = useState<number[]>([])
@@ -71,9 +72,11 @@ const Article: React.FC = () => {
       try {
         const user = JSON.parse(userData)
         setCurrentUser(user.name)
+        setCurrentUserRole(user.role)
       } catch (error) {
         console.error('Error parsing user data:', error)
         setCurrentUser(null)
+        setCurrentUserRole(null)
       }
     }
   }, [])
@@ -335,6 +338,7 @@ const Article: React.FC = () => {
   }
 
   const isAuthor = currentUser === article.userName
+  const isAdmin = currentUserRole === 'ADMIN'
 
   return (
     <Box sx={{ mt: 3 }}>
@@ -386,19 +390,21 @@ const Article: React.FC = () => {
               alignItems="center"
               spacing={2}>
               <Typography variant="body2">{article.userName}</Typography>
-              {isAuthor && (
+              {(isAuthor || isAdmin) && (
                 <Stack
                   direction="row"
                   spacing={1}>
-                  <IconButton
-                    size="small"
-                    onClick={() =>
-                      navigate(
-                        `/user/projects/${projectId}/articles/${articleId}/edit`
-                      )
-                    }>
-                    <Pencil size={16} />
-                  </IconButton>
+                  {isAuthor && (
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        navigate(
+                          `/user/projects/${projectId}/articles/${articleId}/edit`
+                        )
+                      }>
+                      <Pencil size={16} />
+                    </IconButton>
+                  )}
                   <IconButton
                     size="small"
                     onClick={() => setDeleteDialogOpen(true)}>
@@ -700,6 +706,7 @@ const Article: React.FC = () => {
           <CommentSection
             projectId={Number(projectId)}
             articleId={Number(articleId)}
+            isAdmin={isAdmin}
           />
         </Box>
       )}
