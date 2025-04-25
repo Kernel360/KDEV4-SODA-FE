@@ -438,18 +438,19 @@ export default function AdminMain() {
                   </TableHead>
                   <TableBody>
                     {projects
-                      .filter(p => {
-                        const endDate = dayjs(p.endDate).startOf('day')
-                        const today = dayjs().startOf('day')
-                        return endDate.isAfter(today) || endDate.isSame(today)
-                      })
-                      .sort((a, b) => dayjs(a.endDate).diff(dayjs(b.endDate)))
-                      .slice(0, 3)
-                      .map((project, index) => {
-                        const daysUntilEnd = dayjs(project.endDate)
+                      .filter(p => p.status === 'IN_PROGRESS')
+                      .map(p => ({
+                        ...p,
+                        daysUntilEnd: dayjs(p.endDate)
                           .startOf('day')
                           .diff(dayjs().startOf('day'), 'day')
-                        const isUrgent = daysUntilEnd <= 7
+                      }))
+                      .sort((a, b) => a.daysUntilEnd - b.daysUntilEnd)
+                      .slice(0, 3)
+                      .map(project => {
+                        const daysUntilEnd = project.daysUntilEnd
+                        const isOverdue = daysUntilEnd < 0
+                        const isUrgent = daysUntilEnd <= 7 && !isOverdue
 
                         return (
                           <TableRow
@@ -479,8 +480,12 @@ export default function AdminMain() {
                               <Typography
                                 sx={{
                                   fontSize: '0.875rem',
-                                  color: isUrgent ? '#EF4444' : '#4b5563',
-                                  fontWeight: isUrgent ? 600 : 400,
+                                  color: isOverdue
+                                    ? '#EF4444'
+                                    : isUrgent
+                                      ? '#EF4444'
+                                      : '#4b5563',
+                                  fontWeight: isOverdue || isUrgent ? 600 : 400,
                                   display: 'flex',
                                   alignItems: 'center',
                                   gap: 1.5
@@ -492,10 +497,15 @@ export default function AdminMain() {
                                   component="span"
                                   sx={{
                                     fontSize: '0.938rem',
-                                    color: isUrgent ? '#EF4444' : '#B45309',
+                                    color: isOverdue
+                                      ? '#EF4444'
+                                      : isUrgent
+                                        ? '#EF4444'
+                                        : '#B45309',
                                     fontWeight: 600
                                   }}>
-                                  (D-{daysUntilEnd})
+                                  ({isOverdue ? 'D+' : 'D-'}
+                                  {Math.abs(daysUntilEnd)})
                                 </Typography>
                               </Typography>
                             </TableCell>
