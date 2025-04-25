@@ -57,6 +57,8 @@ import {
 import { useTheme } from '@mui/material/styles'
 import { companyService } from '../../../services/companyService'
 import useProjectStore from '../../../stores/projectStore'
+import { Article, SearchType } from '../../../types/article'
+import { articleService } from '../../../services/articleService'
 
 interface Company {
   id: number
@@ -253,7 +255,7 @@ const ProjectDetail = () => {
   const [expandedMemberSections, setExpandedMemberSections] = useState<{
     [key: number]: { managers: boolean; members: boolean }
   }>({})
-  const [articles, setArticles] = useState<any[]>([])
+  const [articles, setArticles] = useState<Article[]>([])
   const [loadingArticles, setLoadingArticles] = useState(false)
   const [showDeleteMemberDialog, setShowDeleteMemberDialog] = useState(false)
   const [memberToDelete, setMemberToDelete] = useState<number | null>(null)
@@ -263,6 +265,16 @@ const ProjectDetail = () => {
     name: string
     type: 'client' | 'dev'
   } | null>(null)
+  const [selectedStage, setSelectedStage] = useState<number | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [searchType, setSearchType] = useState<SearchType>(
+    SearchType.TITLE_CONTENT
+  )
+  const [searchKeyword, setSearchKeyword] = useState('')
+  const [totalPages, setTotalPages] = useState(0)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [totalArticles, setTotalArticles] = useState(0)
+  const [stageArticles, setStageArticles] = useState<Article[]>([])
 
   // 3. Effect hooks
   useEffect(() => {
@@ -467,20 +479,28 @@ const ProjectDetail = () => {
 
   const fetchArticles = async () => {
     try {
-      setLoadingArticles(true)
-      const response = await projectService.getProjectArticles(
-        Number(id),
-        null,
-        undefined,
-        undefined,
-        0,
-        3
-      )
-      setArticles(response.data)
+      const response = await articleService.getArticlesByProjectId(Number(id), {
+        page: 0, // First page
+        size: 3, // Only fetch 3 articles
+        searchType,
+        searchKeyword,
+        stageId: selectedStage
+      })
+
+      if (response.status === 'success' && response.data?.content) {
+        setArticles(response.data.content)
+        setTotalPages(response.data.totalPages)
+        setTotalArticles(response.data.totalElements)
+      } else {
+        setArticles([])
+        setTotalPages(0)
+        setTotalArticles(0)
+      }
     } catch (error) {
       console.error('Failed to fetch articles:', error)
-    } finally {
-      setLoadingArticles(false)
+      setArticles([])
+      setTotalPages(0)
+      setTotalArticles(0)
     }
   }
 
@@ -1552,7 +1572,7 @@ const ProjectDetail = () => {
                                           }
                                         }}
                                       />
-                                      {article.endDate && (
+                                      {article.deadLine && (
                                         <Typography
                                           variant="caption"
                                           sx={{
@@ -1563,7 +1583,7 @@ const ProjectDetail = () => {
                                             color: '#4b5563',
                                             fontSize: '0.75rem'
                                           }}>
-                                          마감: {formatDate(article.endDate)}
+                                          마감: {formatDate(article.deadLine)}
                                         </Typography>
                                       )}
                                     </Box>
