@@ -16,9 +16,15 @@ import {
   Select,
   MenuItem,
   FormControl,
-  IconButton
+  IconButton,
+  Pagination
 } from '@mui/material'
-import { Article, ArticleStatus, PriorityType } from '../../types/article'
+import {
+  Article,
+  PriorityType,
+  ArticleLink,
+  ArticleLinkDTO
+} from '../../types/article'
 import { Stage } from '../../types/project'
 import { projectService } from '../../services/projectService'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
@@ -39,152 +45,152 @@ enum SearchType {
 
 const ITEMS_PER_PAGE = 5
 
+interface PaginatedResponse<T> {
+  data: {
+    content: T[]
+    page: {
+      totalPages: number
+      totalElements: number
+      size: number
+      number: number
+    }
+  }
+}
+
 const ArticleRow: React.FC<{
   article: Article
   projectId: number
-  level?: number
-  index?: number
-  totalCount?: number
-  articles: Article[]
-  getPriorityColor: (priority: PriorityType) => {
+  articleNumber: number
+  getPriorityColor: (priority: string) => {
     color: string
     backgroundColor: string
   }
-  getPriorityText: (priority: PriorityType) => string
-  getStatusColor: (status: ArticleStatus) => {
+  getPriorityText: (priority: string) => string
+  getStatusColor: (status: 'PENDING' | 'COMMENTED') => {
     color: string
     backgroundColor: string
   }
-  getStatusText: (status: ArticleStatus) => string
+  getStatusText: (status: 'PENDING' | 'COMMENTED') => string
 }> = ({
   article,
   projectId,
-  level = 0,
-  index,
-  totalCount,
-  articles,
+  articleNumber,
   getPriorityColor,
   getPriorityText,
   getStatusColor,
   getStatusText
 }) => {
   const navigate = useNavigate()
-  const createdAt = new Date(article.createdAt)
-
-  if (article.deleted && !article.parentArticleId) {
-    return (
-      <>
-        <TableRow
-          sx={{
-            backgroundColor: level > 0 ? '#f8f9fa' : 'inherit',
-            '& > td:first-of-type': {
-              paddingLeft: level * 3 + 2 + 'rem'
-            }
-          }}>
-          <TableCell
-            colSpan={6}
-            align="center">
-            <Typography color="text.secondary">삭제된 게시물입니다</Typography>
-          </TableCell>
-        </TableRow>
-        {article.children &&
-          article.children.length > 0 &&
-          article.children
-            .filter((child: any) => !child.deleted)
-            .map((child: any) => (
-              <ArticleRow
-                key={child.id}
-                article={child}
-                projectId={projectId}
-                level={level + 1}
-                index={index}
-                totalCount={totalCount}
-                articles={articles}
-                getPriorityColor={getPriorityColor}
-                getPriorityText={getPriorityText}
-                getStatusColor={getStatusColor}
-                getStatusText={getStatusText}
-              />
-            ))}
-      </>
-    )
-  }
+  const isReply = !!article.parentId
 
   return (
     <>
       <TableRow
-        hover
-        onClick={() =>
-          navigate(
-            `/user/projects/${projectId}/articles/${article.id}?tab=articles`
-          )
-        }
         sx={{
           cursor: 'pointer',
-          backgroundColor: level > 0 ? '#f8f9fa' : 'inherit',
-          '& > td:first-of-type': {
-            paddingLeft: level * 3 + 2 + 'rem'
+          bgcolor: isReply ? '#FAFAFA' : 'white',
+          '&:hover': {
+            bgcolor: '#F8F9FA'
+          },
+          '& td': {
+            py: 2,
+            color: '#333'
           }
-        }}>
-        <TableCell align="center">
-          {level === 0 ? totalCount! - index! : ''}
+        }}
+        onClick={() =>
+          navigate(`/user/projects/${projectId}/articles/${article.id}`)
+        }>
+        <TableCell
+          align="center"
+          sx={{ width: '80px' }}>
+          {!isReply && articleNumber}
         </TableCell>
-        <TableCell align="center">
+        <TableCell
+          align="center"
+          sx={{ width: '120px' }}>
           <Chip
             label={getPriorityText(article.priority)}
             size="small"
-            sx={getPriorityColor(article.priority)}
+            sx={{
+              ...getPriorityColor(article.priority),
+              height: '24px',
+              borderRadius: '4px'
+            }}
           />
         </TableCell>
-        <TableCell align="center">
+        <TableCell
+          align="center"
+          sx={{ width: '100px' }}>
           <Chip
             label={getStatusText(article.status)}
             size="small"
-            sx={getStatusColor(article.status)}
+            sx={{
+              ...getStatusColor(article.status),
+              height: '24px',
+              borderRadius: '4px'
+            }}
           />
         </TableCell>
         <TableCell>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {level > 0 && (
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {isReply && (
               <Box
-                component="span"
-                sx={{ color: 'text.secondary' }}>
-                └
+                sx={{
+                  width: 24,
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  pr: 1
+                }}>
+                <Box
+                  sx={{
+                    width: 16,
+                    height: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid #E0E0E0',
+                    borderRadius: '2px',
+                    color: '#666',
+                    fontSize: '12px'
+                  }}>
+                  └
+                </Box>
               </Box>
             )}
-            {article.title}
-            {article.linkList && article.linkList.length > 0 && (
-              <Link2
-                size={16}
-                style={{ color: '#6b7280' }}
-              />
-            )}
+            <Typography>
+              {isReply ? `RE: ${article.title}` : article.title}
+            </Typography>
           </Box>
         </TableCell>
-        <TableCell align="center">{article.userName}</TableCell>
-        <TableCell align="center">
-          {createdAt.toLocaleDateString('ko-KR')}
+        <TableCell
+          align="center"
+          sx={{ width: '120px' }}>
+          {article.userName}
+        </TableCell>
+        <TableCell
+          align="center"
+          sx={{ width: '120px' }}>
+          {new Date(article.createdAt).toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })}
         </TableCell>
       </TableRow>
-      {article.children &&
-        article.children.length > 0 &&
-        article.children
-          .filter((child: any) => !child.deleted)
-          .map((child: any) => (
-            <ArticleRow
-              key={child.id}
-              article={child}
-              projectId={projectId}
-              level={level + 1}
-              index={index}
-              totalCount={totalCount}
-              articles={articles}
-              getPriorityColor={getPriorityColor}
-              getPriorityText={getPriorityText}
-              getStatusColor={getStatusColor}
-              getStatusText={getStatusText}
-            />
-          ))}
+      {article.children?.map(child => (
+        <ArticleRow
+          key={child.id}
+          article={child}
+          projectId={projectId}
+          articleNumber={0}
+          getPriorityColor={getPriorityColor}
+          getPriorityText={getPriorityText}
+          getStatusColor={getStatusColor}
+          getStatusText={getStatusText}
+        />
+      ))}
     </>
   )
 }
@@ -205,12 +211,56 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
   const [searchKeyword, setSearchKeyword] = useState('')
   const [totalPages, setTotalPages] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
+  const [totalArticles, setTotalArticles] = useState(0)
+  const [stageArticles, setStageArticles] = useState<{ [key: number]: number }>(
+    {}
+  )
+
+  const fetchArticleCounts = async () => {
+    try {
+      const totalResponse = await projectService.getProjectArticles(
+        projectId,
+        null,
+        searchType,
+        '',
+        0,
+        100
+      )
+      if (totalResponse.status === 'success') {
+        setTotalArticles(totalResponse.data.page.totalElements)
+
+        const stageCounts: { [key: number]: number } = {}
+        await Promise.all(
+          propStages.map(async stage => {
+            const response = await projectService.getProjectArticles(
+              projectId,
+              stage.id,
+              searchType,
+              '',
+              0,
+              100
+            )
+            if (response.status === 'success') {
+              stageCounts[stage.id] = response.data.page.totalElements
+            }
+          })
+        )
+        setStageArticles(stageCounts)
+      }
+    } catch (error) {
+      console.error('Error fetching article counts:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchArticleCounts()
+  }, [projectId])
 
   useEffect(() => {
     fetchArticles()
   }, [projectId, selectedStage, currentPage, searchType, searchTerm])
 
-  const fetchArticles = async (page: number = 0) => {
+  const fetchArticles = async () => {
     try {
       setLoading(true)
       const response = await projectService.getProjectArticles(
@@ -218,19 +268,23 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
         selectedStage,
         searchType,
         searchTerm,
-        page,
+        currentPage,
         ITEMS_PER_PAGE
       )
-      setArticles(Array.isArray(response.data) ? response.data : [])
-      setTotalPages(
-        Math.ceil(
-          (Array.isArray(response.data) ? response.data.length : 0) /
-            ITEMS_PER_PAGE
+
+      if (response.status === 'success') {
+        setArticles(response.data.content)
+        setTotalPages(
+          Math.ceil(response.data.page.totalElements / ITEMS_PER_PAGE)
         )
-      )
-      setLoading(false)
+        setLoading(false)
+      } else {
+        throw new Error(
+          response.message || '게시글 목록을 불러오는데 실패했습니다.'
+        )
+      }
     } catch (error) {
-      console.error('Error fetching articles:', error)
+      console.error('Failed to fetch articles:', error)
       toast.error('게시글 목록을 불러오는데 실패했습니다.')
       setLoading(false)
       setError('게시글 목록을 불러오는데 실패했습니다.')
@@ -259,20 +313,24 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
     }
   }
 
-  const getPriorityColor = (priority: PriorityType) => {
+  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
+    setCurrentPage(value - 1)
+  }
+
+  const getPriorityColor = (priority: string) => {
     switch (priority) {
       case PriorityType.HIGH:
-        return { color: '#ef4444', backgroundColor: '#fef2f2' }
+        return { color: '#dc2626', backgroundColor: '#fee2e2' }
       case PriorityType.MEDIUM:
-        return { color: '#f59e0b', backgroundColor: '#fffbeb' }
+        return { color: '#f59e0b', backgroundColor: '#fef3c7' }
       case PriorityType.LOW:
-        return { color: '#3b82f6', backgroundColor: '#eff6ff' }
+        return { color: '#22c55e', backgroundColor: '#dcfce7' }
       default:
         return { color: 'text.secondary', backgroundColor: 'grey.100' }
     }
   }
 
-  const getPriorityText = (priority: PriorityType) => {
+  const getPriorityText = (priority: string) => {
     switch (priority) {
       case PriorityType.HIGH:
         return '높음'
@@ -285,36 +343,182 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
     }
   }
 
-  const getStatusColor = (status: ArticleStatus) => {
+  const getStatusColor = (status: 'PENDING' | 'COMMENTED') => {
     switch (status) {
-      case ArticleStatus.COMPLETED:
-        return { color: '#22c55e', backgroundColor: '#f0fdf4' }
-      case ArticleStatus.IN_PROGRESS:
-        return { color: '#f59e0b', backgroundColor: '#fffbeb' }
-      case ArticleStatus.PENDING:
+      case 'PENDING':
         return { color: '#6b7280', backgroundColor: '#f3f4f6' }
-      case ArticleStatus.REJECTED:
-        return { color: '#ef4444', backgroundColor: '#fef2f2' }
+      case 'COMMENTED':
+        return { color: '#3b82f6', backgroundColor: '#eff6ff' }
       default:
         return { color: 'text.secondary', backgroundColor: 'grey.100' }
     }
   }
 
-  const getStatusText = (status: ArticleStatus) => {
+  const getStatusText = (status: 'PENDING' | 'COMMENTED') => {
     switch (status) {
-      case ArticleStatus.PENDING:
+      case 'PENDING':
         return '답변대기'
-      case ArticleStatus.COMMENTED:
+      case 'COMMENTED':
         return '답변완료'
-      case ArticleStatus.IN_PROGRESS:
-        return '진행중'
-      case ArticleStatus.COMPLETED:
-        return '완료'
-      case ArticleStatus.REJECTED:
-        return '거절'
       default:
         return status
     }
+  }
+
+  const renderArticles = (articles: Article[]) => {
+    // 최상위 글만 필터링 (다른 글의 답글이 아닌 글만 선택)
+    const mainArticles = articles.filter(
+      article =>
+        !articles.some(a => a.children?.some(child => child.id === article.id))
+    )
+
+    let articleNumber = mainArticles.length
+
+    return mainArticles.map(article => (
+      <React.Fragment key={article.id}>
+        {/* 부모글 */}
+        <TableRow
+          sx={{
+            cursor: 'pointer',
+            '&:hover': {
+              bgcolor: '#F8F9FA'
+            },
+            '& td': {
+              py: 2,
+              color: '#333'
+            }
+          }}
+          onClick={() =>
+            navigate(`/user/projects/${projectId}/articles/${article.id}`)
+          }>
+          <TableCell
+            align="center"
+            sx={{ width: '80px' }}>
+            {articleNumber--}
+          </TableCell>
+          <TableCell
+            align="center"
+            sx={{ width: '120px' }}>
+            <Chip
+              label={getPriorityText(article.priority)}
+              size="small"
+              sx={{
+                ...getPriorityColor(article.priority),
+                height: '24px',
+                borderRadius: '4px'
+              }}
+            />
+          </TableCell>
+          <TableCell
+            align="center"
+            sx={{ width: '100px' }}>
+            <Chip
+              label={getStatusText(article.status)}
+              size="small"
+              sx={{
+                ...getStatusColor(article.status),
+                height: '24px',
+                borderRadius: '4px'
+              }}
+            />
+          </TableCell>
+          <TableCell>
+            <Typography>{article.title}</Typography>
+          </TableCell>
+          <TableCell
+            align="center"
+            sx={{ width: '120px' }}>
+            {article.userName}
+          </TableCell>
+          <TableCell
+            align="center"
+            sx={{ width: '120px' }}>
+            {new Date(article.createdAt).toLocaleDateString('ko-KR', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}
+          </TableCell>
+        </TableRow>
+
+        {/* 답글 표시 */}
+        {article.children?.map(reply => (
+          <TableRow
+            key={reply.id}
+            sx={{
+              cursor: 'pointer',
+              '&:hover': {
+                bgcolor: '#F8F9FA'
+              },
+              '& td': {
+                py: 2,
+                color: '#333'
+              }
+            }}
+            onClick={() =>
+              navigate(`/user/projects/${projectId}/articles/${reply.id}`)
+            }>
+            <TableCell
+              align="center"
+              sx={{ width: '80px' }}
+            />
+            <TableCell
+              align="center"
+              sx={{ width: '120px' }}>
+              <Chip
+                label={getPriorityText(reply.priority)}
+                size="small"
+                sx={{
+                  ...getPriorityColor(reply.priority),
+                  height: '24px',
+                  borderRadius: '4px'
+                }}
+              />
+            </TableCell>
+            <TableCell
+              align="center"
+              sx={{ width: '100px' }}>
+              <Chip
+                label={getStatusText(reply.status)}
+                size="small"
+                sx={{
+                  ...getStatusColor(reply.status),
+                  height: '24px',
+                  borderRadius: '4px'
+                }}
+              />
+            </TableCell>
+            <TableCell>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography
+                  sx={{
+                    color: '#666',
+                    mr: 1,
+                    fontSize: '14px'
+                  }}>
+                  ㄴ
+                </Typography>
+                <Typography>{reply.title}</Typography>
+              </Box>
+            </TableCell>
+            <TableCell
+              align="center"
+              sx={{ width: '120px' }}>
+              {reply.userName}
+            </TableCell>
+            <TableCell
+              align="center"
+              sx={{ width: '120px' }}>
+              {new Date(reply.createdAt).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </TableCell>
+          </TableRow>
+        ))}
+      </React.Fragment>
+    ))
   }
 
   if (loading) return <LoadingSpinner />
@@ -324,18 +528,31 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
     <Box>
       <Box
         sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 3,
-          mb: 3
+          mb: 4,
+          width: '100%',
+          overflow: 'auto',
+          '&::-webkit-scrollbar': {
+            height: '6px',
+            backgroundColor: 'transparent'
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'transparent'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'transparent',
+            borderRadius: '3px'
+          },
+          '&:hover::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(0, 0, 0, 0.1)'
+          }
         }}>
         <Box
           sx={{
             display: 'flex',
             gap: 2,
+            minWidth: 'min-content',
             px: 1,
-            py: 1,
-            flexWrap: 'wrap'
+            py: 1
           }}>
           <Paper
             onClick={() => handleStageChange(null)}
@@ -362,6 +579,13 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
                 color: selectedStage === null ? '#FFB800' : '#666'
               }}>
               전체
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: '#666'
+              }}>
+              {totalArticles}건
             </Typography>
           </Paper>
           {propStages.map(stage => (
@@ -392,113 +616,174 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
                 }}>
                 {stage.name}
               </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: '#666'
+                }}>
+                {stageArticles[stage.id] || 0}건
+              </Typography>
             </Paper>
           ))}
         </Box>
-        <Box
+      </Box>
+
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 2,
+          mb: 2
+        }}>
+        <FormControl
+          size="small"
           sx={{
-            display: 'flex',
-            gap: 2,
-            alignItems: 'center',
-            width: '100%',
-            justifyContent: 'space-between'
-          }}>
-          <Box sx={{ display: 'flex', gap: 2, flex: 1 }}>
-            <FormControl
-              size="small"
-              sx={{
-                width: '150px',
-                flexShrink: 0
-              }}>
-              <Select
-                value={searchType}
-                onChange={e => setSearchType(e.target.value as SearchType)}>
-                <MenuItem value={SearchType.TITLE_CONTENT}>제목+내용</MenuItem>
-                <MenuItem value={SearchType.AUTHOR}>작성자</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField
-              size="small"
-              placeholder="검색어를 입력하세요"
-              value={searchKeyword}
-              onChange={handleSearchChange}
-              onKeyPress={handleKeyPress}
-              sx={{ flex: 1 }}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={handleSearch}>
-                      <Search />
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-            />
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={<Plus />}
-            onClick={() =>
-              navigate(
-                `/user/projects/${projectId}/articles/create?tab=articles`
-              )
+            width: '200px',
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '8px',
+              bgcolor: 'white',
+              height: '40px',
+              '& fieldset': {
+                borderColor: '#E0E0E0'
+              },
+              '&:hover fieldset': {
+                borderColor: '#E0E0E0'
+              }
             }
+          }}>
+          <Select
+            value={searchType}
+            onChange={e => setSearchType(e.target.value as SearchType)}
+            displayEmpty
             sx={{
-              whiteSpace: 'nowrap',
-              bgcolor: '#FFB800',
-              '&:hover': {
-                bgcolor: '#E5A600'
+              color: '#666',
+              '& .MuiSelect-select': {
+                py: 1
               }
             }}>
-            글쓰기
-          </Button>
-        </Box>
+            <MenuItem value={SearchType.TITLE_CONTENT}>제목+내용</MenuItem>
+            <MenuItem value={SearchType.AUTHOR}>작성자</MenuItem>
+          </Select>
+        </FormControl>
+        <TextField
+          size="small"
+          placeholder="검색어를 입력하세요"
+          value={searchKeyword}
+          onChange={handleSearchChange}
+          onKeyPress={handleKeyPress}
+          sx={{
+            flex: 1,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '8px',
+              bgcolor: 'white',
+              height: '40px',
+              '& fieldset': {
+                borderColor: '#E0E0E0'
+              },
+              '&:hover fieldset': {
+                borderColor: '#E0E0E0'
+              },
+              '& input': {
+                py: 0
+              }
+            }
+          }}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={handleSearch}
+                  edge="end"
+                  sx={{
+                    color: '#666',
+                    p: '4px'
+                  }}>
+                  <Search size={20} />
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
+        />
+        <Button
+          variant="contained"
+          startIcon={<Plus size={20} />}
+          onClick={() =>
+            navigate(`/user/projects/${projectId}/articles/create`)
+          }
+          sx={{
+            bgcolor: '#FFB800',
+            borderRadius: '8px',
+            px: 3,
+            height: '40px',
+            '&:hover': {
+              bgcolor: '#E5A600'
+            }
+          }}>
+          글쓰기
+        </Button>
       </Box>
 
       <TableContainer
         component={Paper}
         sx={{
           boxShadow: 'none',
-          border: '1px solid #E0E0E0'
+          borderRadius: '8px',
+          border: '1px solid #E0E0E0',
+          overflow: 'hidden'
         }}>
         <Table>
           <TableHead>
-            <TableRow>
-              <TableCell align="center">번호</TableCell>
-              <TableCell align="center">우선순위</TableCell>
-              <TableCell align="center">상태</TableCell>
+            <TableRow
+              sx={{
+                bgcolor: '#F8F9FA',
+                '& th': {
+                  color: '#666',
+                  fontWeight: 600,
+                  py: 2
+                }
+              }}>
+              <TableCell
+                align="center"
+                sx={{ width: '80px' }}>
+                번호
+              </TableCell>
+              <TableCell
+                align="center"
+                sx={{ width: '120px' }}>
+                우선순위
+              </TableCell>
+              <TableCell
+                align="center"
+                sx={{ width: '100px' }}>
+                상태
+              </TableCell>
               <TableCell>제목</TableCell>
-              <TableCell align="center">작성자</TableCell>
-              <TableCell align="center">작성일</TableCell>
+              <TableCell
+                align="center"
+                sx={{ width: '120px' }}>
+                작성자
+              </TableCell>
+              <TableCell
+                align="center"
+                sx={{ width: '120px' }}>
+                작성일
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {articles.length > 0 ? (
-              articles.map((article, index) => (
-                <ArticleRow
-                  key={article.id}
-                  article={article}
-                  projectId={projectId}
-                  index={index}
-                  totalCount={articles.length}
-                  articles={articles}
-                  getPriorityColor={getPriorityColor}
-                  getPriorityText={getPriorityText}
-                  getStatusColor={getStatusColor}
-                  getStatusText={getStatusText}
-                />
-              ))
+              renderArticles(articles)
             ) : (
               <TableRow>
                 <TableCell
                   colSpan={6}
                   align="center"
-                  sx={{ py: 8 }}>
-                  <Typography color="text.secondary">
-                    {selectedStage !== null
-                      ? '해당 단계의 게시글이 존재하지 않습니다.'
-                      : '게시글이 존재하지 않습니다.'}
-                  </Typography>
+                  sx={{
+                    py: 8,
+                    color: '#666'
+                  }}>
+                  {selectedStage !== null
+                    ? '해당 단계의 질문이 없습니다.'
+                    : '작성된 질문이 없습니다.'}
                 </TableCell>
               </TableRow>
             )}
@@ -506,63 +791,33 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
         </Table>
       </TableContainer>
 
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          mt: 3,
-          mb: 3,
-          gap: 0.5,
-          '& .MuiButton-root': {
-            minWidth: '32px',
-            height: '32px',
-            padding: 0,
-            fontSize: '0.875rem'
-          }
-        }}>
-        <Button
-          onClick={() => setCurrentPage(prev => prev - 1)}
-          disabled={currentPage === 0}
+      {totalPages > 1 && (
+        <Box
           sx={{
-            color: '#666',
-            '&:hover': {
-              bgcolor: '#f5f5f5'
-            },
-            '&.Mui-disabled': {}
+            display: 'flex',
+            justifyContent: 'center',
+            mt: 3
           }}>
-          {'<'}
-        </Button>
-        {[...Array(totalPages)].map((_, index) => (
-          <Button
-            key={index}
-            onClick={() => setCurrentPage(index)}
+          <Pagination
+            count={totalPages}
+            page={currentPage + 1}
+            onChange={handlePageChange}
+            color="primary"
             sx={{
-              color: currentPage === index ? '#fff' : '#666',
-              border: '1px solid',
-              borderColor: currentPage === index ? '#FFB800' : '#E0E0E0',
-              bgcolor: currentPage === index ? '#FFB800' : 'white',
-              '&:hover': {
-                bgcolor: currentPage === index ? '#E5A600' : '#f5f5f5',
-                borderColor: currentPage === index ? '#E5A600' : '#E0E0E0'
+              '& .MuiPaginationItem-root': {
+                color: '#666',
+                '&.Mui-selected': {
+                  bgcolor: '#FFB800',
+                  color: 'white',
+                  '&:hover': {
+                    bgcolor: '#E5A600'
+                  }
+                }
               }
-            }}>
-            {index + 1}
-          </Button>
-        ))}
-        <Button
-          onClick={() => setCurrentPage(prev => prev + 1)}
-          disabled={currentPage >= totalPages - 1}
-          sx={{
-            color: '#666',
-            '&:hover': {
-              bgcolor: '#f5f5f5',
-              border: '1px solid #E0E0E0'
-            },
-            '&.Mui-disabled': {}
-          }}>
-          {'>'}
-        </Button>
-      </Box>
+            }}
+          />
+        </Box>
+      )}
     </Box>
   )
 }

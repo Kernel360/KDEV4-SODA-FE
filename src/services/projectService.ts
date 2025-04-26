@@ -210,6 +210,7 @@ export const projectService = {
         const projectData = response.data.data
         return {
           id: projectData.id,
+          projectId: projectData.id,
           title: projectData.title,
           projectName: projectData.title,
           name: projectData.title,
@@ -226,6 +227,8 @@ export const projectService = {
           devMemberNames: projectData.devMemberNames || [],
           currentUserProjectRole: projectData.currentUserProjectRole,
           currentUserCompanyRole: projectData.currentUserCompanyRole,
+          companyProjectRole: projectData.companyProjectRole || null,
+          memberProjectRole: projectData.memberProjectRole || null,
           createdAt: projectData.createdAt || new Date().toISOString(),
           updatedAt: projectData.updatedAt || new Date().toISOString(),
           stages: projectData.stages || []
@@ -351,21 +354,31 @@ export const projectService = {
     keyword?: string,
     page?: number,
     size?: number
-  ): Promise<{ data: Article[] }> {
+  ): Promise<{
+    status: string
+    code: string
+    message: string
+    data: {
+      content: Article[]
+      page: {
+        size: number
+        number: number
+        totalElements: number
+        totalPages: number
+      }
+    }
+  }> {
     const response = await client.get(`/projects/${projectId}/articles`, {
       params: {
         stageId: stageId || undefined,
         searchType: searchType || undefined,
         keyword: keyword || undefined,
         page: page || 0,
-        size: size || 10,
+        size: size || 5,
         sort: []
       }
     })
-    // API 응답 구조에 맞게 데이터 추출
-    return {
-      data: response.data.data?.content || []
-    }
+    return response.data
   },
 
   async createArticle(
@@ -661,5 +674,31 @@ export const projectService = {
       console.error('프로젝트 회사 삭제 실패:', error)
       throw error
     }
+  },
+
+  deleteComment: async (
+    projectId: number,
+    articleId: number,
+    commentId: number
+  ) => {
+    const response = await client.delete(
+      `/projects/${projectId}/articles/${articleId}/comments/${commentId}`
+    )
+    return response.data
+  },
+
+  getProjectRequests: async (projectId: number) => {
+    const response = await client.get(`/projects/${projectId}/requests`)
+    return response.data
+  },
+
+  async updateArticleStatus(
+    articleId: number,
+    status: 'COMMENTED' | 'PENDING'
+  ) {
+    const response = await client.patch(`/articles/${articleId}/status`, {
+      status
+    })
+    return response.data
   }
 }

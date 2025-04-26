@@ -166,6 +166,7 @@ const ProjectDetail = () => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
   const [project, setProject] = useState<Project>({
     id: 0,
+    projectId: 0,
     title: '',
     projectName: '',
     name: '',
@@ -175,6 +176,8 @@ const ProjectDetail = () => {
     endDate: '',
     currentUserProjectRole: '',
     currentUserCompanyRole: '',
+    companyProjectRole: null,
+    memberProjectRole: null,
     clientCompanyNames: [],
     devCompanyNames: [],
     clientManagerNames: [],
@@ -187,7 +190,7 @@ const ProjectDetail = () => {
     devMembers: [],
     createdAt: '',
     updatedAt: '',
-    stages: [] // Added missing required stages property
+    stages: []
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -263,6 +266,11 @@ const ProjectDetail = () => {
     name: string
     type: 'client' | 'dev'
   } | null>(null)
+  const [showAddDevCompanyDialog, setShowAddDevCompanyDialog] = useState(false)
+  const [showAddClientCompanyDialog, setShowAddClientCompanyDialog] =
+    useState(false)
+  const [requests, setRequests] = useState<any[]>([])
+  const [loadingRequests, setLoadingRequests] = useState(false)
 
   // 3. Effect hooks
   useEffect(() => {
@@ -270,6 +278,7 @@ const ProjectDetail = () => {
       fetchProjectDetail()
       fetchCompanies()
       fetchArticles()
+      fetchRequests()
     }
   }, [id])
 
@@ -476,11 +485,58 @@ const ProjectDetail = () => {
         0,
         3
       )
-      setArticles(response.data)
+      setArticles(response.data.content)
     } catch (error) {
       console.error('Failed to fetch articles:', error)
     } finally {
       setLoadingArticles(false)
+    }
+  }
+
+  const fetchRequests = async () => {
+    try {
+      setLoadingRequests(true)
+      const response = await projectService.getProjectRequests(Number(id))
+      // Get only the first 3 requests
+      setRequests((response.data?.content || []).slice(0, 3))
+    } catch (error) {
+      console.error('Failed to fetch requests:', error)
+      showToast('승인 요청 목록을 불러오는데 실패했습니다.', 'error')
+      setRequests([])
+    } finally {
+      setLoadingRequests(false)
+    }
+  }
+
+  const getRequestStatusText = (status: string): string => {
+    switch (status) {
+      case 'APPROVED':
+        return '승인됨'
+      case 'APPROVING':
+        return '승인중'
+      case 'PENDING':
+        return '대기중'
+      case 'REJECTED':
+        return '거절됨'
+      default:
+        return status
+    }
+  }
+
+  const getRequestStatusColor = (
+    status: string
+  ): { bgColor: string; textColor: string } => {
+    switch (status) {
+      case 'APPROVED':
+        return { bgColor: '#dcfce7', textColor: '#16a34a' }
+      case 'APPROVING':
+        return { bgColor: '#fef3c7', textColor: '#d97706' }
+      case 'PENDING':
+        return { bgColor: '#f3f4f6', textColor: '#4b5563' }
+      case 'REJECTED':
+        return { bgColor: '#fee2e2', textColor: '#dc2626' }
+      default:
+        return { bgColor: '#f3f4f6', textColor: '#4b5563' }
     }
   }
 
@@ -638,53 +694,20 @@ const ProjectDetail = () => {
     if (!selectedNewCompany) return
 
     try {
-      // 개발사와 고객사 추가 로직 분리
-      if (companyType === 'dev') {
-        console.log('개발사 추가 요청:', {
-          devAssignments: [
-            {
-              companyId: selectedNewCompany.id,
-              managerIds: selectedCompanyManagers,
-              memberIds: selectedRegularMembers
-            }
-          ]
-        })
+      await projectService.addProjectCompany(Number(id), {
+        companyId: selectedNewCompany.id,
+        role: companyType === 'dev' ? 'DEV_COMPANY' : 'CLIENT_COMPANY',
+        managerIds: selectedCompanyManagers,
+        memberIds: selectedRegularMembers
+      })
 
-        // 개발사 추가 API 호출
-        const response = await projectService.addProjectDevCompanies(
-          Number(id),
-          {
-            devAssignments: [
-              {
-                companyId: selectedNewCompany.id,
-                managerIds: selectedCompanyManagers,
-                memberIds: selectedRegularMembers
-              }
-            ]
-          }
-        )
-
-        if (response.status === 'success') {
-          showToast('개발사가 추가되었습니다', 'success')
-          // 프로젝트 상태를 진행중으로 업데이트
-          await projectService.updateProjectStatus(Number(id), 'IN_PROGRESS')
-          // 프로젝트 정보 새로고침
-          await fetchProjectDetail()
-        }
-      } else {
-        // 고객사 추가 로직
-        await projectService.addProjectCompany(Number(id), {
-          companyId: selectedNewCompany.id,
-          role: 'CLIENT_COMPANY',
-          managerIds: selectedCompanyManagers,
-          memberIds: selectedRegularMembers
-        })
-        showToast('고객사가 추가되었습니다', 'success')
-      }
-
-      // 멤버 목록 새로고침
-      fetchMembers()
-      setShowAddCompanyMemberDialog(false)
+      showToast(
+        `${companyType === 'dev' ? '개발사' : '고객사'}가 추가되었습니다`,
+        'success'
+      )
+      await fetchProjectDetail()
+      await fetchMembers()
+      setShowAddClientCompanyDialog(false)
       setSelectedNewCompany(null)
       setSelectedCompanyManagers([])
       setSelectedRegularMembers([])
@@ -915,6 +938,58 @@ const ProjectDetail = () => {
     } finally {
       setShowDeleteCompanyDialog(false)
       setCompanyToDelete(null)
+    }
+  }
+
+  // 개발사 추가 버튼 클릭 핸들러 (개발사가 없을 때 표시되는 버튼)
+  const handleDevCompanyAddClick = () => {
+    setCompanyType('dev')
+    setShowAddDevCompanyDialog(true)
+  }
+
+  // 고객사/개발사 탭의 상단 추가 버튼 클릭 핸들러
+  const handleCompanyAddClick = (type: 'client' | 'dev') => {
+    setCompanyType(type)
+    setShowAddClientCompanyDialog(true)
+  }
+
+  const handleDevCompanySelect = (company: Company) => {
+    setSelectedNewCompany({
+      id: company.id,
+      name: company.name
+    })
+    setShowAddDevCompanyDialog(false)
+    setShowAddCompanyMemberDialog(true)
+  }
+
+  const handleAddDevCompany = async () => {
+    if (!selectedNewCompany) return
+
+    try {
+      const response = await projectService.addProjectDevCompanies(Number(id), {
+        devAssignments: [
+          {
+            companyId: selectedNewCompany.id,
+            managerIds: selectedCompanyManagers,
+            memberIds: selectedRegularMembers
+          }
+        ]
+      })
+
+      if (response.status === 'success') {
+        showToast('개발사가 추가되었습니다', 'success')
+        await projectService.updateProjectStatus(Number(id), 'IN_PROGRESS')
+        await fetchProjectDetail()
+        await fetchMembers()
+        setShowAddCompanyMemberDialog(false)
+        setSelectedNewCompany(null)
+        setSelectedCompanyManagers([])
+        setSelectedRegularMembers([])
+        setMemberSearch('')
+      }
+    } catch (error) {
+      console.error('개발사 추가 실패:', error)
+      showToast('개발사 추가에 실패했습니다', 'error')
     }
   }
 
@@ -1274,7 +1349,7 @@ const ProjectDetail = () => {
               <Grid
                 item
                 xs={6}>
-                <Paper sx={{ p: 3 }}>
+                <Paper sx={{ p: 3, minHeight: '300px' }}>
                   <Stack
                     direction="row"
                     spacing={2}
@@ -1284,144 +1359,142 @@ const ProjectDetail = () => {
                       size={24}
                       color="#64748b"
                     />
-                    <Typography variant="h6">
-                      최근 승인요청 (더미 데이터)
-                    </Typography>
+                    <Typography variant="h6">최근 승인요청</Typography>
                   </Stack>
-                  <List>
-                    {[
-                      {
-                        id: 1,
-                        title: 'UI 디자인 변경 승인요청',
-                        content:
-                          '메인 페이지 배너 디자인 변경 작업이 완료되었습니다. 변경된 디자인에 대한 승인을 요청드립니다.',
-                        date: '2024-03-20',
-                        author: '김개발',
-                        status: '대기'
-                      },
-                      {
-                        id: 2,
-                        title: '프로필 이미지 업로드 기능 개발 완료',
-                        content:
-                          '사용자 프로필 이미지 업로드 기능 개발이 완료되었습니다. 테스트를 완료했으니 승인 부탁드립니다.',
-                        date: '2024-03-19',
-                        author: '이개발',
-                        status: '승인'
-                      },
-                      {
-                        id: 3,
-                        title: '모바일 메뉴 반응형 수정 완료',
-                        content:
-                          '모바일 환경에서 메뉴가 제대로 표시되지 않는 문제를 수정했습니다. 변경사항에 대한 승인을 요청드립니다.',
-                        date: '2024-03-18',
-                        author: '박개발',
-                        status: '반려'
-                      }
-                    ].map((item, index, array) => (
-                      <Fragment key={item.id}>
-                        <ListItem sx={{ px: 0, py: 2 }}>
-                          <ListItemText
-                            primary={
-                              <Typography
-                                sx={{
-                                  fontSize: '0.875rem',
-                                  color: theme.palette.primary.main,
-                                  cursor: 'pointer',
-                                  '&:hover': {
-                                    textDecoration: 'underline'
-                                  }
-                                }}>
-                                {item.title}
-                              </Typography>
-                            }
-                            secondary={
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: 0.5
-                                }}>
-                                <Typography
-                                  variant="body2"
-                                  sx={{
-                                    color: 'text.secondary',
-                                    lineHeight: 1.4
-                                  }}>
-                                  {item.content}
-                                </Typography>
-                                <Box
-                                  sx={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center'
-                                  }}>
+                  {loadingRequests ? (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: '200px'
+                      }}>
+                      <CircularProgress />
+                    </Box>
+                  ) : requests.length === 0 ? (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: '200px'
+                      }}>
+                      <Typography color="text.secondary">
+                        등록된 요청이 없습니다.
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <List>
+                      {requests.map((request, index, array) => {
+                        const statusColors = getRequestStatusColor(
+                          request.status
+                        )
+                        return (
+                          <Fragment key={request.requestId}>
+                            <ListItem sx={{ px: 0, py: 2 }}>
+                              <ListItemText
+                                primary={
+                                  <Typography
+                                    onClick={() =>
+                                      navigate(
+                                        `/user/projects/${id}/requests/${request.requestId}`
+                                      )
+                                    }
+                                    sx={{
+                                      fontSize: '1rem',
+                                      fontWeight: 600,
+                                      color: theme.palette.primary.main,
+                                      cursor: 'pointer',
+                                      '&:hover': {
+                                        textDecoration: 'underline'
+                                      }
+                                    }}>
+                                    {request.title}
+                                  </Typography>
+                                }
+                                secondary={
                                   <Box
                                     sx={{
                                       display: 'flex',
-                                      gap: 1,
-                                      alignItems: 'center'
+                                      flexDirection: 'column',
+                                      gap: 0.5
                                     }}>
                                     <Typography
-                                      variant="caption"
-                                      color="text.secondary">
-                                      {item.author}
+                                      variant="body2"
+                                      sx={{
+                                        color: 'text.secondary',
+                                        lineHeight: 1.4,
+                                        fontSize: '0.875rem'
+                                      }}>
+                                      {request.content}
                                     </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                      sx={{ opacity: 0.5 }}>
-                                      |
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary">
-                                      {item.date}
-                                    </Typography>
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                      }}>
+                                      <Box
+                                        sx={{
+                                          display: 'flex',
+                                          gap: 1,
+                                          alignItems: 'center'
+                                        }}>
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary">
+                                          {request.memberName}
+                                        </Typography>
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          sx={{ opacity: 0.5 }}>
+                                          |
+                                        </Typography>
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary">
+                                          {formatDate(request.createdAt)}
+                                        </Typography>
+                                      </Box>
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          px: 1,
+                                          py: 0.5,
+                                          borderRadius: 1,
+                                          backgroundColor: statusColors.bgColor,
+                                          color: statusColors.textColor,
+                                          fontSize: '0.75rem'
+                                        }}>
+                                        {getRequestStatusText(request.status)}
+                                      </Typography>
+                                    </Box>
                                   </Box>
-                                  <Typography
-                                    variant="caption"
-                                    sx={{
-                                      px: 1,
-                                      py: 0.5,
-                                      borderRadius: 1,
-                                      backgroundColor:
-                                        item.status === '승인'
-                                          ? '#dcfce7'
-                                          : item.status === '반려'
-                                            ? '#fee2e2'
-                                            : '#f3f4f6',
-                                      color:
-                                        item.status === '승인'
-                                          ? '#16a34a'
-                                          : item.status === '반려'
-                                            ? '#dc2626'
-                                            : '#4b5563',
-                                      fontSize: '0.75rem'
-                                    }}>
-                                    {item.status}
-                                  </Typography>
-                                </Box>
-                              </Box>
-                            }
-                            sx={{
-                              '& .MuiListItemText-secondary': {
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 0.5
-                              }
-                            }}
-                          />
-                        </ListItem>
-                        {index < array.length - 1 && <Divider sx={{ my: 1 }} />}
-                      </Fragment>
-                    ))}
-                  </List>
+                                }
+                                sx={{
+                                  '& .MuiListItemText-secondary': {
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 0.5
+                                  }
+                                }}
+                              />
+                            </ListItem>
+                            {index < array.length - 1 && (
+                              <Divider sx={{ my: 1 }} />
+                            )}
+                          </Fragment>
+                        )
+                      })}
+                    </List>
+                  )}
                 </Paper>
               </Grid>
               <Grid
                 item
                 xs={6}>
-                <Paper sx={{ p: 3 }}>
+                <Paper sx={{ p: 3, minHeight: '300px' }}>
                   <Stack
                     direction="row"
                     spacing={2}
@@ -1435,12 +1508,22 @@ const ProjectDetail = () => {
                   </Stack>
                   {loadingArticles ? (
                     <Box
-                      sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: '200px'
+                      }}>
                       <CircularProgress />
                     </Box>
                   ) : articles.length === 0 ? (
                     <Box
-                      sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: '200px'
+                      }}>
                       <Typography color="text.secondary">
                         등록된 질문사항이 없습니다.
                       </Typography>
@@ -1817,21 +1900,33 @@ const ProjectDetail = () => {
                 mb: 2
               }}>
               <Typography variant="h6">개발사 멤버 관리</Typography>
-              <Button
-                variant="contained"
-                startIcon={<Building2 size={20} />}
-                onClick={() => {
-                  setCompanyType('dev')
-                  setShowAddCompanyDialog(true)
-                }}
-                sx={{
-                  backgroundColor: '#F59E0B',
-                  '&:hover': {
-                    backgroundColor: '#FCD34D'
-                  }
-                }}>
-                회사 추가
-              </Button>
+              {devMembers.length === 0 ? (
+                <Button
+                  variant="contained"
+                  startIcon={<Building2 size={20} />}
+                  onClick={handleDevCompanyAddClick}
+                  sx={{
+                    backgroundColor: '#F59E0B',
+                    '&:hover': {
+                      backgroundColor: '#FCD34D'
+                    }
+                  }}>
+                  개발사 추가
+                </Button>
+              ) : (
+                <Button
+                  variant="contained"
+                  startIcon={<Building2 size={20} />}
+                  onClick={() => handleCompanyAddClick('dev')}
+                  sx={{
+                    backgroundColor: '#F59E0B',
+                    '&:hover': {
+                      backgroundColor: '#FCD34D'
+                    }
+                  }}>
+                  회사 추가
+                </Button>
+              )}
             </Box>
             <Card>
               {loadingMembers ? (
@@ -1856,7 +1951,7 @@ const ProjectDetail = () => {
                   <Button
                     variant="contained"
                     startIcon={<Building2 size={20} />}
-                    onClick={() => setShowAddCompanyDialog(true)}
+                    onClick={handleDevCompanyAddClick}
                     sx={{
                       backgroundColor: '#F59E0B',
                       '&:hover': {
@@ -2343,13 +2438,13 @@ const ProjectDetail = () => {
         maxWidth="sm"
         fullWidth>
         <DialogTitle>
-          {companyType === 'client' ? '고객사' : '개발사'} 추가
+          {companyType === 'dev' ? '개발사 추가' : '고객사 추가'}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
             <TextField
               fullWidth
-              label="회사 검색"
+              label={`${companyType === 'dev' ? '개발사' : '고객사'} 검색`}
               value={companySearch}
               onChange={e => setCompanySearch(e.target.value)}
               InputProps={{
@@ -2368,21 +2463,13 @@ const ProjectDetail = () => {
             ) : availableCompanies.length === 0 ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                 <Typography color="text.secondary">
-                  추가 가능한 회사가 없습니다.
+                  추가 가능한 {companyType === 'dev' ? '개발사' : '고객사'}가
+                  없습니다.
                 </Typography>
               </Box>
             ) : (
               <Box sx={{ maxHeight: '300px', overflow: 'auto' }}>
-                <List
-                  sx={{
-                    '& .MuiListItem-root': {
-                      borderBottom: '1px solid',
-                      borderColor: 'divider',
-                      '&:last-child': {
-                        borderBottom: 'none'
-                      }
-                    }
-                  }}>
+                <List>
                   {availableCompanies
                     .filter(company =>
                       company.name
@@ -2393,9 +2480,7 @@ const ProjectDetail = () => {
                       <ListItem
                         key={company.id}
                         button
-                        onClick={() => {
-                          handleCompanySelect(company)
-                        }}
+                        onClick={() => handleCompanySelect(company)}
                         sx={{
                           py: 2,
                           '&:hover': {
@@ -2444,13 +2529,8 @@ const ProjectDetail = () => {
         onClose={() => {
           setShowAddCompanyMemberDialog(false)
           setSelectedNewCompany(null)
-          setSelectedCompanyMembers({
-            companyId: 0,
-            companyName: '',
-            companyType: 'client',
-            members: []
-          })
           setSelectedCompanyManagers([])
+          setSelectedRegularMembers([])
           setMemberSearch('')
         }}
         maxWidth="sm"
@@ -2837,13 +2917,8 @@ const ProjectDetail = () => {
             onClick={() => {
               setShowAddCompanyMemberDialog(false)
               setSelectedNewCompany(null)
-              setSelectedCompanyMembers({
-                companyId: 0,
-                companyName: '',
-                companyType: 'client',
-                members: []
-              })
               setSelectedCompanyManagers([])
+              setSelectedRegularMembers([])
               setMemberSearch('')
             }}>
             취소
@@ -2851,7 +2926,9 @@ const ProjectDetail = () => {
           <Button
             variant="contained"
             color="primary"
-            onClick={handleAddNewMembers}
+            onClick={
+              companyType === 'dev' ? handleAddDevCompany : handleAddNewMembers
+            }
             disabled={
               selectedCompanyManagers.length === 0 &&
               selectedRegularMembers.length === 0
@@ -2916,6 +2993,202 @@ const ProjectDetail = () => {
             onClick={handleCompanyDelete}
             color="error">
             삭제
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 개발사 추가 전용 다이얼로그 */}
+      <Dialog
+        open={showAddDevCompanyDialog}
+        onClose={() => {
+          setShowAddDevCompanyDialog(false)
+          setSelectedCompany(null)
+          setSelectedMembers([])
+        }}
+        maxWidth="sm"
+        fullWidth>
+        <DialogTitle>개발사 추가</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="개발사 검색"
+              value={companySearch}
+              onChange={e => setCompanySearch(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                )
+              }}
+              sx={{ mb: 2 }}
+            />
+            {loadingCompanies ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <CircularProgress />
+              </Box>
+            ) : availableCompanies.length === 0 ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <Typography color="text.secondary">
+                  추가 가능한 개발사가 없습니다.
+                </Typography>
+              </Box>
+            ) : (
+              <Box sx={{ maxHeight: '300px', overflow: 'auto' }}>
+                <List>
+                  {availableCompanies
+                    .filter(company =>
+                      company.name
+                        .toLowerCase()
+                        .includes(companySearch.toLowerCase())
+                    )
+                    .map(company => (
+                      <ListItem
+                        key={company.id}
+                        button
+                        onClick={() => handleDevCompanySelect(company)}
+                        sx={{
+                          py: 2,
+                          '&:hover': {
+                            backgroundColor: 'action.hover'
+                          }
+                        }}>
+                        <ListItemText
+                          primary={
+                            <Typography
+                              variant="subtitle1"
+                              sx={{ fontWeight: 500, color: 'primary.main' }}>
+                              {company.name}
+                            </Typography>
+                          }
+                          secondary={
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              component="span">
+                              {company.address || '주소 정보 없음'}
+                            </Typography>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                </List>
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowAddDevCompanyDialog(false)
+              setSelectedCompany(null)
+              setSelectedMembers([])
+            }}>
+            취소
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 고객사 추가 다이얼로그 */}
+      <Dialog
+        open={showAddClientCompanyDialog}
+        onClose={() => {
+          setShowAddClientCompanyDialog(false)
+          setSelectedCompany(null)
+          setSelectedMembers([])
+        }}
+        maxWidth="sm"
+        fullWidth>
+        <DialogTitle>
+          {companyType === 'dev' ? '개발사' : '고객사'} 추가
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label={`${companyType === 'dev' ? '개발사' : '고객사'} 검색`}
+              value={companySearch}
+              onChange={e => setCompanySearch(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                )
+              }}
+              sx={{ mb: 2 }}
+            />
+            {loadingCompanies ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <CircularProgress />
+              </Box>
+            ) : availableCompanies.length === 0 ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <Typography color="text.secondary">
+                  추가 가능한 {companyType === 'dev' ? '개발사' : '고객사'}가
+                  없습니다.
+                </Typography>
+              </Box>
+            ) : (
+              <Box sx={{ maxHeight: '300px', overflow: 'auto' }}>
+                <List>
+                  {availableCompanies
+                    .filter(company =>
+                      company.name
+                        .toLowerCase()
+                        .includes(companySearch.toLowerCase())
+                    )
+                    .map(company => (
+                      <ListItem
+                        key={company.id}
+                        button
+                        onClick={() => {
+                          setSelectedNewCompany({
+                            id: company.id,
+                            name: company.name
+                          })
+                          setShowAddClientCompanyDialog(false)
+                          setShowAddCompanyMemberDialog(true)
+                        }}
+                        sx={{
+                          py: 2,
+                          '&:hover': {
+                            backgroundColor: 'action.hover'
+                          }
+                        }}>
+                        <ListItemText
+                          primary={
+                            <Typography
+                              variant="subtitle1"
+                              sx={{ fontWeight: 500, color: 'primary.main' }}>
+                              {company.name}
+                            </Typography>
+                          }
+                          secondary={
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              component="span">
+                              {company.address || '주소 정보 없음'}
+                            </Typography>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                </List>
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowAddClientCompanyDialog(false)
+              setSelectedCompany(null)
+              setSelectedMembers([])
+            }}>
+            취소
           </Button>
         </DialogActions>
       </Dialog>

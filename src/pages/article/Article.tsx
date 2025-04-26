@@ -23,7 +23,10 @@ import {
   TextField,
   LinearProgress,
   Alert,
-  Snackbar
+  Snackbar,
+  Select,
+  MenuItem,
+  FormControl
 } from '@mui/material'
 import type { Article as ArticleType } from '../../types/article'
 import { projectService } from '../../services/projectService'
@@ -39,9 +42,11 @@ import {
   Pencil,
   Trash2,
   MessageSquarePlus,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown
 } from 'lucide-react'
 import dayjs from 'dayjs'
+import { toast } from 'react-hot-toast'
 
 const Article: React.FC = () => {
   const navigate = useNavigate()
@@ -63,18 +68,30 @@ const Article: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [showAddItem, setShowAddItem] = useState(false)
   const [newItemText, setNewItemText] = useState('')
+  const [articleStatus, setArticleStatus] = useState<'PENDING' | 'COMMENTED'>(
+    'PENDING'
+  )
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
     if (userData) {
-      const user = JSON.parse(userData)
-      setCurrentUser(user.name)
+      try {
+        const user = JSON.parse(userData)
+        setCurrentUser(user.name)
+      } catch (error) {
+        console.error('Error parsing user data:', error)
+        setCurrentUser(null)
+      }
     }
   }, [])
 
   useEffect(() => {
     const fetchArticle = async () => {
-      if (!projectId || !articleId) return
+      if (!projectId || !articleId) {
+        setError('프로젝트 ID 또는 게시글 ID가 없습니다.')
+        setLoading(false)
+        return
+      }
       try {
         setLoading(true)
         setError(null)
@@ -82,12 +99,11 @@ const Article: React.FC = () => {
           Number(projectId),
           Number(articleId)
         )
-        console.log('Received article data:', data)
-        console.log('Article fileList:', data.fileList)
         if (!data) {
           throw new Error('No article data received')
         }
         setArticle(data)
+        setArticleStatus(data.status)
       } catch (err) {
         console.error('Error fetching article:', err)
         setError(
@@ -95,6 +111,7 @@ const Article: React.FC = () => {
             ? err.message
             : '게시글을 불러오는데 실패했습니다.'
         )
+        toast.error('게시글을 불러오는데 실패했습니다.')
       } finally {
         setLoading(false)
       }
@@ -108,16 +125,10 @@ const Article: React.FC = () => {
       if (!articleId) return
       try {
         const data = await projectService.getVoteInfo(Number(articleId))
-        console.log('투표 정보:', {
-          isTextVote: data.items.length === 0,
-          multipleSelection: data.multipleSelection,
-          title: data.title,
-          items: data.items,
-          전체데이터: data
-        })
         setVoteInfo(data)
       } catch (error) {
         console.error('Error fetching vote info:', error)
+        toast.error('투표 정보를 불러오는데 실패했습니다.')
       }
     }
 
@@ -125,17 +136,22 @@ const Article: React.FC = () => {
   }, [articleId])
 
   const handleDelete = async () => {
-    if (!projectId || !articleId) return
+    if (!projectId || !articleId) {
+      toast.error('프로젝트 ID 또는 게시글 ID가 없습니다.')
+      return
+    }
 
     try {
       setLoading(true)
       await projectService.deleteArticle(Number(projectId), Number(articleId))
       setDeleteDialogOpen(false)
       setIsDeleted(true)
+      toast.success('게시글이 삭제되었습니다.')
       navigate(`/user/projects/${projectId}?tab=articles`)
     } catch (error) {
       console.error('Error deleting article:', error)
       setError('게시글 삭제에 실패했습니다.')
+      toast.error('게시글 삭제에 실패했습니다.')
     } finally {
       setLoading(false)
     }
@@ -146,15 +162,11 @@ const Article: React.FC = () => {
   }
 
   const handleVoteSubmit = async () => {
-    if (!articleId) return
+    if (!articleId) {
+      toast.error('게시글 ID가 없습니다.')
+      return
+    }
     try {
-      console.log('투표 제출 시도:', {
-        isTextVote: voteInfo?.items.length === 0,
-        textAnswer,
-        selectedItems,
-        voteInfo
-      })
-
       if (voteInfo?.items.length === 0) {
         // 텍스트 답변 투표
         await projectService.submitVote(Number(articleId), {
@@ -168,34 +180,40 @@ const Article: React.FC = () => {
       }
       // 투표 후 결과 보기
       const result = await projectService.getVoteResult(Number(articleId))
-      console.log('투표 결과:', result)
       setVoteResult(result)
       setShowVoteResult(true)
+      toast.success('투표가 제출되었습니다.')
     } catch (error: any) {
       console.error('Error submitting vote:', error)
-      // 에러 응답에서 코드 확인
       const errorCode = error.response?.data?.code
       if (errorCode === '1309') {
         setErrorMessage('투표할 권한이 없습니다')
+        toast.error('투표할 권한이 없습니다')
       } else {
         setErrorMessage('중복 투표는 불가능합니다')
+        toast.error('중복 투표는 불가능합니다')
       }
     }
   }
 
   const handleShowVoteResult = async () => {
-    if (!articleId) return
+    if (!articleId) {
+      toast.error('게시글 ID가 없습니다.')
+      return
+    }
     try {
       const result = await projectService.getVoteResult(Number(articleId))
       setVoteResult(result)
       setShowVoteResult(true)
     } catch (error) {
       console.error('Error fetching vote result:', error)
+      toast.error('투표 결과를 불러오는데 실패했습니다.')
     }
   }
 
   const handleItemSelect = (itemId: number) => {
-    if (voteInfo?.multipleSelection) {
+    if (!voteInfo) return
+    if (voteInfo.multipleSelection) {
       setSelectedItems(prev =>
         prev.includes(itemId)
           ? prev.filter(id => id !== itemId)
@@ -204,6 +222,88 @@ const Article: React.FC = () => {
     } else {
       setSelectedItems([itemId])
     }
+  }
+
+  const handleStatusChange = async (newStatus: 'PENDING' | 'COMMENTED') => {
+    if (!articleId) return
+    try {
+      await projectService.updateArticleStatus(Number(articleId), newStatus)
+      setArticleStatus(newStatus)
+      toast.success('상태가 변경되었습니다.')
+    } catch (error) {
+      console.error('Error updating article status:', error)
+      toast.error('상태 변경에 실패했습니다.')
+    }
+  }
+
+  const renderFileList = () => {
+    if (!article?.fileList || article.fileList.length === 0) return null
+
+    return (
+      <Box sx={{ mt: 3 }}>
+        <Typography
+          variant="subtitle1"
+          sx={{ mb: 1 }}>
+          첨부파일
+        </Typography>
+        <List>
+          {article.fileList.map((file, index) => (
+            <ListItem key={index}>
+              <ListItemIcon>
+                <FileText size={20} />
+              </ListItemIcon>
+              <ListItemText
+                primary={file.name}
+                secondary={file.url}
+              />
+              <Button
+                component="a"
+                href={file.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                size="small">
+                다운로드
+              </Button>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+    )
+  }
+
+  const renderLinkList = () => {
+    if (!article?.linkList || article.linkList.length === 0) return null
+
+    return (
+      <Box sx={{ mt: 3 }}>
+        <Typography
+          variant="subtitle1"
+          sx={{ mb: 1 }}>
+          관련 링크
+        </Typography>
+        <List>
+          {article.linkList.map((link, index) => (
+            <ListItem key={index}>
+              <ListItemIcon>
+                <Link2 size={20} />
+              </ListItemIcon>
+              <ListItemText
+                primary={link.urlDescription}
+                secondary={link.urlAddress}
+              />
+              <Button
+                component="a"
+                href={link.urlAddress}
+                target="_blank"
+                rel="noopener noreferrer"
+                size="small">
+                열기
+              </Button>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+    )
   }
 
   if (loading) {
@@ -218,7 +318,7 @@ const Article: React.FC = () => {
     return <ErrorMessage message="게시글을 찾을 수 없습니다." />
   }
 
-  if (article.deleted && !article.parentArticleId) {
+  if (article.deleted) {
     return (
       <Box sx={{ mt: 3 }}>
         <Box
@@ -282,17 +382,45 @@ const Article: React.FC = () => {
           <ArrowLeft size={24} />
         </IconButton>
 
-        <Chip
-          label={article.stageName}
-          color="primary"
-          size="small"
-          sx={{ height: 24 }}
-        />
         <Typography
           variant="h5"
           sx={{ flex: 1 }}>
           {article.title}
         </Typography>
+
+        {isAuthor && (
+          <FormControl
+            size="small"
+            sx={{ minWidth: 100 }}>
+            <Select
+              value={articleStatus}
+              onChange={e =>
+                handleStatusChange(e.target.value as 'COMMENTED' | 'PENDING')
+              }
+              displayEmpty
+              IconComponent={() => (
+                <span style={{ marginRight: '8px' }}>⏷</span>
+              )}
+              sx={{
+                height: 28,
+                fontSize: '0.875rem',
+                '& .MuiSelect-select': {
+                  py: 0,
+                  pl: 1,
+                  pr: 3,
+                  display: 'flex',
+                  alignItems: 'center'
+                },
+                '& .MuiSelect-icon': {
+                  right: 4,
+                  top: 'calc(50% - 8px)'
+                }
+              }}>
+              <MenuItem value="PENDING">답변대기</MenuItem>
+              <MenuItem value="COMMENTED">답변완료</MenuItem>
+            </Select>
+          </FormControl>
+        )}
       </Box>
 
       <Paper sx={{ p: 3 }}>
@@ -580,7 +708,7 @@ const Article: React.FC = () => {
                 <Stack spacing={1}>
                   {article.fileList
                     .filter(file => !file.deleted)
-                    .map((file: any) => (
+                    .map(file => (
                       <Stack
                         key={file.id}
                         direction="row"
@@ -612,38 +740,39 @@ const Article: React.FC = () => {
                 sx={{ mb: 1 }}>
                 첨부링크
               </Typography>
-              {article.linkList && article.linkList.length > 0 && (
-                <Box sx={{ mt: 2 }}>
-                  <List>
-                    {article.linkList
-                      .filter(link => !link.deleted)
-                      .map((link, index) => {
-                        const url =
-                          link.urlAddress.startsWith('http://') ||
-                          link.urlAddress.startsWith('https://')
-                            ? link.urlAddress
-                            : `https://${link.urlAddress}`
-
-                        return (
-                          <ListItem key={index}>
-                            <ListItemIcon>
-                              <Link2 size={20} />
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={
-                                <MuiLink
-                                  href={url}
-                                  target="_blank"
-                                  rel="noopener noreferrer">
-                                  {link.urlDescription || link.urlAddress}
-                                </MuiLink>
-                              }
-                            />
-                          </ListItem>
-                        )
-                      })}
-                  </List>
-                </Box>
+              {article.linkList && article.linkList.length > 0 ? (
+                <Stack spacing={1}>
+                  {article.linkList
+                    .filter(link => !link.deleted)
+                    .map((link, index) => {
+                      const url =
+                        link.urlAddress.startsWith('http://') ||
+                        link.urlAddress.startsWith('https://')
+                          ? link.urlAddress
+                          : `https://${link.urlAddress}`
+                      return (
+                        <Stack
+                          key={index}
+                          direction="row"
+                          alignItems="center"
+                          spacing={1}>
+                          <Link2 size={16} />
+                          <MuiLink
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer">
+                            {link.urlDescription || link.urlAddress}
+                          </MuiLink>
+                        </Stack>
+                      )
+                    })}
+                </Stack>
+              ) : (
+                <Typography
+                  variant="body2"
+                  color="text.secondary">
+                  없음
+                </Typography>
               )}
             </Box>
           </Stack>

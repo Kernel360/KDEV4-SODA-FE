@@ -15,6 +15,7 @@ import { projectService } from '../../../services/projectService'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
 import { client } from '../../../api/client'
+import { useToast } from '../../../contexts/ToastContext'
 
 interface ProjectWithProgress extends Project {
   progress: number
@@ -91,6 +92,7 @@ const UserProject: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tabValue, setTabValue] = useState(initialTab)
+  const { showToast } = useToast()
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -104,12 +106,29 @@ const UserProject: React.FC = () => {
 
   const handleStatusChange = async (newStatus: ProjectStatus) => {
     if (!project) return
+
     try {
-      await client.put(`/projects/${project.id}/status`, { status: newStatus })
-      setProject(prev => (prev ? { ...prev, status: newStatus } : null))
+      setLoading(true)
+
+      const response = await client.patch(`/projects/${project.id}/status`, {
+        status: newStatus
+      })
+
+      if (response.data.status === 'success') {
+        setProject(prev => (prev ? { ...prev, status: newStatus } : null))
+        showToast('프로젝트 상태가 변경되었습니다.', 'success')
+      } else {
+        throw new Error('상태 변경에 실패했습니다.')
+      }
     } catch (error) {
-      console.error('Failed to update project status:', error)
-      throw error
+      console.error('프로젝트 상태 변경 실패:', error)
+      showToast('프로젝트 상태 변경에 실패했습니다.', 'error')
+
+      if (project) {
+        setProject(prev => (prev ? { ...prev, status: project.status } : null))
+      }
+    } finally {
+      setLoading(false)
     }
   }
 
