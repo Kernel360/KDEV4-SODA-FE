@@ -18,6 +18,8 @@ import { Send, Trash2, MessageCircle, Edit } from 'lucide-react'
 import type { Comment } from '../../types/comment'
 import { commentService } from '../../services/commentService'
 import dayjs from 'dayjs'
+import { projectService } from '../../services/projectService'
+import { toast } from 'react-hot-toast'
 
 interface CommentInputProps {
   isReply?: boolean
@@ -445,11 +447,13 @@ CommentItem.displayName = 'CommentItem'
 interface CommentSectionProps {
   projectId: number
   articleId: number
+  isAdmin?: boolean
 }
 
 const CommentSection: React.FC<CommentSectionProps> = ({
   projectId,
-  articleId
+  articleId,
+  isAdmin = false
 }) => {
   const theme = useTheme()
   const [comments, setComments] = useState<Comment[]>([])
@@ -539,15 +543,14 @@ const CommentSection: React.FC<CommentSectionProps> = ({
   }
 
   // 댓글 삭제
-  const handleDelete = async (commentId: number) => {
+  const handleDeleteComment = async (commentId: number) => {
     try {
-      setLoading(true)
-      await commentService.deleteComment(commentId)
-      await fetchComments()
+      await projectService.deleteComment(projectId, articleId, commentId)
+      toast.success('댓글이 삭제되었습니다.')
+      fetchComments()
     } catch (error) {
       console.error('Error deleting comment:', error)
-    } finally {
-      setLoading(false)
+      toast.error('댓글 삭제에 실패했습니다.')
     }
   }
 
@@ -596,18 +599,46 @@ const CommentSection: React.FC<CommentSectionProps> = ({
         {comments && comments.length > 0 ? (
           <Stack spacing={3}>
             {comments.map((comment, index) => (
-              <Box key={comment.id}>
-                <CommentItem
-                  comment={comment}
-                  onReply={handleReplyClick}
-                  onDelete={handleDelete}
-                  onUpdate={handleUpdate}
-                  replyToId={replyToId}
-                  loading={loading}
-                  onSubmitReply={handleSubmitComment}
-                  currentUser={currentUser}
-                />
-                {index < comments.length - 1 && <Divider sx={{ mt: 2 }} />}
+              <Box
+                key={comment.id}
+                sx={{
+                  p: 2,
+                  mb: 2,
+                  bgcolor: 'white',
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: 'grey.200'
+                }}>
+                <Stack spacing={1}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center">
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center">
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ fontWeight: 600 }}>
+                        {comment.member.name}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary">
+                        {dayjs(comment.createdAt).format('YYYY.MM.DD HH:mm')}
+                      </Typography>
+                    </Stack>
+                    {(comment.member.name === currentUser || isAdmin) && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDeleteComment(comment.id)}>
+                        <Trash2 size={16} />
+                      </IconButton>
+                    )}
+                  </Stack>
+                  <Typography variant="body2">{comment.content}</Typography>
+                </Stack>
               </Box>
             ))}
           </Stack>

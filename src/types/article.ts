@@ -47,7 +47,8 @@ export interface Article {
   priority: string
   createdAt: string
   updatedAt: string
-  userName: string
+  userName?: string
+  memberName: string
   children?: Article[]
   deleted: boolean
   projectId?: number
@@ -57,6 +58,7 @@ export interface Article {
   deadLine?: string
   fileList?: ArticleFileDTO[]
   linkList?: ArticleLinkDTO[]
+  parentId?: number | null
 }
 
 export interface ArticleFile {
@@ -131,12 +133,14 @@ export interface ArticleUpdateResponse {
 
 export interface ArticleFileDTO {
   id: number
-  fileName: string
-  fileUrl: string
+  name: string
+  url: string
+  deleted?: boolean
 }
 
 export interface ArticleLinkDTO {
   id: number
   urlAddress: string
   urlDescription: string
+  deleted?: boolean
 }
