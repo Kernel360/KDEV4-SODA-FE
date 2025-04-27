@@ -273,14 +273,18 @@ const CommentItem: React.FC<CommentItemProps> = memo(
             <Typography
               variant="subtitle2"
               sx={{
-                fontWeight: 600,
+                fontWeight: 700,
                 color: theme.palette.text.primary
               }}>
               {comment.member.name}
             </Typography>
             <Typography
               variant="caption"
-              sx={{ color: theme.palette.text.secondary }}>
+              sx={{
+                color: theme.palette.text.secondary,
+                fontSize: '13px',
+                mt: '2px'
+              }}>
               {formatDate(comment.createdAt)}
             </Typography>
           </Stack>
@@ -301,7 +305,7 @@ const CommentItem: React.FC<CommentItemProps> = memo(
                       color: theme.palette.primary.main
                     }
                   }}>
-                  <Edit size={14} />
+                  <Edit size={16} />
                 </IconButton>
                 {!isEditing && (
                   <IconButton
@@ -314,7 +318,7 @@ const CommentItem: React.FC<CommentItemProps> = memo(
                         color: theme.palette.error.main
                       }
                     }}>
-                    <Trash2 size={14} />
+                    <Trash2 size={16} />
                   </IconButton>
                 )}
               </>
@@ -366,7 +370,9 @@ const CommentItem: React.FC<CommentItemProps> = memo(
             sx={{
               whiteSpace: 'pre-wrap',
               color: theme.palette.text.primary,
-              lineHeight: 1.5
+              lineHeight: 1.5,
+              mt: 0.5,
+              mb: 0.5
             }}>
             {comment.content}
           </Typography>
@@ -376,22 +382,27 @@ const CommentItem: React.FC<CommentItemProps> = memo(
         {!comment.parentCommentId && !isEditing && (
           <Button
             size="small"
-            startIcon={<MessageCircle size={14} />}
+            startIcon={
+              <MessageCircle
+                size={16}
+                color={theme.palette.secondary.main}
+              />
+            }
             onClick={() => onReply(comment.id)}
             sx={{
-              mt: 1,
+              mt: 0.5,
               p: 0,
               minWidth: 'auto',
-              color:
-                replyToId === comment.id
-                  ? theme.palette.primary.main
-                  : theme.palette.text.secondary,
+              color: theme.palette.secondary.main,
+              fontWeight: 500,
+              fontSize: '15px',
+              textAlign: 'left',
+              justifyContent: 'flex-start',
               '&:hover': {
                 backgroundColor: 'transparent',
-                color: theme.palette.primary.main
+                color: theme.palette.secondary.dark
               },
-              textTransform: 'none',
-              justifyContent: 'flex-start'
+              textTransform: 'none'
             }}>
             답글 작성
           </Button>
@@ -545,7 +556,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
   // 댓글 삭제
   const handleDeleteComment = async (commentId: number) => {
     try {
-      await projectService.deleteComment(projectId, articleId, commentId)
+      await commentService.deleteComment(commentId)
       toast.success('댓글이 삭제되었습니다.')
       fetchComments()
     } catch (error) {
@@ -594,52 +605,23 @@ const CommentSection: React.FC<CommentSectionProps> = ({
         sx={{
           p: 3,
           border: `1px solid ${theme.palette.divider}`,
-          borderRadius: 1
+          borderRadius: 1,
+          bgcolor: '#fff'
         }}>
         {comments && comments.length > 0 ? (
           <Stack spacing={3}>
-            {comments.map((comment, index) => (
-              <Box
+            {comments.map(comment => (
+              <CommentItem
                 key={comment.id}
-                sx={{
-                  p: 2,
-                  mb: 2,
-                  bgcolor: 'white',
-                  borderRadius: 1,
-                  border: '1px solid',
-                  borderColor: 'grey.200'
-                }}>
-                <Stack spacing={1}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center">
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      alignItems="center">
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ fontWeight: 600 }}>
-                        {comment.member.name}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary">
-                        {dayjs(comment.createdAt).format('YYYY.MM.DD HH:mm')}
-                      </Typography>
-                    </Stack>
-                    {(comment.member.name === currentUser || isAdmin) && (
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteComment(comment.id)}>
-                        <Trash2 size={16} />
-                      </IconButton>
-                    )}
-                  </Stack>
-                  <Typography variant="body2">{comment.content}</Typography>
-                </Stack>
-              </Box>
+                comment={comment}
+                onReply={handleReplyClick}
+                onDelete={handleDeleteComment}
+                onUpdate={handleUpdate}
+                replyToId={replyToId}
+                loading={loading}
+                onSubmitReply={handleSubmitComment}
+                currentUser={currentUser}
+              />
             ))}
           </Stack>
         ) : (
