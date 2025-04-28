@@ -83,13 +83,14 @@ const CreateRequest: React.FC = () => {
         })
         console.log('승인권자 목록 응답:', response)
         if (response && response.content) {
-          const approvers = response.content.map(member => ({
+          const approvers = response.content.map((member: any) => ({
             id: member.memberId,
             name: member.memberName,
             email: member.email,
             companyRole: member.role,
             companyName: member.companyName,
-            role: member.role
+            role: member.role,
+            memberStatus: member.memberStatus || 'AVAILABLE',
           }))
           setApprovers(approvers)
         } else {
@@ -209,6 +210,17 @@ const CreateRequest: React.FC = () => {
     const value = event.target.value
     setSelectedApprovers(typeof value === 'string' ? value.split(',').map(Number) : value)
   }
+
+  // memberStatus 한글 변환 함수
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'AVAILABLE': return '업무가능';
+      case 'BUSY': return '바쁨';
+      case 'AWAY': return '자리비움';
+      case 'ON_VACATION': return '휴가중';
+      default: return status;
+    }
+  };
 
   return (
     <Box sx={{ maxWidth: '100%', p: 3 }}>
@@ -499,7 +511,11 @@ const CreateRequest: React.FC = () => {
                       return (
                         <Chip
                           key={value}
-                          label={approver?.name || ''}
+                          label={
+                            approver
+                              ? `${approver.name} (${approver.companyName}) - ${getStatusLabel(approver.memberStatus)} `
+                              : ''
+                          }
                           onDelete={() => {
                             setSelectedApprovers(
                               selectedApprovers.filter(id => id !== value)
@@ -516,7 +532,7 @@ const CreateRequest: React.FC = () => {
                     key={approver.id}
                     value={approver.id}
                   >
-                    {approver.name}
+                    {`${approver.name} (${approver.companyName}) - ${getStatusLabel(approver.memberStatus)}`}
                   </MenuItem>
                 ))}
               </Select>
