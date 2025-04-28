@@ -171,6 +171,11 @@ const RequestDetail = () => {
           color: '#4b5563',
           backgroundColor: '#f3f4f6'
         };
+      case 'APPROVING':
+        return {
+          color: '#2563eb',
+          backgroundColor: '#dbeafe'
+        };
       default:
         return {
           color: '#4b5563',
@@ -1750,7 +1755,7 @@ const RequestDetail = () => {
       {/* 재승인 요청 버튼 */}
       {!editMode && (
         <Box sx={{ display: 'flex', gap: 2, mt: 3, justifyContent: 'flex-end' }}>
-          {canReapply() && (
+          {request && user && request.memberId === user.memberId && (
             <Button
               variant="contained"
               onClick={() => navigate(`/user/projects/${projectId}/requests/${requestId}/reapply`)}

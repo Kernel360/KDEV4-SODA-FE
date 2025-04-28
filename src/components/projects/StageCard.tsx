@@ -345,7 +345,7 @@ const StageCard: React.FC<StageCardProps> = ({
 
   return (
     <>
-      <Paper
+    <Paper
         elevation={1}
         sx={{
           width: 250,
@@ -391,9 +391,9 @@ const StageCard: React.FC<StageCardProps> = ({
           type="task">
           {provided => (
             <List
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              sx={{
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                sx={{
                 flex: 1,
                 overflowY: 'auto',
                 p: 1,
@@ -453,9 +453,9 @@ const StageCard: React.FC<StageCardProps> = ({
               )}
               {stage.tasks.map((task, index) => (
                 <React.Fragment key={`task-${task.id}`}>
-                  <Draggable
-                    draggableId={`task-${task.id}`}
-                    index={index}
+                    <Draggable
+                      draggableId={`task-${task.id}`}
+                          index={index}
                     isDragDisabled={!isEditMode}>
                     {provided => (
                       <ListItem
@@ -509,8 +509,8 @@ const StageCard: React.FC<StageCardProps> = ({
                           )}
                         </Box>
                       </ListItem>
-                    )}
-                  </Draggable>
+                      )}
+                    </Draggable>
                   {isEditMode && (
                     <Box
                       key={`add-task-${index}`}
@@ -528,8 +528,8 @@ const StageCard: React.FC<StageCardProps> = ({
                         }
                       }}>
                       {hoveredTaskIndex === index + 1 && (
-                        <Button
-                          sx={{
+                      <Button
+                        sx={{
                             minWidth: '28px',
                             width: '28px',
                             height: '28px',
@@ -537,7 +537,7 @@ const StageCard: React.FC<StageCardProps> = ({
                             borderRadius: '50%',
                             backgroundColor: 'background.paper',
                             boxShadow: 1,
-                            '&:hover': {
+                          '&:hover': {
                               backgroundColor: 'primary.main',
                               color: 'primary.contrastText',
                               transform: 'scale(1.1)'
@@ -546,16 +546,16 @@ const StageCard: React.FC<StageCardProps> = ({
                           }}
                           onClick={() => handleAddTaskClick(index + 1)}>
                           <Plus size={18} />
-                        </Button>
+                      </Button>
                       )}
                     </Box>
                   )}
-                </React.Fragment>
-              ))}
-              {provided.placeholder}
+                  </React.Fragment>
+                ))}
+                {provided.placeholder}
             </List>
-          )}
-        </Droppable>
+            )}
+          </Droppable>
 
         <Menu
           anchorEl={menuAnchorEl}
@@ -617,11 +617,11 @@ const StageCard: React.FC<StageCardProps> = ({
           </DialogActions>
         </Dialog>
 
-        <Dialog
+      <Dialog
           open={isEditTaskModalOpen}
           onClose={() => setIsEditTaskModalOpen(false)}>
           <DialogTitle>작업 수정</DialogTitle>
-          <DialogContent>
+        <DialogContent>
             <TextField
               autoFocus
               margin="dense"
@@ -639,16 +639,16 @@ const StageCard: React.FC<StageCardProps> = ({
               value={editedTaskContent}
               onChange={e => setEditedTaskContent(e.target.value)}
             />
-          </DialogContent>
-          <DialogActions>
+        </DialogContent>
+        <DialogActions>
             <Button onClick={() => setIsEditTaskModalOpen(false)}>취소</Button>
-            <Button
+          <Button
               onClick={handleEditTask}
               variant="contained">
-              수정
-            </Button>
-          </DialogActions>
-        </Dialog>
+            수정
+          </Button>
+        </DialogActions>
+      </Dialog>
 
         <Dialog
           open={isAddTaskModalOpen}
@@ -702,7 +702,7 @@ const StageCard: React.FC<StageCardProps> = ({
           projectId={projectId}
           stageId={stage.id}
         />
-      </Paper>
+    </Paper>
     </>
   )
 }

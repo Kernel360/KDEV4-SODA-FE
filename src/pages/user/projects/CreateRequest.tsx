@@ -78,8 +78,7 @@ const CreateRequest: React.FC = () => {
     const fetchApprovers = async () => {
       try {
         const response = await projectService.getProjectMembers(Number(projectId), {
-          companyRole: 'CLIENT_COMPANY',
-          memberRole: 'CLI_MANAGER'
+          companyRole: 'CLIENT_COMPANY'
         })
         console.log('승인권자 목록 응답:', response)
         if (response && response.content) {
