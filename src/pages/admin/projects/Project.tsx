@@ -348,6 +348,15 @@ const ProjectDetail = () => {
             return existingCompany?.id === company.id
           })
 
+        // 개발사 추가 시 이미 고객사로 등록된 회사는 제외
+        if (companyType === 'dev') {
+          const isClientCompany = project.clientCompanyNames.some(name => {
+            const existingCompany = allCompanies.find(c => c.name === name)
+            return existingCompany?.id === company.id
+          })
+          if (isClientCompany) return false
+        }
+
         return !isAssigned
       })
 
