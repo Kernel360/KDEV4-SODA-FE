@@ -543,7 +543,7 @@ export default function AdminMain() {
             item
             xs={6.5}>
             <Paper
-              elevation={0}
+          elevation={0}
               sx={{
                 p: 3,
                 border: '1px solid #e5e7eb',
@@ -586,9 +586,9 @@ export default function AdminMain() {
                 </Button>
               </Box>
               <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
+          <Table>
+            <TableHead>
+              <TableRow>
                       <TableCell
                         sx={{
                           fontSize: '0.875rem',
@@ -634,9 +634,9 @@ export default function AdminMain() {
                         }}>
                         대시보드
                       </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
+              </TableRow>
+            </TableHead>
+            <TableBody>
                     {loadingActiveProjects ? (
                       <TableRow>
                         <TableCell
@@ -690,8 +690,8 @@ export default function AdminMain() {
                               {project.weeklyArticleCount}건
                             </Box>
                           </TableCell>
-                          <TableCell>
-                            <Typography
+                  <TableCell>
+                    <Typography
                               sx={{
                                 fontSize: '0.875rem',
                                 color: '#4b5563'
@@ -708,7 +708,7 @@ export default function AdminMain() {
                               variant="outlined"
                               size="small"
                               startIcon={<LayoutDashboard size={14} />}
-                              onClick={() => handleProjectClick(project.id)}
+                      onClick={() => handleProjectClick(project.id)}
                               sx={{
                                 color: '#1E293B',
                                 bgcolor: 'white',
@@ -893,7 +893,7 @@ export default function AdminMain() {
                             fontSize: '0.75rem'
                           }}>
                           {week}
-                        </Typography>
+                    </Typography>
                       </Box>
                     ))}
                   </Box>
@@ -958,10 +958,10 @@ export default function AdminMain() {
           <Grid
             item
             xs={12}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 3,
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
                 border: '1px solid #e5e7eb',
                 borderRadius: 2,
                 bgcolor: '#fff',
@@ -1002,7 +1002,7 @@ export default function AdminMain() {
                         right: 0,
                         bottom: `${(num / 5) * 100}%`,
                         borderBottom: '1px dashed',
-                        borderColor: 'divider',
+            borderColor: 'divider',
                         zIndex: 0
                       }}
                     />
@@ -1116,7 +1116,7 @@ export default function AdminMain() {
                   </Box>
                 </Box>
               </Box>
-            </Paper>
+        </Paper>
           </Grid>
         </Grid>
       </Box>
