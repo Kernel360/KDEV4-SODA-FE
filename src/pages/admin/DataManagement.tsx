@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import {
   Box,
   Typography,
@@ -31,20 +31,61 @@ interface DiffValue {
   after: any;
 }
 
+// formatValue는 순수 텍스트만 반환
 const formatValue = (value: any): string => {
   if (value === null || value === undefined) return '-'
   if (typeof value === 'string') return value
   if (typeof value === 'number') return value.toString()
   if (typeof value === 'boolean') return value ? '예' : '아니오'
-  if (Array.isArray(value)) {
-    if (value.length === 0) return '없음'
-    return value.map(item => formatValue(item)).join(', ')
-  }
-  if (typeof value === 'object') {
-    if (Object.keys(value).length === 0) return '없음'
-    return JSON.stringify(value, null, 2)
-  }
+  if (Array.isArray(value)) return '[...]'
+  if (typeof value === 'object') return '{...}'
   return value.toString()
+}
+
+// ToggleableValue는 그대로 유지
+const ToggleableValue: React.FC<{ value: any }> = ({ value }) => {
+  const [open, setOpen] = useState(false)
+  const isObjectOrArray = typeof value === 'object' && value !== null
+  if (!isObjectOrArray) return <>{String(value)}</>
+  const summary = Array.isArray(value)
+    ? `[${value.length > 0 ? '...' : ''}]`
+    : '{...}'
+  return (
+    <Box
+      component="span"
+      sx={{
+        cursor: 'pointer',
+        color: 'inherit',
+        borderBottom: open ? '1px solid #1976d2' : 'none',
+        transition: 'border-bottom 0.2s',
+        '&:hover': {
+          borderBottom: '1px dashed #1976d2',
+        },
+        fontWeight: 500
+      }}
+      onClick={() => setOpen((prev) => !prev)}
+    >
+      {open ? (
+        <Box
+          component="pre"
+          sx={{
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+            color: '#222',
+            background: '#f8f8f8',
+            borderRadius: 1,
+            p: 1,
+            m: 0,
+            fontSize: '0.95em',
+            boxShadow: 'none',
+            display: 'inline',
+          }}
+        >
+          {JSON.stringify(value, null, 2)}
+        </Box>
+      ) : summary}
+    </Box>
+  )
 }
 
 const formatFieldName = (name: string): string => {
@@ -102,7 +143,7 @@ const formatFiles = (files: any[]): string => {
 
 const formatRequestData = (data: any): JSX.Element => {
   const groupData = (entries: [string, any][]) => {
-    const groups: { [key: string]: string[] } = {
+    const groups: { [key: string]: (string | JSX.Element)[] } = {
       ids: [],      // ID 관련 정보
       status: [],   // 상태 정보
       content: [],  // 내용 정보
@@ -113,7 +154,18 @@ const formatRequestData = (data: any): JSX.Element => {
 
     entries.forEach(([key, value]) => {
       const fieldName = formatFieldName(key)
-      let formattedValue = ''
+      let formattedValue: string | JSX.Element = ''
+
+      // 값이 비어있으면 출력하지 않음
+      if (
+        value === null ||
+        value === undefined ||
+        (typeof value === 'string' && value.trim() === '') ||
+        (Array.isArray(value) && value.length === 0) ||
+        (typeof value === 'object' && value !== null && Object.keys(value).length === 0)
+      ) {
+        return
+      }
 
       if (typeof value === 'object' && value !== null && 'before' in value && 'after' in value) {
         const diffValue = value as DiffValue
@@ -141,22 +193,20 @@ const formatRequestData = (data: any): JSX.Element => {
           formattedValue = `${fieldName}: ${diffValue.before} → ${diffValue.after}`
         }
       } else {
-        if (key === 'status') {
-          formattedValue = `${fieldName}: ${formatStatus(value as string)}`
-        } else if (key === 'createdAt' || key === 'updatedAt') {
-          formattedValue = `${fieldName}: ${formatDateTime(value as string)}`
-        } else if (key === 'links') {
-          formattedValue = `${fieldName}:\n    ${formatLinks(value as any[]).replace(/\n/g, '\n    ')}`
-        } else if (key === 'files') {
-          formattedValue = `${fieldName}:\n    ${formatFiles(value as any[]).replace(/\n/g, '\n    ')}`
+        if (key === 'links' || key === 'files') {
+          formattedValue = (
+            <>
+              {fieldName}: <ToggleableValue value={value} />
+            </>
+          )
         } else if (typeof value === 'object' && value !== null) {
-          if ('id' in value) formattedValue = `${fieldName}: ${value.id}`
-          else if ('name' in value) formattedValue = `${fieldName}: ${value.name}`
-          else if ('title' in value) formattedValue = `${fieldName}: ${value.title}`
-          else if ('content' in value) formattedValue = `${fieldName}: ${value.content}`
-          else formattedValue = `${fieldName}: ${JSON.stringify(value)}`
+          formattedValue = (
+            <>
+              {fieldName}: <ToggleableValue value={value} />
+            </>
+          )
         } else {
-          formattedValue = `${fieldName}: ${value}`
+          formattedValue = `${fieldName}: ${formatValue(value)}`
         }
       }
 
@@ -172,7 +222,6 @@ const formatRequestData = (data: any): JSX.Element => {
       } else if (key === 'createdAt' || key === 'updatedAt') {
         groups.dates.push(formattedValue)
       } else {
-        // ID, status, links, files, dates를 제외한 모든 정보는 내용 정보로 분류
         groups.content.push(formattedValue)
       }
     })
@@ -186,7 +235,7 @@ const formatRequestData = (data: any): JSX.Element => {
             </Typography>
             <Box ml={4}>
               {groups.ids.map((value, index) => (
-                <Typography key={index} variant="body2" gutterBottom>
+                <Typography key={index} variant="body2" gutterBottom component="pre" sx={{ whiteSpace: 'pre-line' }}>
                   {value}
                 </Typography>
               ))}
@@ -201,7 +250,7 @@ const formatRequestData = (data: any): JSX.Element => {
             </Typography>
             <Box ml={4}>
               {groups.status.map((value, index) => (
-                <Typography key={index} variant="body2" gutterBottom>
+                <Typography key={index} variant="body2" gutterBottom component="pre" sx={{ whiteSpace: 'pre-line' }}>
                   {value}
                 </Typography>
               ))}
@@ -216,7 +265,7 @@ const formatRequestData = (data: any): JSX.Element => {
             </Typography>
             <Box ml={4}>
               {groups.content.map((value, index) => (
-                <Typography key={index} variant="body2" gutterBottom>
+                <Typography key={index} variant="body2" gutterBottom component="pre" sx={{ whiteSpace: 'pre-line' }}>
                   {value}
                 </Typography>
               ))}
@@ -261,7 +310,7 @@ const formatRequestData = (data: any): JSX.Element => {
             </Typography>
             <Box ml={4}>
               {groups.dates.map((value, index) => (
-                <Typography key={index} variant="body2" gutterBottom>
+                <Typography key={index} variant="body2" gutterBottom component="pre" sx={{ whiteSpace: 'pre-line' }}>
                   {value}
                 </Typography>
               ))}
@@ -357,7 +406,7 @@ const DataManagement: React.FC = () => {
       </Box>
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={3}>
+        <Grid item xs={6}>
           <FormControl fullWidth size="small">
             <InputLabel shrink>데이터 종류</InputLabel>
             <Select
@@ -385,7 +434,7 @@ const DataManagement: React.FC = () => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={3}>
+        <Grid item xs={6}>
           <FormControl fullWidth size="small">
             <InputLabel shrink>액션</InputLabel>
             <Select
@@ -410,73 +459,78 @@ const DataManagement: React.FC = () => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={3}>
-          <TextField
-            fullWidth
-            size="small"
-            type="date"
-            label="시작일"
-            InputLabelProps={{ shrink: true }}
-            value={fromDate}
-            onChange={(e) => {
-              setFromDate(e.target.value)
-              handleFilterChange()
-            }}
-            sx={{
-              '& .MuiInputBase-input': {
-                backgroundColor: 'white'
-              }
-            }}
-          />
-        </Grid>
-        <Grid item xs={3}>
-          <TextField
-            fullWidth
-            size="small"
-            type="date"
-            label="종료일"
-            InputLabelProps={{ shrink: true }}
-            value={toDate}
-            onChange={(e) => {
-              setToDate(e.target.value)
-              handleFilterChange()
-            }}
-            sx={{
-              '& .MuiInputBase-input': {
-                backgroundColor: 'white'
-              }
-            }}
-          />
-        </Grid>
       </Grid>
 
-      <Box display="flex" alignItems="center" gap={2} mb={3}>
-        <TextField
-          value={tempSearchTerm}
-          onChange={(e) => setTempSearchTerm(e.target.value)}
-          placeholder="검색어를 입력하세요"
-          size="small"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            )
-          }}
-          onKeyPress={(e) => {
-            if (e.key === 'Enter') {
-              handleSearch()
-            }
-          }}
-        />
-        <Button
-          variant="contained"
-          onClick={handleSearch}
-          size="small"
-        >
-          검색
-        </Button>
-      </Box>
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={8}>
+          <Box display="flex" alignItems="center" gap={2}>
+            <TextField
+              value={tempSearchTerm}
+              onChange={(e) => setTempSearchTerm(e.target.value)}
+              placeholder="검색어를 입력하세요"
+              size="small"
+              fullWidth
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                )
+              }}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch()
+                }
+              }}
+            />
+            <Button
+              variant="contained"
+              onClick={handleSearch}
+              size="small"
+            >
+              검색
+            </Button>
+          </Box>
+        </Grid>
+        <Grid item xs={4}>
+          <Box display="flex" gap={2}>
+            <TextField
+              fullWidth
+              size="small"
+              type="date"
+              label="시작일"
+              InputLabelProps={{ shrink: true }}
+              value={fromDate}
+              onChange={(e) => {
+                setFromDate(e.target.value)
+                handleFilterChange()
+              }}
+              sx={{
+                '& .MuiInputBase-input': {
+                  backgroundColor: 'white'
+                }
+              }}
+            />
+            <TextField
+              fullWidth
+              size="small"
+              type="date"
+              label="종료일"
+              InputLabelProps={{ shrink: true }}
+              value={toDate}
+              onChange={(e) => {
+                setToDate(e.target.value)
+                handleFilterChange()
+              }}
+              sx={{
+                '& .MuiInputBase-input': {
+                  backgroundColor: 'white'
+                }
+              }}
+            />
+          </Box>
+        </Grid>
+      </Grid>
 
       {error && (
         <Typography color="error" sx={{ mb: 2 }}>
@@ -485,43 +539,48 @@ const DataManagement: React.FC = () => {
       )}
 
       <TableContainer component={Paper} sx={{ mb: 3 }}>
-        <Table>
+        <Table size="small" sx={{ minWidth: 650 }}>
           <TableHead>
             <TableRow>
-              <TableCell>시간</TableCell>
-              <TableCell>데이터 종류</TableCell>
-              <TableCell>액션</TableCell>
-              <TableCell>작업자</TableCell>
-              <TableCell>변경 내용</TableCell>
+              <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', fontWeight: 'bold' }}>시간</TableCell>
+              <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', fontWeight: 'bold' }}>데이터 종류</TableCell>
+              <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', fontWeight: 'bold' }}>액션</TableCell>
+              <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', fontWeight: 'bold' }}>작업자</TableCell>
+              <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', fontWeight: 'bold' }}>변경 내용</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {logs.map((log) => (
               <TableRow key={log.id}>
-                <TableCell>{formatDate(log.timestamp)}</TableCell>
-                <TableCell>{log.entityName}</TableCell>
-                <TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px' }}>{formatDate(log.timestamp)}</TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px' }}>{log.entityName}</TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px' }}>
                   {log.action === 'CREATE' ? '생성' :
                    log.action === 'UPDATE' ? '수정' :
                    log.action === 'DELETE' ? '삭제' : log.action}
                 </TableCell>
-                <TableCell>{log.operator}</TableCell>
-                <TableCell>
-                  {log.action === 'CREATE' && log.afterData && (
-                    <Box sx={{ whiteSpace: 'pre-line' }}>
-                      {formatRequestData(log.afterData)}
-                    </Box>
-                  )}
-                  {log.action === 'UPDATE' && log.diff && (
-                    <Box sx={{ whiteSpace: 'pre-line' }}>
-                      {formatRequestData({ diff: log.diff })}
-                    </Box>
-                  )}
-                  {log.action === 'DELETE' && log.beforeData && (
-                    <Box sx={{ whiteSpace: 'pre-line' }}>
-                      {formatRequestData(log.beforeData)}
-                    </Box>
-                  )}
+                <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px' }}>{log.operator}</TableCell>
+                <TableCell sx={{ padding: '6px 8px', minWidth: 220, maxWidth: 400 }}>
+                  <Box
+                    sx={{
+                      minHeight: 48,
+                      display: 'flex',
+                      alignItems: 'center',
+                      whiteSpace: 'pre-line',
+                      wordBreak: 'break-all',
+                      width: '100%'
+                    }}
+                  >
+                    {log.action === 'CREATE' && log.afterData && (
+                      formatRequestData(log.afterData)
+                    )}
+                    {log.action === 'UPDATE' && log.diff && (
+                      formatRequestData({ diff: log.diff })
+                    )}
+                    {log.action === 'DELETE' && log.beforeData && (
+                      formatRequestData(log.beforeData)
+                    )}
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}
