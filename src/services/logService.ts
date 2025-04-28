@@ -1,5 +1,5 @@
 import { client } from '../api/client'
-import type { LogResponse, LogQueryParams } from '../types/log'
+import type { LogResponse, LogQueryParams, Log } from '../types/log'
 
 export const logService = {
   getLogs: async (params: LogQueryParams): Promise<LogResponse> => {

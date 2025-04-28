@@ -149,7 +149,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
     try {
       await client.post(`/requests/${requestDetail?.requestId}/approve`)
       showToast('요청이 승인되었습니다.', 'success')
-      onClose()
+    onClose()
     } catch (error) {
       console.error('Failed to approve request:', error)
       showToast('요청 승인 중 오류가 발생했습니다.', 'error')
@@ -165,8 +165,8 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
     try {
       await client.post(`/requests/${requestDetail?.requestId}/reject`, rejectForm)
       showToast('요청이 반려되었습니다.', 'success')
-      setIsRejecting(false)
-      onClose()
+    setIsRejecting(false)
+    onClose()
     } catch (error) {
       console.error('Failed to reject request:', error)
       showToast('요청 반려 중 오류가 발생했습니다.', 'error')
@@ -182,17 +182,17 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
       maxWidth="md"
       fullWidth>
       <DialogTitle sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
         borderBottom: '1px solid #E0E0E0',
         pb: 2
-      }}>
+            }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
             {requestDetail.title}
           </Typography>
-          <Chip
+            <Chip
             label={getStatusText(requestDetail.status)}
             sx={{
               ...getStatusColor(requestDetail.status),
@@ -221,7 +221,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
             <Box sx={{ mt: 2 }}>
               <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
                 첨부 링크
-              </Typography>
+          </Typography>
               {requestDetail.links.map((link) => (
                 <Link
                   key={link.id}
