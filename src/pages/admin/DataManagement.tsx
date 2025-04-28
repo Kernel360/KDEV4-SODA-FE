@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import {
   Box,
   Typography,
@@ -284,53 +284,67 @@ const DataManagement: React.FC = () => {
   const [logs, setLogs] = useState<Log[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [page, setPage] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [entityName, setEntityName] = useState<string>('')
-  const [action, setAction] = useState<string>('')
-  const [fromDate, setFromDate] = useState<string>('2024-01-01')
-  const [toDate, setToDate] = useState<string>(() => {
-    const today = new Date()
-    const year = today.getFullYear()
-    const month = String(today.getMonth() + 1).padStart(2, '0')
-    const day = String(today.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
+  const [pagination, setPagination] = useState({
+    page: 0,
+    size: 10,
+    totalElements: 0,
+    totalPages: 0
   })
+  const [searchTerm, setSearchTerm] = useState('')
+  const [entityName, setEntityName] = useState('')
+  const [action, setAction] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
+  const [tempSearchTerm, setTempSearchTerm] = useState('')
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
+      
+      // 날짜 변환 로직
+      const fromDateISO = fromDate ? new Date(fromDate).toISOString() : new Date('2024-01-01').toISOString()
+      const toDateISO = toDate ? new Date(toDate).toISOString() : new Date().toISOString()
 
       const response = await logService.getLogs({
-        page: page - 1,
-        size: 10,
-        keyword: searchTerm.trim() || undefined
+        page: pagination.page,
+        size: pagination.size,
+        keyword: searchTerm || undefined,
+        entityName: entityName || undefined,
+        action: action || undefined,
+        from: fromDateISO,
+        to: toDateISO
       })
-
       setLogs(response.content)
-      setTotalPages(Math.max(1, Math.ceil(response.totalElements / 10)))
-    } catch (error) {
-      console.error('로그 조회 중 오류:', error)
-      setError('로그를 불러오는데 실패했습니다.')
-      showToast('로그를 불러오는데 실패했습니다.', 'error')
+      setPagination(prev => ({
+        ...prev,
+        totalElements: response.totalElements,
+        totalPages: response.totalPages
+      }))
+    } catch (err) {
+      setError('로그를 불러오는 중 오류가 발생했습니다.')
+      console.error('Error fetching logs:', err)
     } finally {
       setLoading(false)
     }
-  }
+  }, [pagination.page, pagination.size, searchTerm, entityName, action, fromDate, toDate])
 
   useEffect(() => {
     fetchLogs()
-  }, [page, entityName, action, fromDate, toDate, searchTerm])
+  }, [fetchLogs, entityName, action, fromDate, toDate])
 
   const handleSearch = () => {
-    setPage(0)
+    setSearchTerm(tempSearchTerm)
+    setPagination(prev => ({ ...prev, page: 0 }))
     fetchLogs()
   }
 
-  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
-    setPage(value)
+  const handleFilterChange = () => {
+    setPagination(prev => ({ ...prev, page: 0 }))
+  }
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    setPagination(prev => ({ ...prev, page: value - 1 }))
   }
 
   return (
@@ -351,7 +365,7 @@ const DataManagement: React.FC = () => {
               label="데이터 종류"
               onChange={(e) => {
                 setEntityName(e.target.value)
-                setPage(1)
+                handleFilterChange()
               }}
               displayEmpty
               notched
@@ -379,7 +393,7 @@ const DataManagement: React.FC = () => {
               label="액션"
               onChange={(e) => {
                 setAction(e.target.value)
-                setPage(1)
+                handleFilterChange()
               }}
               displayEmpty
               notched
@@ -406,7 +420,7 @@ const DataManagement: React.FC = () => {
             value={fromDate}
             onChange={(e) => {
               setFromDate(e.target.value)
-              setPage(1)
+              handleFilterChange()
             }}
             sx={{
               '& .MuiInputBase-input': {
@@ -425,7 +439,7 @@ const DataManagement: React.FC = () => {
             value={toDate}
             onChange={(e) => {
               setToDate(e.target.value)
-              setPage(1)
+              handleFilterChange()
             }}
             sx={{
               '& .MuiInputBase-input': {
@@ -438,8 +452,8 @@ const DataManagement: React.FC = () => {
 
       <Box display="flex" alignItems="center" gap={2} mb={3}>
         <TextField
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          value={tempSearchTerm}
+          onChange={(e) => setTempSearchTerm(e.target.value)}
           placeholder="검색어를 입력하세요"
           size="small"
           InputProps={{
@@ -478,11 +492,7 @@ const DataManagement: React.FC = () => {
               <TableCell>데이터 종류</TableCell>
               <TableCell>액션</TableCell>
               <TableCell>작업자</TableCell>
-              <TableCell>
-                {action === 'CREATE' ? '생성된 데이터' :
-                 action === 'UPDATE' ? '변경된 데이터' :
-                 action === 'DELETE' ? '삭제된 데이터' : '변경 내용'}
-              </TableCell>
+              <TableCell>변경 내용</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -521,9 +531,9 @@ const DataManagement: React.FC = () => {
 
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
         <Pagination
-          count={totalPages}
-          page={page + 1}
-          onChange={(_, value) => setPage(value - 1)}
+          count={pagination.totalPages}
+          page={pagination.page + 1}
+          onChange={handlePageChange}
           color="primary"
         />
       </Box>

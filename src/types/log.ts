@@ -12,8 +12,10 @@ export interface Log {
 
 export interface LogResponse {
   content: Log[];
-  totalPages: number;
   totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
 }
 
 export interface LogQueryParams {
