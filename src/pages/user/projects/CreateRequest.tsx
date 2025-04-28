@@ -83,13 +83,14 @@ const CreateRequest: React.FC = () => {
         })
         console.log('승인권자 목록 응답:', response)
         if (response && response.content) {
-          const approvers = response.content.map(member => ({
+          const approvers = response.content.map((member: any) => ({
             id: member.memberId,
             name: member.memberName,
             email: member.email,
             companyRole: member.role,
             companyName: member.companyName,
-            role: member.role
+            role: member.role,
+            memberStatus: member.memberStatus || 'AVAILABLE',
           }))
           setApprovers(approvers)
         } else {
@@ -209,6 +210,17 @@ const CreateRequest: React.FC = () => {
     const value = event.target.value
     setSelectedApprovers(typeof value === 'string' ? value.split(',').map(Number) : value)
   }
+
+  // memberStatus 한글 변환 함수
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'AVAILABLE': return '업무가능';
+      case 'BUSY': return '바쁨';
+      case 'AWAY': return '자리비움';
+      case 'ON_VACATION': return '휴가중';
+      default: return status;
+    }
+  };
 
   return (
     <Box sx={{ maxWidth: '100%', p: 3 }}>
@@ -484,7 +496,7 @@ const CreateRequest: React.FC = () => {
             </Box>
           </Box>
 
-          <Box sx={{ mb: 3 }}>
+          <Box sx={{ px: 2, mb: 3 }}>
             <FormControl fullWidth>
               <InputLabel>승인권자 선택</InputLabel>
               <Select
@@ -492,16 +504,22 @@ const CreateRequest: React.FC = () => {
                 value={selectedApprovers}
                 onChange={handleApproverChange}
                 input={<OutlinedInput label="승인권자 선택" />}
-                renderValue={(selected) => (
+                renderValue={selected => (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.map((value) => {
+                    {selected.map(value => {
                       const approver = approvers.find(a => a.id === value)
                       return (
                         <Chip
                           key={value}
-                          label={approver?.name || ''}
+                          label={
+                            approver
+                              ? `${approver.name} (${approver.companyName}) - ${getStatusLabel(approver.memberStatus)} `
+                              : ''
+                          }
                           onDelete={() => {
-                            setSelectedApprovers(selectedApprovers.filter(id => id !== value))
+                            setSelectedApprovers(
+                              selectedApprovers.filter(id => id !== value)
+                            )
                           }}
                         />
                       )
@@ -509,9 +527,12 @@ const CreateRequest: React.FC = () => {
                   </Box>
                 )}
               >
-                {approvers.map((approver) => (
-                  <MenuItem key={approver.id} value={approver.id}>
-                    {approver.name}
+                {approvers.map(approver => (
+                  <MenuItem
+                    key={approver.id}
+                    value={approver.id}
+                  >
+                    {`${approver.name} (${approver.companyName}) - ${getStatusLabel(approver.memberStatus)}`}
                   </MenuItem>
                 ))}
               </Select>

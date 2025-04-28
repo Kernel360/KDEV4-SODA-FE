@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Box,
   Typography,
@@ -216,6 +216,8 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
     {}
   )
 
+  const memoStages = useMemo(() => propStages, [propStages])
+
   const fetchArticleCounts = async () => {
     try {
       const totalResponse = await projectService.getProjectArticles(
@@ -231,7 +233,7 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
 
         const stageCounts: { [key: number]: number } = {}
         await Promise.all(
-          propStages.map(async stage => {
+          memoStages.map(async stage => {
             const response = await projectService.getProjectArticles(
               projectId,
               stage.id,
@@ -588,7 +590,7 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
               {totalArticles}건
             </Typography>
           </Paper>
-          {propStages.map(stage => (
+          {memoStages.map(stage => (
             <Paper
               key={stage.id}
               onClick={() => handleStageChange(stage.id)}
