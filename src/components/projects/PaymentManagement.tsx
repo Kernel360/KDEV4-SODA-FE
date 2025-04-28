@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Box,
@@ -76,6 +76,8 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
   )
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL')
 
+  const memoStages = useMemo(() => stages, [stages])
+
   const fetchRequestCounts = async () => {
     try {
       const totalQueryParams = new URLSearchParams({
@@ -86,7 +88,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
         totalQueryParams.append('status', selectedStatus)
       }
 
-      const stagePromises = stages.map(stage => {
+      const stagePromises = memoStages.map(stage => {
         const stageQueryParams = new URLSearchParams({
           stageId: stage.id.toString(),
           page: '0',
@@ -112,7 +114,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
       const stageCounts: { [key: number]: number } = {}
       stageResponses.forEach((response, index) => {
         if (response.data.status === 'success' && response.data.data) {
-          stageCounts[stages[index].id] = response.data.data.page.totalElements
+          stageCounts[memoStages[index].id] = response.data.data.page.totalElements
         }
       })
       setStageRequests(stageCounts)
@@ -332,7 +334,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
               {totalRequests}건
             </Typography>
           </Paper>
-          {stages.map(stage => (
+          {memoStages.map(stage => (
             <Paper
               key={stage.id}
               onClick={() => setSelectedStage(stage.id)}
@@ -482,7 +484,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
                     }
                     sx={{ cursor: 'pointer' }}>
                     <TableCell>
-                      {stages.find(s => s.id === group.parent.stageId)?.name}
+                      {memoStages.find(s => s.id === group.parent.stageId)?.name}
                     </TableCell>
                     <TableCell>{group.parent.title}</TableCell>
                     <TableCell>

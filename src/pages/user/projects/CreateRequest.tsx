@@ -484,7 +484,7 @@ const CreateRequest: React.FC = () => {
             </Box>
           </Box>
 
-          <Box sx={{ mb: 3 }}>
+          <Box sx={{ px: 2, mb: 3 }}>
             <FormControl fullWidth>
               <InputLabel>승인권자 선택</InputLabel>
               <Select
@@ -492,16 +492,18 @@ const CreateRequest: React.FC = () => {
                 value={selectedApprovers}
                 onChange={handleApproverChange}
                 input={<OutlinedInput label="승인권자 선택" />}
-                renderValue={(selected) => (
+                renderValue={selected => (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.map((value) => {
+                    {selected.map(value => {
                       const approver = approvers.find(a => a.id === value)
                       return (
                         <Chip
                           key={value}
                           label={approver?.name || ''}
                           onDelete={() => {
-                            setSelectedApprovers(selectedApprovers.filter(id => id !== value))
+                            setSelectedApprovers(
+                              selectedApprovers.filter(id => id !== value)
+                            )
                           }}
                         />
                       )
@@ -509,8 +511,11 @@ const CreateRequest: React.FC = () => {
                   </Box>
                 )}
               >
-                {approvers.map((approver) => (
-                  <MenuItem key={approver.id} value={approver.id}>
+                {approvers.map(approver => (
+                  <MenuItem
+                    key={approver.id}
+                    value={approver.id}
+                  >
                     {approver.name}
                   </MenuItem>
                 ))}

@@ -746,9 +746,8 @@ const RequestDetail = () => {
               onChange={e => setEditForm(prev => ({ ...prev, content: e.target.value }))}
               sx={{ mb: 3 }}
             />
-            
             {/* 링크와 파일을 가로로 배치 */}
-            <Box sx={{ display: 'flex', gap: 4 }}>
+            <Box sx={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
               {/* 링크 수정/추가 */}
               <Box sx={{ flex: 1 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>첨부 링크</Typography>
@@ -771,9 +770,9 @@ const RequestDetail = () => {
                     <AddIcon />
                   </IconButton>
                 </Box>
-                <List>
+                <List sx={{ p: 0 }}>
                   {editLinks.map((link, idx) => (
-                    <ListItem key={idx} secondaryAction={
+                    <ListItem key={idx} sx={{ py: 0.5, minHeight: 40, alignItems: 'center' }} secondaryAction={
                       <IconButton edge="end" onClick={() => handleEditLinkRemove(idx)}>
                         <DeleteIcon />
                       </IconButton>
@@ -800,7 +799,6 @@ const RequestDetail = () => {
                   ))}
                 </List>
               </Box>
-
               {/* 파일 첨부 */}
               <Box sx={{ flex: 1 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>파일 첨부</Typography>
@@ -819,9 +817,9 @@ const RequestDetail = () => {
                 >
                   파일 선택
                 </Button>
-                <List>
+                <List sx={{ p: 0 }}>
                   {editFiles.map((file, idx) => (
-                    <ListItem key={idx} secondaryAction={
+                    <ListItem key={idx} sx={{ py: 0.5, minHeight: 40, alignItems: 'center' }} secondaryAction={
                       <IconButton edge="end" onClick={() => handleEditFileRemove(idx)}>
                         <DeleteIcon />
                       </IconButton>
@@ -832,10 +830,11 @@ const RequestDetail = () => {
                 </List>
                 {/* 기존 첨부파일 표시 */}
                 {request.files.length > 0 && (
-                  <List>
+                  <List sx={{ p: 0 }}>
                     {request.files.map((file) => (
                       <ListItem 
                         key={file.id}
+                        sx={{ py: 0.5, minHeight: 40, alignItems: 'center' }}
                         secondaryAction={
                           <IconButton 
                             edge="end" 
@@ -927,14 +926,24 @@ const RequestDetail = () => {
 
               {/* 수정/삭제 버튼 */}
               <Box sx={{ display: 'flex', gap: 1 }}>
-                {user?.memberId === request.memberId && (
-                  <Button
-                    variant="outlined"
-                    startIcon={<EditIcon />}
-                    onClick={handleEditClick}
-                  >
-                    수정
-                  </Button>
+                {(user?.memberId === request.memberId || user?.role === 'ADMIN') && (
+                  <>
+                    <Button
+                      variant="outlined"
+                      startIcon={<EditIcon />}
+                      onClick={handleEditClick}
+                    >
+                      수정
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      startIcon={<DeleteIcon />}
+                      onClick={handleDelete}
+                    >
+                      삭제
+                    </Button>
+                  </>
                 )}
               </Box>
             </Box>
@@ -1119,483 +1128,460 @@ const RequestDetail = () => {
           >
             저장
           </Button>
-          {user?.memberId === request.memberId && (
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<DeleteIcon />}
-              onClick={() => setIsDeleteDialogOpen(true)}
-              sx={{ ml: 2 }}
-            >
-              삭제
-            </Button>
-          )}
         </Box>
       )}
 
       {/* 응답 내역 */}
-      <Paper 
-        elevation={0}
-        sx={{ 
-          p: 4,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2
-        }}
-      >
-        <Typography 
-          variant="h6" 
+      {!editMode && (
+        <Paper 
+          elevation={0}
           sx={{ 
-            mb: 3,
-            fontWeight: 700,
-            color: 'text.primary'
+            p: 4,
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2
           }}
         >
-          응답 내역
-        </Typography>
-        
-        {responses.length === 0 ? (
-          <Box 
+          <Typography 
+            variant="h6" 
             sx={{ 
-              py: 6,
-              textAlign: 'center',
-              bgcolor: 'grey.50',
-              borderRadius: 1
+              mb: 3,
+              fontWeight: 700,
+              color: 'text.primary'
             }}
           >
-            <Typography color="text.secondary">
-              아직 응답이 없습니다.
-            </Typography>
-          </Box>
-        ) : (
-          responses.map((response, index) => {
-            console.log('Response member ID:', response.memberId, 'type:', typeof response.memberId);
-            console.log('User memberId for comparison:', user?.memberId);
-            console.log('User object:', user);
-            console.log('Comparison result:', user?.memberId === response.memberId);
-            
-            return (
-              <Box
-                key={response.responseId}
-                sx={{
-                  mb: index !== responses.length - 1 ? 3 : 0,
-                  p: 3,
-                  bgcolor: 'grey.50',
-                  borderRadius: 2
-                }}
-              >
-                {/* 응답 헤더 */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  mb: 2 
-                }}>
-                  {/* 왼쪽: 작성자 정보 */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    {/* 프로필 이미지 */}
-                    <Box
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: '50%',
-                        bgcolor: '#e5e7eb',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
+            응답 내역
+          </Typography>
+          
+          {responses.length === 0 ? (
+            <Box 
+              sx={{ 
+                py: 6,
+                textAlign: 'center',
+                bgcolor: 'grey.50',
+                borderRadius: 1
+              }}
+            >
+              <Typography color="text.secondary">
+                아직 응답이 없습니다.
+              </Typography>
+            </Box>
+          ) : (
+            responses.map((response, index) => {
+              console.log('Response member ID:', response.memberId, 'type:', typeof response.memberId);
+              console.log('User memberId for comparison:', user?.memberId);
+              console.log('User object:', user);
+              console.log('Comparison result:', user?.memberId === response.memberId);
+              
+              return (
+                <Box
+                  key={response.responseId}
+                  sx={{
+                    mb: index !== responses.length - 1 ? 3 : 0,
+                    p: 3,
+                    bgcolor: 'grey.50',
+                    borderRadius: 2
+                  }}
+                >
+                  {/* 응답 헤더 */}
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    mb: 2 
+                  }}>
+                    {/* 왼쪽: 작성자 정보 */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      {/* 프로필 이미지 */}
+                      <Box
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: '50%',
+                          bgcolor: '#e5e7eb',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
                       >
-                        <path
-                          d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"
-                          fill="#9CA3AF"
-                        />
-                      </svg>
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"
+                            fill="#9CA3AF"
+                          />
+                        </svg>
+                      </Box>
+                      {/* 작성자명과 작성일 */}
+                      <Box>
+                        <Typography fontWeight="medium">
+                          {response.memberName} ({response.companyName} {response.role ? getRoleText(response.role) : ''})
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'grey.500' }}>
+                          {dayjs(response.createdAt).format('YYYY-MM-DD HH:mm')}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={getStatusText(response.status)}
+                        size="small"
+                        sx={{
+                          ...getStatusColor(response.status),
+                          fontWeight: 600,
+                          px: 2,
+                          height: 32,
+                          ml: 1
+                        }}
+                      />
                     </Box>
-                    {/* 작성자명과 작성일 */}
-                    <Box>
-                      <Typography fontWeight="medium">
-                        {response.memberName} ({response.companyName} {response.role ? getRoleText(response.role) : ''})
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: 'grey.500' }}>
-                        {dayjs(response.createdAt).format('YYYY-MM-DD HH:mm')}
-                      </Typography>
-                    </Box>
-                    <Chip
-                      label={getStatusText(response.status)}
-                      size="small"
-                      sx={{
-                        ...getStatusColor(response.status),
-                        fontWeight: 600,
-                        px: 2,
-                        height: 32,
-                        ml: 1
-                      }}
-                    />
+
+                    {/* 오른쪽: 수정/삭제 버튼 */}
+                    {user?.memberId === response.memberId && (
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                          variant="outlined"
+                          startIcon={<EditIcon />}
+                          size="small"
+                          onClick={() => handleEditResponseClick(response)}
+                        >
+                          수정
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          startIcon={<DeleteIcon />}
+                          size="small"
+                          onClick={() => handleDeleteResponse(response.responseId)}
+                        >
+                          삭제
+                        </Button>
+                      </Box>
+                    )}
                   </Box>
 
-                  {/* 오른쪽: 수정/삭제 버튼 */}
-                  {user?.memberId === response.memberId && (
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button
-                        variant="outlined"
-                        startIcon={<EditIcon />}
-                        size="small"
-                        onClick={() => handleEditResponseClick(response)}
-                      >
-                        수정
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        startIcon={<DeleteIcon />}
-                        size="small"
-                        onClick={() => handleDeleteResponse(response.responseId)}
-                      >
-                        삭제
-                      </Button>
-                    </Box>
-                  )}
-                </Box>
-
-                {/* 응답 내용 */}
-                {editingResponseId === response.responseId ? (
-                  <Box sx={{ p: 3, bgcolor: 'white', borderRadius: 2 }}>
-                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
-                      {response.status === 'APPROVED' ? '승인 코멘트' : '거절 사유'} 수정
-                    </Typography>
-                    
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={4}
-                      placeholder={response.status === 'APPROVED' ? '승인 코멘트를 입력해주세요' : '거절 사유를 입력해주세요'}
-                      value={editResponseForm.comment}
-                      onChange={(e) => setEditResponseForm(prev => ({ ...prev, comment: e.target.value }))}
-                      sx={{ mb: 3 }}
-                    />
-
-                    {/* 링크 추가 */}
-                    <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>첨부 링크</Typography>
-                    <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                  {/* 응답 내용 */}
+                  {editingResponseId === response.responseId ? (
+                    <Box sx={{ p: 3, bgcolor: 'white', borderRadius: 2 }}>
+                      <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+                        {response.status === 'APPROVED' ? '승인 코멘트' : '거절 사유'} 수정
+                      </Typography>
+                      
                       <TextField
-                        size="small"
-                        placeholder="URL"
-                        value={newEditResponseLink.urlAddress}
-                        onChange={e => setNewEditResponseLink(prev => ({ ...prev, urlAddress: e.target.value }))}
-                        sx={{ flex: 2 }}
+                        fullWidth
+                        multiline
+                        rows={4}
+                        placeholder={response.status === 'APPROVED' ? '승인 코멘트를 입력해주세요' : '거절 사유를 입력해주세요'}
+                        value={editResponseForm.comment}
+                        onChange={(e) => setEditResponseForm(prev => ({ ...prev, comment: e.target.value }))}
+                        sx={{ mb: 3 }}
                       />
-                      <TextField
-                        size="small"
-                        placeholder="설명"
-                        value={newEditResponseLink.urlDescription}
-                        onChange={e => setNewEditResponseLink(prev => ({ ...prev, urlDescription: e.target.value }))}
-                        sx={{ flex: 1 }}
-                      />
-                      <IconButton 
-                        onClick={() => {
-                          if (newEditResponseLink.urlAddress && newEditResponseLink.urlDescription) {
-                            setEditResponseForm(prev => ({
-                              ...prev,
-                              links: [...prev.links, newEditResponseLink]
-                            }));
-                            setNewEditResponseLink({ urlAddress: '', urlDescription: '' });
-                          }
-                        }} 
-                        color="primary" 
-                        sx={{ border: '1px solid #eee' }}
-                      >
-                        <AddIcon />
-                      </IconButton>
-                    </Box>
-                    <List>
-                      {editResponseForm.links.map((link, idx) => (
-                        <ListItem key={idx} secondaryAction={
-                          <IconButton 
-                            edge="end" 
-                            onClick={async () => {
-                              // 기존 링크인 경우 API 호출
-                              if ('id' in link) {
-                                try {
-                                  const response = await client.delete(`/responses/${editingResponseId}/links/${link.id}`);
-                                  if (response.data.status === 'success') {
-                                    showToast('링크가 성공적으로 삭제되었습니다.', 'success');
-                                  }
-                                } catch (error) {
-                                  console.error('Failed to delete response link:', error);
-                                  showToast('링크 삭제 중 오류가 발생했습니다.', 'error');
-                                  return;
-                                }
-                              }
-                              // UI에서 링크 제거
+
+                      {/* 링크 추가 */}
+                      <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>첨부 링크</Typography>
+                      <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                        <TextField
+                          size="small"
+                          placeholder="URL"
+                          value={newEditResponseLink.urlAddress}
+                          onChange={e => setNewEditResponseLink(prev => ({ ...prev, urlAddress: e.target.value }))}
+                          sx={{ flex: 2 }}
+                        />
+                        <TextField
+                          size="small"
+                          placeholder="설명"
+                          value={newEditResponseLink.urlDescription}
+                          onChange={e => setNewEditResponseLink(prev => ({ ...prev, urlDescription: e.target.value }))}
+                          sx={{ flex: 1 }}
+                        />
+                        <IconButton 
+                          onClick={() => {
+                            if (newEditResponseLink.urlAddress && newEditResponseLink.urlDescription) {
                               setEditResponseForm(prev => ({
                                 ...prev,
-                                links: prev.links.filter((_, i) => i !== idx)
+                                links: [...prev.links, newEditResponseLink]
                               }));
-                            }}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        }>
-                          <ListItemText primary={link.urlDescription} secondary={link.urlAddress} />
-                        </ListItem>
-                      ))}
-                    </List>
-
-                    {/* 파일 첨부 */}
-                    <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>파일 첨부</Typography>
-                    <input
-                      type="file"
-                      ref={editResponseFileInputRef}
-                      onChange={(e) => {
-                        if (e.target.files) {
-                          setEditResponseForm(prev => ({
-                            ...prev,
-                            files: [...prev.files, ...Array.from(e.target.files!)]
-                          }));
-                        }
-                      }}
-                      multiple
-                      style={{ display: 'none' }}
-                    />
-                    <Button
-                      variant="outlined"
-                      onClick={() => editResponseFileInputRef.current?.click()}
-                      startIcon={<AddIcon />}
-                      sx={{ mb: 2 }}
-                    >
-                      파일 선택
-                    </Button>
-                    <List>
-                      {editResponseForm.files.map((file, idx) => (
-                        <ListItem key={idx} secondaryAction={
-                          <IconButton 
-                            edge="end" 
-                            onClick={() => {
-                              setEditResponseForm(prev => ({
-                                ...prev,
-                                files: prev.files.filter((_, i) => i !== idx)
-                              }));
-                            }}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        }>
-                          <ListItemText primary={file.name} />
-                        </ListItem>
-                      ))}
-                    </List>
-
-                    {/* 기존 첨부 파일 목록 */}
-                    {response.files && response.files.length > 0 && (
+                              setNewEditResponseLink({ urlAddress: '', urlDescription: '' });
+                            }
+                          }} 
+                          color="primary" 
+                          sx={{ border: '1px solid #eee' }}
+                        >
+                          <AddIcon />
+                        </IconButton>
+                      </Box>
                       <List>
-                        <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
-                          기존 첨부 파일
-                        </Typography>
-                        {response.files.map((file) => (
-                          <ListItem 
-                            key={file.id}
-                            sx={{
-                              px: 0,
-                              py: 0.5,
-                              display: 'flex',
-                              justifyContent: 'space-between'
-                            }}
-                          >
-                            <ListItemText 
-                              primary={
-                                <MuiLink
-                                  component="button"
-                                  onClick={() => window.open(file.url, '_blank')}
-                                  sx={{ 
-                                    textAlign: 'left',
-                                    color: 'primary.main',
-                                    textDecoration: 'none',
-                                    '&:hover': {
-                                      textDecoration: 'underline'
+                        {editResponseForm.links.map((link, idx) => (
+                          <ListItem key={idx} secondaryAction={
+                            <IconButton 
+                              edge="end" 
+                              onClick={async () => {
+                                // 기존 링크인 경우 API 호출
+                                if ('id' in link) {
+                                  try {
+                                    const response = await client.delete(`/responses/${editingResponseId}/links/${link.id}`);
+                                    if (response.data.status === 'success') {
+                                      showToast('링크가 성공적으로 삭제되었습니다.', 'success');
                                     }
-                                  }}
-                                >
-                                  {file.name}
-                                </MuiLink>
-                              }
-                            />
-                            {editingResponseId === response.responseId && user?.memberId === response.memberId && (
-                              <IconButton
-                                size="small"
-                                onClick={() => handleResponseFileDelete(response.responseId, file.id)}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            )}
+                                  } catch (error) {
+                                    console.error('Failed to delete response link:', error);
+                                    showToast('링크 삭제 중 오류가 발생했습니다.', 'error');
+                                    return;
+                                  }
+                                }
+                                // UI에서 링크 제거
+                                setEditResponseForm(prev => ({
+                                  ...prev,
+                                  links: prev.links.filter((_, i) => i !== idx)
+                                }));
+                              }}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          }>
+                            <ListItemText primary={link.urlDescription} secondary={link.urlAddress} />
                           </ListItem>
                         ))}
                       </List>
-                    )}
 
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
+                      {/* 파일 첨부 */}
+                      <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>파일 첨부</Typography>
+                      <input
+                        type="file"
+                        ref={editResponseFileInputRef}
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            setEditResponseForm(prev => ({
+                              ...prev,
+                              files: [...prev.files, ...Array.from(e.target.files!)]
+                            }));
+                          }
+                        }}
+                        multiple
+                        style={{ display: 'none' }}
+                      />
                       <Button
                         variant="outlined"
-                        onClick={() => {
-                          setEditingResponseId(null);
-                          setEditResponseForm({
-                            comment: '',
-                            files: [],
-                            links: []
-                          });
+                        onClick={() => editResponseFileInputRef.current?.click()}
+                        startIcon={<AddIcon />}
+                        sx={{ mb: 2 }}
+                      >
+                        파일 선택
+                      </Button>
+                      <List>
+                        {editResponseForm.files.map((file, idx) => (
+                          <ListItem key={idx} secondaryAction={
+                            <IconButton 
+                              edge="end" 
+                              onClick={() => {
+                                setEditResponseForm(prev => ({
+                                  ...prev,
+                                  files: prev.files.filter((_, i) => i !== idx)
+                                }));
+                              }}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          }>
+                            <ListItemText primary={file.name} />
+                          </ListItem>
+                        ))}
+                      </List>
+
+                      {/* 기존 첨부 파일 목록 */}
+                      {response.files && response.files.length > 0 && (
+                        <List>
+                          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
+                            기존 첨부 파일
+                          </Typography>
+                          {response.files.map((file) => (
+                            <ListItem 
+                              key={file.id}
+                              sx={{
+                                px: 0,
+                                py: 0.5,
+                                display: 'flex',
+                                justifyContent: 'space-between'
+                              }}
+                            >
+                              <ListItemText 
+                                primary={
+                                  <MuiLink
+                                    component="button"
+                                    onClick={() => window.open(file.url, '_blank')}
+                                    sx={{ 
+                                      textAlign: 'left',
+                                      color: 'primary.main',
+                                      textDecoration: 'none',
+                                      '&:hover': {
+                                        textDecoration: 'underline'
+                                      }
+                                    }}
+                                  >
+                                    {file.name}
+                                  </MuiLink>
+                                }
+                              />
+                              {editingResponseId === response.responseId && user?.memberId === response.memberId && (
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleResponseFileDelete(response.responseId, file.id)}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              )}
+                            </ListItem>
+                          ))}
+                        </List>
+                      )}
+
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
+                        <Button
+                          variant="outlined"
+                          onClick={() => {
+                            setEditingResponseId(null);
+                            setEditResponseForm({
+                              comment: '',
+                              files: [],
+                              links: []
+                            });
+                          }}
+                        >
+                          취소
+                        </Button>
+                        <Button
+                          variant="contained"
+                          color={response.status === 'APPROVED' ? 'success' : 'error'}
+                          onClick={handleEditResponseSubmit}
+                        >
+                          {response.status === 'APPROVED' ? '승인하기' : '거절하기'}
+                        </Button>
+                      </Box>
+                    </Box>
+                  ) : (
+                    <>
+                      <Typography 
+                        sx={{ 
+                          whiteSpace: 'pre-wrap',
+                          mb: 2,
+                          lineHeight: 1.8,
+                          color: 'text.primary'
                         }}
                       >
-                        취소
-                      </Button>
-                      <Button
-                        variant="contained"
-                        color={response.status === 'APPROVED' ? 'success' : 'error'}
-                        onClick={handleEditResponseSubmit}
-                      >
-                        {response.status === 'APPROVED' ? '승인하기' : '거절하기'}
-                      </Button>
-                    </Box>
-                  </Box>
-                ) : (
-                  <>
-                    <Typography 
-                      sx={{ 
-                        whiteSpace: 'pre-wrap',
-                        mb: 2,
-                        lineHeight: 1.8,
-                        color: 'text.primary'
-                      }}
-                    >
-                      {response.comment}
-                    </Typography>
+                        {response.comment}
+                      </Typography>
 
-                    {/* 링크와 파일을 가로로 배치 */}
-                    <Box sx={{ display: 'flex', gap: 4 }}>
-                      {/* 첨부 링크 */}
-                      <Box sx={{ flex: 1 }}>
-                        {response.links.length > 0 && (
-                          <Box>
-                            <Typography 
-                              variant="subtitle2" 
-                              sx={{ 
-                                mb: 1.5,
-                                fontWeight: 600,
-                                color: 'text.secondary'
-                              }}
-                            >
-                              첨부 링크
-                            </Typography>
-                            {response.links.map((link) => (
-                              <Box
-                                key={link.id}
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  mb: 1
+                      {/* 링크와 파일을 가로로 배치 */}
+                      <Box sx={{ display: 'flex', gap: 4 }}>
+                        {/* 첨부 링크 */}
+                        <Box sx={{ flex: 1 }}>
+                          {response.links.length > 0 && (
+                            <Box>
+                              <Typography 
+                                variant="subtitle2" 
+                                sx={{ 
+                                  mb: 1.5,
+                                  fontWeight: 600,
+                                  color: 'text.secondary'
                                 }}
                               >
-                                <MuiLink
-                                  href={link.urlAddress.startsWith('http') ? link.urlAddress : `https://${link.urlAddress}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  sx={{ 
-                                    color: 'primary.main',
-                                    textDecoration: 'none',
-                                    '&:hover': {
-                                      textDecoration: 'underline'
-                                    }
-                                  }}
-                                >
-                                  {link.urlDescription || link.urlAddress}
-                                </MuiLink>
-                                {editingResponseId === response.responseId && user?.memberId === response.memberId && (
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleResponseLinkDelete(response.responseId, link.id)}
-                                  >
-                                    <DeleteIcon fontSize="small" />
-                                  </IconButton>
-                                )}
-                              </Box>
-                            ))}
-                          </Box>
-                        )}
-                      </Box>
-
-                      {/* 첨부 파일 */}
-                      <Box sx={{ flex: 1 }}>
-                        {response.files && response.files.length > 0 && (
-                          <Box>
-                            <Typography 
-                              variant="subtitle2" 
-                              sx={{ 
-                                mb: 1.5,
-                                fontWeight: 600,
-                                color: 'text.secondary'
-                              }}
-                            >
-                              첨부 파일
-                            </Typography>
-                            <List sx={{ p: 0 }}>
-                              {response.files.map((file) => (
-                                <ListItem 
-                                  key={file.id}
+                                첨부 링크
+                              </Typography>
+                              {response.links.map((link) => (
+                                <Box
+                                  key={link.id}
                                   sx={{
-                                    px: 0,
-                                    py: 0.5,
                                     display: 'flex',
-                                    justifyContent: 'space-between'
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    mb: 1
                                   }}
                                 >
-                                  <ListItemText 
-                                    primary={
-                                      <MuiLink
-                                        component="button"
-                                        onClick={() => window.open(file.url, '_blank')}
-                                        sx={{ 
-                                          textAlign: 'left',
-                                          color: 'primary.main',
-                                          textDecoration: 'none',
-                                          '&:hover': {
-                                            textDecoration: 'underline'
-                                          }
-                                        }}
-                                      >
-                                        {file.name}
-                                      </MuiLink>
-                                    }
-                                  />
-                                  {editingResponseId === response.responseId && user?.memberId === response.memberId && (
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleResponseFileDelete(response.responseId, file.id)}
-                                    >
-                                      <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                  )}
-                                </ListItem>
+                                  <MuiLink
+                                    href={link.urlAddress.startsWith('http') ? link.urlAddress : `https://${link.urlAddress}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    sx={{ 
+                                      color: 'primary.main',
+                                      textDecoration: 'none',
+                                      '&:hover': {
+                                        textDecoration: 'underline'
+                                      }
+                                    }}
+                                  >
+                                    {link.urlDescription || link.urlAddress}
+                                  </MuiLink>
+                                </Box>
                               ))}
-                            </List>
-                          </Box>
-                        )}
-                      </Box>
-                    </Box>
-                  </>
-                )}
-              </Box>
-            );
-          })
-        )}
+                            </Box>
+                          )}
+                        </Box>
 
-        {/* 응답 박스 */}
-        {(request?.status === 'PENDING' || request?.status === 'APPROVING') && canApproveOrReject() && (
+                        {/* 첨부 파일 */}
+                        <Box sx={{ flex: 1 }}>
+                          {response.files && response.files.length > 0 && (
+                            <Box>
+                              <Typography 
+                                variant="subtitle2" 
+                                sx={{ 
+                                  mb: 1.5,
+                                  fontWeight: 600,
+                                  color: 'text.secondary'
+                                }}
+                              >
+                                첨부 파일
+                              </Typography>
+                              <List sx={{ p: 0 }}>
+                                {response.files.map((file) => (
+                                  <ListItem 
+                                    key={file.id}
+                                    sx={{
+                                      px: 0,
+                                      py: 0.5,
+                                      display: 'flex',
+                                      justifyContent: 'space-between'
+                                    }}
+                                  >
+                                    <ListItemText 
+                                      primary={
+                                        <MuiLink
+                                          component="button"
+                                          onClick={() => window.open(file.url, '_blank')}
+                                          sx={{ 
+                                            textAlign: 'left',
+                                            color: 'primary.main',
+                                            textDecoration: 'none',
+                                            '&:hover': {
+                                              textDecoration: 'underline'
+                                            }
+                                          }}
+                                        >
+                                          {file.name}
+                                        </MuiLink>
+                                      }
+                                    />
+                                  </ListItem>
+                                ))}
+                              </List>
+                            </Box>
+                          )}
+                        </Box>
+                      </Box>
+                    </>
+                  )}
+                </Box>
+              );
+            })
+          )}
+        </Paper>
+      )}
+
+      {/* 응답 박스 */}
+      {!editMode && (
+        (request?.status === 'PENDING' || request?.status === 'APPROVING') && canApproveOrReject() && (
           <Box sx={{ mt: 4 }}>
             {!isResponseBoxOpen ? (
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
@@ -1758,40 +1744,45 @@ const RequestDetail = () => {
               </Box>
             )}
           </Box>
-        )}
-      </Paper>
+        )
+      )}
+
+      {/* 재승인 요청 버튼 */}
+      {!editMode && (
+        <Box sx={{ display: 'flex', gap: 2, mt: 3, justifyContent: 'flex-end' }}>
+          {canReapply() && (
+            <Button
+              variant="contained"
+              onClick={() => navigate(`/user/projects/${projectId}/requests/${requestId}/reapply`)}
+              sx={{ 
+                bgcolor: '#FFB800',
+                '&:hover': {
+                  bgcolor: '#FFB800',
+                  opacity: 0.9
+                }
+              }}>
+              재승인 요청
+            </Button>
+          )}
+        </Box>
+      )}
 
       {/* 삭제 확인 다이얼로그 */}
-      <Dialog
-        open={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
-      >
-        <DialogTitle>요청 삭제</DialogTitle>
-        <DialogContent>
-          <Typography>정말로 이 요청을 삭제하시겠습니까?</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsDeleteDialogOpen(false)}>취소</Button>
-          <Button onClick={handleDelete} color="error" variant="contained">삭제</Button>
-        </DialogActions>
-      </Dialog>
-
-      <Box sx={{ display: 'flex', gap: 2, mt: 3, justifyContent: 'flex-end' }}>
-        {canReapply() && (
-          <Button
-            variant="contained"
-            onClick={() => navigate(`/user/projects/${projectId}/requests/${requestId}/reapply`)}
-            sx={{ 
-              bgcolor: '#FFB800',
-              '&:hover': {
-                bgcolor: '#FFB800',
-                opacity: 0.9
-              }
-            }}>
-            재승인 요청
-          </Button>
-        )}
-      </Box>
+      {!editMode && (
+        <Dialog
+          open={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+        >
+          <DialogTitle>요청 삭제</DialogTitle>
+          <DialogContent>
+            <Typography>정말로 이 요청을 삭제하시겠습니까?</Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setIsDeleteDialogOpen(false)}>취소</Button>
+            <Button onClick={handleDelete} color="error" variant="contained">삭제</Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Container>
   );
 };
