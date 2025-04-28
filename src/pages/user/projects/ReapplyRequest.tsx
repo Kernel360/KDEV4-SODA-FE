@@ -62,7 +62,7 @@ const ReapplyRequest: React.FC = () => {
         )
         if (response && response.content) {
           setApprovers(
-            response.content.map(member => ({
+            response.content.map((member: any) => ({
               id: member.memberId,
               name: member.memberName,
               email: member.email,
@@ -70,7 +70,8 @@ const ReapplyRequest: React.FC = () => {
                 ? 'CLIENT_COMPANY'
                 : 'DEV_COMPANY',
               companyName: member.companyName,
-              role: member.role
+              role: member.role,
+              memberStatus: member.memberStatus || 'AVAILABLE',
             }))
           )
         }
@@ -173,6 +174,16 @@ const ReapplyRequest: React.FC = () => {
       typeof value === 'string' ? value.split(',').map(Number) : value
     )
   }
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'AVAILABLE': return '업무가능';
+      case 'BUSY': return '바쁨';
+      case 'AWAY': return '자리비움';
+      case 'ON_VACATION': return '휴가중';
+      default: return status;
+    }
+  };
 
   return (
     <Box sx={{ maxWidth: '100%', p: 3 }}>
@@ -417,7 +428,11 @@ const ReapplyRequest: React.FC = () => {
                       return (
                         <Chip
                           key={value}
-                          label={approver?.name || ''}
+                          label={
+                            approver
+                              ? `${approver.name} (${approver.companyName}) - ${getStatusLabel(approver.memberStatus)}`
+                              : ''
+                          }
                           onDelete={() => {
                             setSelectedApprovers(
                               selectedApprovers.filter(id => id !== value)
@@ -427,12 +442,14 @@ const ReapplyRequest: React.FC = () => {
                       )
                     })}
                   </Box>
-                )}>
+                )}
+              >
                 {approvers.map(approver => (
                   <MenuItem
                     key={approver.id}
-                    value={approver.id}>
-                    {approver.name}
+                    value={approver.id}
+                  >
+                    {`${approver.name} (${approver.companyName}) - ${getStatusLabel(approver.memberStatus)}`}
                   </MenuItem>
                 ))}
               </Select>
