@@ -24,7 +24,7 @@ const UserMain: React.FC = () => {
       setLoading(true)
       const userProjects = await projectService.getUserProjects()
       console.log('프로젝트 목록 조회 완료:', userProjects)
-      setProjects(userProjects)
+      setProjects(userProjects.slice(0, 3))
     } catch (err) {
       console.error('프로젝트 목록 조회 중 오류:', err)
       const errorMessage =
@@ -72,7 +72,7 @@ const UserMain: React.FC = () => {
       <Grid
         container
         spacing={3}>
-        {projects.map(project => (
+        {projects.slice(0, 3).map(project => (
           <Grid
             item
             xs={12}

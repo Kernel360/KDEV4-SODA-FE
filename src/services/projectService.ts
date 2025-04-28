@@ -176,7 +176,13 @@ export const projectService = {
   async getUserProjects(): Promise<Project[]> {
     try {
       console.log('프로젝트 목록 조회 시작')
-      const response = await client.get('/projects/my')
+      const response = await client.get('/projects/my', {
+        params: {
+          page: 0,
+          size: 3,
+          sort: []
+        }
+      })
       console.log('프로젝트 목록 조회 응답:', response)
 
       // 응답 형식에 따른 데이터 추출
