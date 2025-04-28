@@ -23,6 +23,10 @@ import { LayoutDashboard } from 'lucide-react'
 import { companyService } from '../../services/companyService'
 import { client } from '../../api/client'
 import dayjs from 'dayjs'
+import ProjectCreationTrendChart from '../../components/charts/ProjectCreationTrendChart'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import isBetween from 'dayjs/plugin/isBetween'
+import CompanyCreationTrendChart from '../../components/charts/CompanyCreationTrendChart'
 
 interface ActiveProject {
   id: number
@@ -36,6 +40,8 @@ interface ActiveProject {
   recentActivityDate: string | null
 }
 
+dayjs.extend(isBetween)
+
 export default function AdminMain() {
   const navigate = useNavigate()
   const { projects, isLoading, error, fetchAllProjects } = useProjectStore()
@@ -43,6 +49,26 @@ export default function AdminMain() {
   const [totalCompanies, setTotalCompanies] = useState<number>(0)
   const [activeProjects, setActiveProjects] = useState<ActiveProject[]>([])
   const [loadingActiveProjects, setLoadingActiveProjects] = useState(false)
+  const [trendTimeUnit, setTrendTimeUnit] = useState<'DAY' | 'WEEK' | 'MONTH'>(
+    'DAY'
+  )
+  const [trendStartDate, setTrendStartDate] = useState(
+    dayjs().startOf('week').add(1, 'day')
+  )
+  const [trendEndDate, setTrendEndDate] = useState(
+    dayjs().endOf('week').add(1, 'day')
+  )
+  const [trendKey, setTrendKey] = useState(0)
+  const [companyTrendUnit, setCompanyTrendUnit] = useState<
+    'DAY' | 'WEEK' | 'MONTH'
+  >('DAY')
+  const [companyTrendStartDate, setCompanyTrendStartDate] = useState(
+    dayjs().startOf('week').add(1, 'day')
+  )
+  const [companyTrendEndDate, setCompanyTrendEndDate] = useState(
+    dayjs().endOf('week').add(1, 'day')
+  )
+  const [companyTrendKey, setCompanyTrendKey] = useState(0)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -144,6 +170,12 @@ export default function AdminMain() {
     }
   }
 
+  const handleTrendSearch = () => {
+    setTrendKey(prev => prev + 1)
+  }
+
+  const handleCompanyTrendSearch = () => setCompanyTrendKey(prev => prev + 1)
+
   if (isLoading) {
     return <LoadingSpinner />
   }
@@ -179,17 +211,6 @@ export default function AdminMain() {
       }}>
       {/* 프로젝트 섹션 */}
       <Box>
-        <Typography
-          variant="h5"
-          sx={{
-            fontSize: '1.75rem',
-            fontWeight: 700,
-            color: '#1a1a1a',
-            mb: 3
-          }}>
-          프로젝트 현황
-        </Typography>
-
         {/* 프로젝트 현황 카드들 */}
         <Grid
           container
@@ -543,7 +564,7 @@ export default function AdminMain() {
             item
             xs={6.5}>
             <Paper
-          elevation={0}
+              elevation={0}
               sx={{
                 p: 3,
                 border: '1px solid #e5e7eb',
@@ -586,9 +607,9 @@ export default function AdminMain() {
                 </Button>
               </Box>
               <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
+                <Table>
+                  <TableHead>
+                    <TableRow>
                       <TableCell
                         sx={{
                           fontSize: '0.875rem',
@@ -634,9 +655,9 @@ export default function AdminMain() {
                         }}>
                         대시보드
                       </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
                     {loadingActiveProjects ? (
                       <TableRow>
                         <TableCell
@@ -690,8 +711,8 @@ export default function AdminMain() {
                               {project.weeklyArticleCount}건
                             </Box>
                           </TableCell>
-                  <TableCell>
-                    <Typography
+                          <TableCell>
+                            <Typography
                               sx={{
                                 fontSize: '0.875rem',
                                 color: '#4b5563'
@@ -708,7 +729,7 @@ export default function AdminMain() {
                               variant="outlined"
                               size="small"
                               startIcon={<LayoutDashboard size={14} />}
-                      onClick={() => handleProjectClick(project.id)}
+                              onClick={() => handleProjectClick(project.id)}
                               sx={{
                                 color: '#1E293B',
                                 bgcolor: 'white',
@@ -755,150 +776,77 @@ export default function AdminMain() {
                   fontSize: '1.25rem',
                   fontWeight: 600,
                   color: '#1a1a1a',
-                  mb: 3
+                  mb: 2
                 }}>
-                최근 3개월간 프로젝트 생성 추이 (더미데이터)
+                프로젝트 생성 추이
               </Typography>
               <Box
                 sx={{
-                  height: 300,
                   display: 'flex',
-                  flexDirection: 'column',
-                  width: '100%',
-                  position: 'relative'
+                  alignItems: 'center',
+                  gap: 2,
+                  mb: 3,
+                  flexWrap: 'wrap'
                 }}>
-                {/* 그래프 영역 */}
-                <Box
+                <DatePicker
+                  label="시작일"
+                  value={trendStartDate}
+                  onChange={v => v && setTrendStartDate(v)}
+                  format="YYYY-MM-DD"
                   sx={{
-                    flex: 1,
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'flex-end'
-                  }}>
-                  {/* 가로 그리드 라인 */}
-                  {[0, 1, 2, 3, 4, 5].map(num => (
-                    <Box
-                      key={num}
-                      sx={{
-                        position: 'absolute',
-                        left: 0,
-                        right: 0,
-                        bottom: `${(num / 5) * 100}%`,
-                        borderBottom: '1px dashed',
-                        borderColor: 'divider',
-                        zIndex: 0
-                      }}
-                    />
-                  ))}
-
-                  {/* 막대 그래프 */}
-                  {[
-                    { week: '1월1주', count: 2 },
-                    { week: '1월2주', count: 3 },
-                    { week: '1월3주', count: 2 },
-                    { week: '1월4주', count: 4 },
-                    { week: '2월1주', count: 3 },
-                    { week: '2월2주', count: 5 },
-                    { week: '2월3주', count: 4 },
-                    { week: '2월4주', count: 3 },
-                    { week: '3월1주', count: 4 },
-                    { week: '3월2주', count: 3 },
-                    { week: '3월3주', count: 2 },
-                    { week: '3월4주', count: 3 }
-                  ].map((data, index) => (
-                    <Box
-                      key={index}
-                      sx={{
-                        position: 'relative',
-                        flex: 1,
-                        mx: 1.5,
-                        height: `${(data.count / 5) * 100}%`,
-                        bgcolor: '#94a3b8',
-                        borderRadius: '2px 2px 0 0',
-                        transition: 'all 0.3s ease',
-                        cursor: 'pointer',
-                        '&:hover': {
-                          bgcolor: '#64748b',
-                          transform: 'translateY(-4px)',
-                          '& .count-tooltip': {
-                            opacity: 1,
-                            visibility: 'visible'
-                          }
-                        }
-                      }}>
-                      <Box
-                        className="count-tooltip"
-                        sx={{
-                          position: 'absolute',
-                          top: -25,
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          bgcolor: 'rgba(0, 0, 0, 0.8)',
-                          color: 'white',
-                          px: 1,
-                          py: 0.5,
-                          borderRadius: 1,
-                          fontSize: '0.75rem',
-                          opacity: 0,
-                          visibility: 'hidden',
-                          transition: 'all 0.2s ease',
-                          whiteSpace: 'nowrap'
-                        }}>
-                        {data.count}개
-                      </Box>
-                    </Box>
-                  ))}
-                </Box>
-
-                {/* X축 */}
-                <Box
+                    minWidth: 110,
+                    '& .MuiInputBase-root': {
+                      fontSize: '0.95rem',
+                      py: 0.5,
+                      height: 36
+                    }
+                  }}
+                />
+                <DatePicker
+                  label="종료일"
+                  value={trendEndDate}
+                  onChange={v => v && setTrendEndDate(v)}
+                  format="YYYY-MM-DD"
                   sx={{
-                    height: 60,
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    mt: 2
-                  }}>
-                  <Box sx={{ flex: 1, display: 'flex' }}>
-                    {[
-                      '1월1주',
-                      '1월2주',
-                      '1월3주',
-                      '1월4주',
-                      '2월1주',
-                      '2월2주',
-                      '2월3주',
-                      '2월4주',
-                      '3월1주',
-                      '3월2주',
-                      '3월3주',
-                      '3월4주'
-                    ].map((week, index) => (
-                      <Box
-                        key={index}
-                        sx={{
-                          flex: 1,
-                          textAlign: 'center',
-                          position: 'relative',
-                          px: 1.5
-                        }}>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{
-                            display: 'block',
-                            whiteSpace: 'nowrap',
-                            position: 'absolute',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            fontSize: '0.75rem'
-                          }}>
-                          {week}
-                    </Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
+                    minWidth: 110,
+                    '& .MuiInputBase-root': {
+                      fontSize: '0.95rem',
+                      py: 0.5,
+                      height: 36
+                    }
+                  }}
+                />
+                <Button
+                  variant={trendTimeUnit === 'DAY' ? 'contained' : 'outlined'}
+                  onClick={() => setTrendTimeUnit('DAY')}
+                  sx={{ minWidth: 80 }}>
+                  일간
+                </Button>
+                <Button
+                  variant={trendTimeUnit === 'WEEK' ? 'contained' : 'outlined'}
+                  onClick={() => setTrendTimeUnit('WEEK')}
+                  sx={{ minWidth: 80 }}>
+                  주간
+                </Button>
+                <Button
+                  variant={trendTimeUnit === 'MONTH' ? 'contained' : 'outlined'}
+                  onClick={() => setTrendTimeUnit('MONTH')}
+                  sx={{ minWidth: 80 }}>
+                  월간
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleTrendSearch}
+                  sx={{ ml: 2 }}>
+                  조회
+                </Button>
               </Box>
+              <ProjectCreationTrendChart
+                key={trendKey}
+                startDate={trendStartDate.format('YYYY-MM-DD')}
+                endDate={trendEndDate.format('YYYY-MM-DD')}
+                timeUnit={trendTimeUnit}
+              />
             </Paper>
           </Grid>
         </Grid>
@@ -906,50 +854,6 @@ export default function AdminMain() {
 
       {/* 회사 섹션 */}
       <Box>
-        <Typography
-          variant="h5"
-          sx={{
-            fontSize: '1.75rem',
-            fontWeight: 700,
-            color: '#1a1a1a',
-            mb: 3
-          }}>
-          회사 현황
-        </Typography>
-
-        {/* 회사 현황 카드 */}
-        <Grid
-          container
-          spacing={3}>
-          <Grid
-            item
-            xs={12}
-            md={6}>
-            <Card
-              sx={{
-                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                '&:hover': {
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                }
-              }}>
-              <CardContent>
-                <Typography
-                  sx={{ fontSize: '0.875rem', color: '#64748b', mb: 1 }}>
-                  전체 등록된 회사
-                </Typography>
-                <Typography
-                  sx={{
-                    fontSize: '2.5rem',
-                    fontWeight: 700,
-                    color: theme.palette.primary.main
-                  }}>
-                  {totalCompanies}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
         {/* 회사 생성 추이 */}
         <Grid
           container
@@ -958,10 +862,10 @@ export default function AdminMain() {
           <Grid
             item
             xs={12}>
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
                 border: '1px solid #e5e7eb',
                 borderRadius: 2,
                 bgcolor: '#fff',
@@ -972,151 +876,84 @@ export default function AdminMain() {
                   fontSize: '1.25rem',
                   fontWeight: 600,
                   color: '#1a1a1a',
-                  mb: 3
+                  mb: 2
                 }}>
-                최근 3개월간 회사 생성 추이 (더미데이터)
+                회사 등록 추이
               </Typography>
               <Box
                 sx={{
-                  height: 300,
                   display: 'flex',
-                  flexDirection: 'column',
-                  width: '100%',
-                  position: 'relative'
+                  alignItems: 'center',
+                  gap: 2,
+                  mb: 3,
+                  flexWrap: 'wrap'
                 }}>
-                {/* 그래프 영역 */}
-                <Box
+                <DatePicker
+                  label="시작일"
+                  value={companyTrendStartDate}
+                  onChange={v => v && setCompanyTrendStartDate(v)}
+                  format="YYYY-MM-DD"
                   sx={{
-                    flex: 1,
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'flex-end'
-                  }}>
-                  {/* 가로 그리드 라인 */}
-                  {[0, 1, 2, 3, 4, 5].map(num => (
-                    <Box
-                      key={num}
-                      sx={{
-                        position: 'absolute',
-                        left: 0,
-                        right: 0,
-                        bottom: `${(num / 5) * 100}%`,
-                        borderBottom: '1px dashed',
-            borderColor: 'divider',
-                        zIndex: 0
-                      }}
-                    />
-                  ))}
-
-                  {/* 막대 그래프 */}
-                  {[
-                    { week: '1월1주', count: 1 },
-                    { week: '1월2주', count: 2 },
-                    { week: '1월3주', count: 1 },
-                    { week: '1월4주', count: 2 },
-                    { week: '2월1주', count: 3 },
-                    { week: '2월2주', count: 2 },
-                    { week: '2월3주', count: 3 },
-                    { week: '2월4주', count: 2 },
-                    { week: '3월1주', count: 1 },
-                    { week: '3월2주', count: 1 },
-                    { week: '3월3주', count: 2 },
-                    { week: '3월4주', count: 1 }
-                  ].map((data, index) => (
-                    <Box
-                      key={index}
-                      sx={{
-                        position: 'relative',
-                        flex: 1,
-                        mx: 1.5,
-                        height: `${(data.count / 5) * 100}%`,
-                        bgcolor: '#94a3b8',
-                        borderRadius: '2px 2px 0 0',
-                        transition: 'all 0.3s ease',
-                        cursor: 'pointer',
-                        '&:hover': {
-                          bgcolor: '#64748b',
-                          transform: 'translateY(-4px)',
-                          '& .count-tooltip': {
-                            opacity: 1,
-                            visibility: 'visible'
-                          }
-                        }
-                      }}>
-                      <Box
-                        className="count-tooltip"
-                        sx={{
-                          position: 'absolute',
-                          top: -25,
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          bgcolor: 'rgba(0, 0, 0, 0.8)',
-                          color: 'white',
-                          px: 1,
-                          py: 0.5,
-                          borderRadius: 1,
-                          fontSize: '0.75rem',
-                          opacity: 0,
-                          visibility: 'hidden',
-                          transition: 'all 0.2s ease',
-                          whiteSpace: 'nowrap'
-                        }}>
-                        {data.count}개
-                      </Box>
-                    </Box>
-                  ))}
-                </Box>
-
-                {/* X축 */}
-                <Box
+                    minWidth: 110,
+                    '& .MuiInputBase-root': {
+                      fontSize: '0.95rem',
+                      py: 0.5,
+                      height: 36
+                    }
+                  }}
+                />
+                <DatePicker
+                  label="종료일"
+                  value={companyTrendEndDate}
+                  onChange={v => v && setCompanyTrendEndDate(v)}
+                  format="YYYY-MM-DD"
                   sx={{
-                    height: 60,
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    mt: 2
-                  }}>
-                  <Box sx={{ flex: 1, display: 'flex' }}>
-                    {[
-                      '1월1주',
-                      '1월2주',
-                      '1월3주',
-                      '1월4주',
-                      '2월1주',
-                      '2월2주',
-                      '2월3주',
-                      '2월4주',
-                      '3월1주',
-                      '3월2주',
-                      '3월3주',
-                      '3월4주'
-                    ].map((week, index) => (
-                      <Box
-                        key={index}
-                        sx={{
-                          flex: 1,
-                          textAlign: 'center',
-                          position: 'relative',
-                          px: 1.5
-                        }}>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{
-                            display: 'block',
-                            whiteSpace: 'nowrap',
-                            position: 'absolute',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            fontSize: '0.75rem'
-                          }}>
-                          {week}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
+                    minWidth: 110,
+                    '& .MuiInputBase-root': {
+                      fontSize: '0.95rem',
+                      py: 0.5,
+                      height: 36
+                    }
+                  }}
+                />
+                <Button
+                  variant={
+                    companyTrendUnit === 'DAY' ? 'contained' : 'outlined'
+                  }
+                  onClick={() => setCompanyTrendUnit('DAY')}
+                  sx={{ minWidth: 80 }}>
+                  일간
+                </Button>
+                <Button
+                  variant={
+                    companyTrendUnit === 'WEEK' ? 'contained' : 'outlined'
+                  }
+                  onClick={() => setCompanyTrendUnit('WEEK')}
+                  sx={{ minWidth: 80 }}>
+                  주간
+                </Button>
+                <Button
+                  variant={
+                    companyTrendUnit === 'MONTH' ? 'contained' : 'outlined'
+                  }
+                  onClick={() => setCompanyTrendUnit('MONTH')}
+                  sx={{ minWidth: 80 }}>
+                  월간
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleCompanyTrendSearch}
+                  sx={{ ml: 2 }}>
+                  조회
+                </Button>
               </Box>
-        </Paper>
+              <CompanyCreationTrendChart
+                key={companyTrendKey}
+                startDate={companyTrendStartDate.format('YYYY-MM-DD')}
+                endDate={companyTrendEndDate.format('YYYY-MM-DD')}
+                unit={companyTrendUnit}
+              />
+            </Paper>
           </Grid>
         </Grid>
       </Box>
