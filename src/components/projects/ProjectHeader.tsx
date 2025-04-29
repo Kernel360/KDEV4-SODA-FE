@@ -167,6 +167,8 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
   const [newStageNameError, setNewStageNameError] = useState('')
   const [addingStageIndex, setAddingStageIndex] = useState<number | null>(null)
   const [stageManagementOpen, setStageManagementOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [stageToDelete, setStageToDelete] = useState<Stage | null>(null)
 
   useEffect(() => {
     if (deletingStageId !== null && !isDeleting) {
@@ -385,18 +387,32 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
     }
   }
 
-  const handleStageDeleteClick = async (stageId: number) => {
+  const handleStageDeleteClick = (stage: Stage) => {
+    setStageToDelete(stage)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!stageToDelete) return
+
     try {
-      console.log('Deleting stage:', stageId)
       setIsDeleting(true)
-      setDeletingStageId(stageId)
-      await deleteStage(stageId)
-      await onStageDelete(stageId)
+      setDeletingStageId(stageToDelete.id)
+      await deleteStage(stageToDelete.id)
+      await onStageDelete(stageToDelete.id)
+      setDeleteConfirmOpen(false)
+      setStageToDelete(null)
     } catch (error) {
       console.error('Failed to delete stage:', error)
+      showToast('단계 삭제에 실패했습니다.', 'error')
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false)
+    setStageToDelete(null)
   }
 
   const statusColors = {
@@ -790,7 +806,15 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
                                   <IconButton
                                     size="small"
                                     onClick={() =>
-                                      handleStageDeleteClick(stage.id)
+                                      handleStageDeleteClick({
+                                        id: stage.id,
+                                        name: stage.name,
+                                        title: stage.name,
+                                        order: stage.order,
+                                        stageOrder: stage.stageOrder,
+                                        status: stage.status,
+                                        tasks: stage.tasks
+                                      })
                                     }
                                     sx={{ color: 'text.primary' }}>
                                     <DeleteIcon fontSize="small" />
@@ -849,6 +873,58 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
             )}
           </Box>
         </DialogContent>
+      </Dialog>
+
+      {/* 삭제 확인 모달 */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={handleDeleteCancel}
+        maxWidth="xs"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            width: '100%',
+            maxWidth: '400px'
+          }
+        }}>
+        <DialogTitle>단계 삭제</DialogTitle>
+        <DialogContent>
+          <Typography>정말 단계를 삭제하시겠습니까?</Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 1 }}>
+            {stageToDelete?.name} 단계와 관련된 모든 데이터가 삭제됩니다.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleDeleteCancel}
+            sx={{
+              color: 'text.secondary',
+              backgroundColor: '#fff',
+              border: '1.5px solid #d1d5db',
+              boxShadow: 'none',
+              '&:hover': {
+                backgroundColor: '#f5f5f5',
+                borderColor: '#2563eb'
+              }
+            }}>
+            취소
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            disabled={isDeleting}
+            sx={{
+              backgroundColor: '#DC2626',
+              color: '#fff',
+              '&:hover': {
+                backgroundColor: '#B91C1C'
+              }
+            }}>
+            {isDeleting ? '삭제 중...' : '삭제'}
+          </Button>
+        </DialogActions>
       </Dialog>
 
       <Modal
