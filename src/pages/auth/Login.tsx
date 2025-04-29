@@ -137,34 +137,38 @@ const Login: React.FC = () => {
                   SODA는 웹 에이전시와 고객사 간의 원활한 협업을 위한 <br></br>올인원 프로젝트 관리 플랫폼입니다.
                 </p>
                 <div className="grid gap-4 sm:grid-cols-1 sm:gap-6 w-full max-w-full">
-                  <div className="flex items-center bg-[#F2F2F2] rounded-xl p-6">
-                    <img src="logo.png" alt="SODA" className="h-20 w-20 mr-6" />
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                        SODA-FE Repository
-                        <svg className="w-6 h-6 text-gray-700 ml-2" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                        </svg>
-                      </h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed">
-                        React와 TypeScript를 활용한 프론트엔드 코드베이스입니다. <br></br>사용자 인터페이스와 상호작용을 구현한 저장소입니다.
-                      </p>
+                  <a href="https://github.com/Kernel360/KDEV4-SODA-FE" target="_blank" rel="noopener noreferrer" className="block">
+                    <div className="flex items-center bg-[#F2F2F2] rounded-xl p-6 transition hover:shadow-lg cursor-pointer">
+                      <img src="logo.png" alt="SODA" className="h-20 w-20 mr-6" />
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                          SODA-FE Repository
+                          <svg className="w-6 h-6 text-gray-700 ml-2" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                          </svg>
+                        </h3>
+                        <p className="text-muted-foreground text-sm leading-relaxed">
+                          React와 TypeScript를 활용한 프론트엔드 코드베이스입니다. <br></br>사용자 인터페이스와 상호작용을 구현한 저장소입니다.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center bg-[#F2F2F2] rounded-xl p-6 mt-4">
-                    <img src="logo.png" alt="SODA" className="h-20 w-20 mr-6" />
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                        SODA-BE Repository
-                        <svg className="w-6 h-6 text-gray-700 ml-2" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                        </svg>
-                      </h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed">
-                        Spring Boot 기반의 백엔드 코드베이스입니다. <br></br>서버 로직과 데이터베이스 관리를 담당하는 저장소입니다.
-                      </p>
+                  </a>
+                  <a href="https://github.com/Kernel360/KDEV4-SODA-BE" target="_blank" rel="noopener noreferrer" className="block">
+                    <div className="flex items-center bg-[#F2F2F2] rounded-xl p-6 mt-4 transition hover:shadow-lg cursor-pointer">
+                      <img src="logo.png" alt="SODA" className="h-20 w-20 mr-6" />
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                          SODA-BE Repository
+                          <svg className="w-6 h-6 text-gray-700 ml-2" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                          </svg>
+                        </h3>
+                        <p className="text-muted-foreground text-sm leading-relaxed">
+                          Spring Boot 기반의 백엔드 코드베이스입니다. <br></br>서버 로직과 데이터베이스 관리를 담당하는 저장소입니다.
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  </a>
                 </div>
               </div>
             </div>
@@ -241,7 +245,7 @@ const Login: React.FC = () => {
                   <div className="space-y-6">
                     <button
                       type="submit"
-                      className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-[#FFB800] px-6 font-medium text-white transition-colors hover:bg-[#E5A600] focus:outline-none focus:ring-2 focus:ring-[#FFB800] focus:ring-offset-2 disabled:opacity-50 sm:h-12 sm:text-base"
+                      className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-[#2F3833] px-6 font-medium text-white transition-colors hover:bg-[#E5A600] focus:outline-none focus:ring-2 focus:ring-[#FFB800] focus:ring-offset-2 disabled:opacity-50 sm:h-12 sm:text-base"
                       disabled={isLoading}>
                       {isLoading ? (
                         <>
