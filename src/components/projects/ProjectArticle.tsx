@@ -17,7 +17,10 @@ import {
   MenuItem,
   FormControl,
   IconButton,
-  Pagination
+  Pagination,
+  InputLabel,
+  SelectChangeEvent,
+  Popover
 } from '@mui/material'
 import {
   Article,
@@ -215,6 +218,12 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
   const [stageArticles, setStageArticles] = useState<{ [key: number]: number }>(
     {}
   )
+  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [priorityType, setPriorityType] = useState<string>('')
+  const [anchorElPriority, setAnchorElPriority] = useState<null | HTMLElement>(
+    null
+  )
+  const [anchorElStatus, setAnchorElStatus] = useState<null | HTMLElement>(null)
 
   const memoStages = useMemo(() => propStages, [propStages])
 
@@ -260,7 +269,15 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
 
   useEffect(() => {
     fetchArticles()
-  }, [projectId, selectedStage, currentPage, searchType, searchTerm])
+  }, [
+    projectId,
+    selectedStage,
+    currentPage,
+    searchType,
+    searchTerm,
+    statusFilter,
+    priorityType
+  ])
 
   const fetchArticles = async () => {
     try {
@@ -271,7 +288,9 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
         searchType,
         searchTerm,
         currentPage,
-        ITEMS_PER_PAGE
+        ITEMS_PER_PAGE,
+        statusFilter,
+        priorityType
       )
 
       if (response.status === 'success') {
@@ -337,7 +356,7 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
       case PriorityType.HIGH:
         return '높음'
       case PriorityType.MEDIUM:
-        return '보통'
+        return '중간'
       case PriorityType.LOW:
         return '낮음'
       default:
@@ -521,6 +540,30 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
         ))}
       </React.Fragment>
     ))
+  }
+
+  const handlePriorityClick = (event: React.MouseEvent<HTMLElement>) => {
+    if (anchorElPriority && anchorElPriority === event.currentTarget) {
+      setAnchorElPriority(null)
+    } else {
+      setAnchorElPriority(event.currentTarget)
+    }
+  }
+
+  const handleStatusClick = (event: React.MouseEvent<HTMLElement>) => {
+    if (anchorElStatus && anchorElStatus === event.currentTarget) {
+      setAnchorElStatus(null)
+    } else {
+      setAnchorElStatus(event.currentTarget)
+    }
+  }
+
+  const handlePriorityClose = () => {
+    setAnchorElPriority(null)
+  }
+
+  const handleStatusClose = () => {
+    setAnchorElStatus(null)
   }
 
   if (loading) return <LoadingSpinner />
@@ -750,13 +793,109 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
               </TableCell>
               <TableCell
                 align="center"
-                sx={{ width: '120px' }}>
-                우선순위
+                sx={{ width: '120px', cursor: 'pointer' }}
+                onClick={handlePriorityClick}>
+                {priorityType
+                  ? priorityType === 'HIGH'
+                    ? '높음'
+                    : priorityType === 'MEDIUM'
+                      ? '중간'
+                      : '낮음'
+                  : '우선순위'}{' '}
+                ▼
+                <Popover
+                  open={Boolean(anchorElPriority)}
+                  anchorEl={anchorElPriority}
+                  onClose={handlePriorityClose}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'center'
+                  }}
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'center'
+                  }}>
+                  <MenuItem
+                    onClick={() => {
+                      setPriorityType('')
+                      setCurrentPage(0)
+                      handlePriorityClose()
+                    }}>
+                    전체
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setPriorityType('HIGH')
+                      setCurrentPage(0)
+                      handlePriorityClose()
+                    }}>
+                    높음
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setPriorityType('MEDIUM')
+                      setCurrentPage(0)
+                      handlePriorityClose()
+                    }}>
+                    중간
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setPriorityType('LOW')
+                      setCurrentPage(0)
+                      handlePriorityClose()
+                    }}>
+                    낮음
+                  </MenuItem>
+                </Popover>
               </TableCell>
               <TableCell
                 align="center"
-                sx={{ width: '100px' }}>
-                상태
+                sx={{ width: '100px', cursor: 'pointer' }}
+                onClick={handleStatusClick}>
+                {statusFilter
+                  ? statusFilter === 'PENDING'
+                    ? '답변대기'
+                    : '답변완료'
+                  : '상태'}{' '}
+                ▼
+                <Popover
+                  open={Boolean(anchorElStatus)}
+                  anchorEl={anchorElStatus}
+                  onClose={handleStatusClose}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'center'
+                  }}
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'center'
+                  }}>
+                  <MenuItem
+                    onClick={() => {
+                      setStatusFilter('')
+                      setCurrentPage(0)
+                      handleStatusClose()
+                    }}>
+                    전체
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setStatusFilter('PENDING')
+                      setCurrentPage(0)
+                      handleStatusClose()
+                    }}>
+                    답변대기
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setStatusFilter('COMMENTED')
+                      setCurrentPage(0)
+                      handleStatusClose()
+                    }}>
+                    답변완료
+                  </MenuItem>
+                </Popover>
               </TableCell>
               <TableCell>제목</TableCell>
               <TableCell
