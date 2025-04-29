@@ -406,49 +406,57 @@ const UserDashboard: React.FC = () => {
             </React.Fragment>
           ))
         ) : type === 'request' ? (
-          recentRequests.map((request, index) => (
-            <React.Fragment key={request.requestId}>
-              <ListItem
-                button
-                onClick={() =>
-                  handleItemClick(type, request.requestId, request.projectId)
-                }
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  py: 2
-                }}>
-                <Box sx={{ flex: 1 }}>
-                  <Typography
-                    variant="body1"
-                    sx={{ mb: 1 }}>
-                    {request.title}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary">
-                    {dayjs(request.createdAt).format('YYYY-MM-DD HH:mm')}
-                  </Typography>
-                </Box>
-                <Chip
-                  label={getStatusText(request.status)}
+          recentRequests.length === 0 ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <Typography color="text.secondary">
+                요청사항이 없습니다.
+              </Typography>
+            </Box>
+          ) : (
+            recentRequests.map((request, index) => (
+              <React.Fragment key={request.requestId}>
+                <ListItem
+                  button
+                  onClick={() =>
+                    handleItemClick(type, request.requestId, request.projectId)
+                  }
                   sx={{
-                    ...getStatusColor(request.status),
-                    ml: 2
-                  }}
-                />
-              </ListItem>
-              {index < recentRequests.length - 1 && (
-                <Box
-                  sx={{
-                    borderBottom: '1px solid',
-                    borderColor: 'divider'
-                  }}
-                />
-              )}
-            </React.Fragment>
-          ))
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    py: 2
+                  }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography
+                      variant="body1"
+                      sx={{ mb: 1 }}>
+                      {request.title}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary">
+                      {dayjs(request.createdAt).format('YYYY-MM-DD HH:mm')}
+                    </Typography>
+                  </Box>
+                  <Chip
+                    label={getStatusText(request.status)}
+                    sx={{
+                      ...getStatusColor(request.status),
+                      ml: 2
+                    }}
+                  />
+                </ListItem>
+                {index < recentRequests.length - 1 && (
+                  <Box
+                    sx={{
+                      borderBottom: '1px solid',
+                      borderColor: 'divider'
+                    }}
+                  />
+                )}
+              </React.Fragment>
+            ))
+          )
         ) : type === 'article' ? (
           recentArticles.length === 0 ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
