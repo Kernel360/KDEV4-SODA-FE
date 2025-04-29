@@ -48,7 +48,7 @@ const UserRequests: React.FC = () => {
   const [activeSearchTerm, setActiveSearchTerm] = useState('')
   const [projectNames, setProjectNames] = useState<{ [projectId: number]: string }>({})
   const [myProjects, setMyProjects] = useState<{ id: number; title: string }[]>([])
-  const [selectedProjectId, setSelectedProjectId] = useState<number | ''>('')
+  const [selectedProjectId, setSelectedProjectId] = useState<string | number>('')
 
   useEffect(() => {
     if (user?.memberId) {
@@ -210,9 +210,9 @@ const UserRequests: React.FC = () => {
               }}
               displayEmpty
               renderValue={selected =>
-                selected === '' || selected === undefined
+                selected == '' || selected === undefined
                   ? <span>전체</span>
-                  : myProjects.find(p => p.id === selected)?.title
+                  : myProjects.find(p => p.id === Number(selected))?.title
               }
             >
               <MenuItem value="">전체</MenuItem>
