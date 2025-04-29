@@ -359,7 +359,9 @@ export const projectService = {
     searchType?: string,
     keyword?: string,
     page?: number,
-    size?: number
+    size?: number,
+    status?: string,
+    priorityType?: string
   ): Promise<{
     status: string
     code: string
@@ -381,6 +383,8 @@ export const projectService = {
         keyword: keyword || undefined,
         page: page || 0,
         size: size || 5,
+        status: status || undefined,
+        priorityType: priorityType || undefined,
         sort: []
       }
     })

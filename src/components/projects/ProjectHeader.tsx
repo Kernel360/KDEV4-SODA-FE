@@ -22,7 +22,8 @@ import {
   Tabs,
   Paper,
   Stack,
-  SelectChangeEvent
+  SelectChangeEvent,
+  List
 } from '@mui/material'
 import {
   Settings as SettingsIcon,
@@ -165,6 +166,9 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
   const [newStageName, setNewStageName] = useState('')
   const [newStageNameError, setNewStageNameError] = useState('')
   const [addingStageIndex, setAddingStageIndex] = useState<number | null>(null)
+  const [stageManagementOpen, setStageManagementOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [stageToDelete, setStageToDelete] = useState<Stage | null>(null)
 
   useEffect(() => {
     if (deletingStageId !== null && !isDeleting) {
@@ -350,44 +354,65 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
     event: React.MouseEvent<HTMLElement>,
     stageId: number
   ) => {
+    event.stopPropagation()
     setStageMenuAnchorEl(prev => ({ ...prev, [stageId]: event.currentTarget }))
-    setSelectedStageId(stageId)
   }
 
   const handleStageMenuClose = (stageId: number) => {
     setStageMenuAnchorEl(prev => ({ ...prev, [stageId]: null }))
-    setSelectedStageId(null)
   }
 
   const handleStageEdit = (stage: Stage) => {
-    setEditingStage({ id: stage.id, name: stage.name })
+    console.log('Editing stage:', stage)
+    setEditingStage({
+      id: stage.id,
+      name: stage.name || stage.title
+    })
   }
 
   const handleStageEditSave = async () => {
-    if (editingStage) {
-      try {
-        console.log('Updating stage:', editingStage.id, editingStage.name)
-        const response = await updateStage(editingStage.id, editingStage.name)
-        await onStageEdit(editingStage.id, editingStage.name)
-        setEditingStage(null)
-      } catch (error) {
-        console.error('Failed to update stage:', error)
-      }
+    if (!editingStage) return
+
+    try {
+      await onStageEdit(editingStage.id, editingStage.name)
+      const updatedStages = stages.map(stage =>
+        stage.id === editingStage.id
+          ? { ...stage, name: editingStage.name }
+          : stage
+      )
+      onStagesChange(updatedStages)
+      setEditingStage(null)
+    } catch (error) {
+      console.error('Failed to update stage:', error)
     }
   }
 
-  const handleStageDeleteClick = async (stageId: number) => {
+  const handleStageDeleteClick = (stage: Stage) => {
+    setStageToDelete(stage)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!stageToDelete) return
+
     try {
-      console.log('Deleting stage:', stageId)
       setIsDeleting(true)
-      setDeletingStageId(stageId)
-      await deleteStage(stageId)
-      await onStageDelete(stageId)
+      setDeletingStageId(stageToDelete.id)
+      await deleteStage(stageToDelete.id)
+      await onStageDelete(stageToDelete.id)
+      setDeleteConfirmOpen(false)
+      setStageToDelete(null)
     } catch (error) {
       console.error('Failed to delete stage:', error)
+      showToast('단계 삭제에 실패했습니다.', 'error')
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false)
+    setStageToDelete(null)
   }
 
   const statusColors = {
@@ -423,16 +448,31 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
             </Select>
           </FormControl>
         </Box>
-        <IconButton
-          onClick={handleSettingsClick}
-          sx={{
-            color: 'text.secondary',
-            '&:hover': {
-              backgroundColor: 'action.hover'
-            }
-          }}>
-          <SettingsIcon />
-        </IconButton>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {['고객사담당자', 'ADMIN', '개발사담당자'].includes(
+            project.currentUserProjectRole
+          ) && (
+            <Button
+              onClick={() => setEditModalOpen(true)}
+              startIcon={<SettingsIcon fontSize="small" />}
+              sx={{
+                color: 'text.secondary',
+                backgroundColor: '#fff',
+                border: '1.5px solid #d1d5db',
+                boxShadow: 'none',
+                fontWeight: 500,
+                transition:
+                  'background 0.2s, box-shadow 0.2s, border-color 0.2s',
+                '&:hover': {
+                  backgroundColor: '#f5f5f5',
+                  boxShadow: '0 2px 8px 0 rgba(0,0,0,0.04)',
+                  borderColor: '#2563eb'
+                }
+              }}>
+              단계 관리
+            </Button>
+          )}
+        </Box>
       </Box>
 
       <Box
@@ -486,396 +526,20 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
         </Box>
       </Box>
 
-      <Menu
-        anchorEl={settingsAnchorEl}
-        open={Boolean(settingsAnchorEl)}
-        onClose={handleSettingsClose}>
-        <MenuItem onClick={handleEditModalOpen}>
-          <ListItemIcon>
-            <EditIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>수정</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleSettingsClose}>
-          <ListItemIcon>
-            <DeleteIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>삭제</ListItemText>
-        </MenuItem>
-      </Menu>
-
-      {/* Edit Modal */}
-      <Dialog
-        open={editModalOpen}
-        onClose={handleEditModalClose}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            height: '550px',
-            maxHeight: '550px'
-          }
-        }}>
-        <DialogTitle>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-            <Typography variant="h6">프로젝트 수정</Typography>
-            <IconButton
-              onClick={handleEditModalClose}
-              sx={{ color: 'text.secondary' }}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent
-          sx={{
-            height: '100%',
-            pb: '8px !important'
-          }}>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-            <Tabs
-              value={editTabValue}
-              onChange={handleEditTabChange}
-              aria-label="project edit tabs">
-              <Tab label="기본 정보" />
-              <Tab label="단계 수정" />
-            </Tabs>
-          </Box>
-
-          {/* Basic Info Tab */}
-          <TabPanel
-            value={editTabValue}
-            index={0}
-            sx={{
-              height: 'calc(100% - 49px)',
-              overflow: 'auto',
-              '&::-webkit-scrollbar': {
-                width: '8px',
-                backgroundColor: '#f5f5f5'
-              },
-              '&::-webkit-scrollbar-track': {
-                background: '#f1f1f1',
-                borderRadius: '4px'
-              },
-              '&::-webkit-scrollbar-thumb': {
-                background: '#888',
-                borderRadius: '4px',
-                '&:hover': {
-                  background: '#555'
-                }
-              }
-            }}>
-            <Stack spacing={3}>
-              <TextField
-                fullWidth
-                label="프로젝트명"
-                value={editFormData.title}
-                onChange={e => handleFormChange('title', e.target.value)}
-              />
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label="프로젝트 설명"
-                value={editFormData.description}
-                onChange={e => handleFormChange('description', e.target.value)}
-              />
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <Stack
-                  direction="row"
-                  spacing={2}>
-                  <DatePicker
-                    label="시작일"
-                    value={editFormData.startDate}
-                    onChange={value => handleFormChange('startDate', value)}
-                  />
-                  <DatePicker
-                    label="종료일"
-                    value={editFormData.endDate}
-                    onChange={value => handleFormChange('endDate', value)}
-                  />
-                </Stack>
-              </LocalizationProvider>
-            </Stack>
-          </TabPanel>
-
-          {/* Stages Tab */}
-          <TabPanel
-            value={editTabValue}
-            index={1}
-            sx={{
-              height: 'calc(100% - 49px)',
-              overflow: 'auto',
-              '&::-webkit-scrollbar': {
-                width: '8px',
-                backgroundColor: '#f5f5f5'
-              },
-              '&::-webkit-scrollbar-track': {
-                background: '#f1f1f1',
-                borderRadius: '4px'
-              },
-              '&::-webkit-scrollbar-thumb': {
-                background: '#888',
-                borderRadius: '4px',
-                '&:hover': {
-                  background: '#555'
-                }
-              }
-            }}>
-            <Box
-              sx={{
-                height: '100%'
-              }}>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 2 }}>
-                • 단계는 최대 10개까지만 생성할 수 있습니다.
-                <br />• 드래그앤드롭으로 단계의 순서를 변경할 수 있습니다.
-              </Typography>
-              <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable
-                  droppableId="stages"
-                  direction="horizontal">
-                  {provided => (
-                    <Box
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      sx={{
-                        display: 'flex',
-                        gap: 0,
-                        overflowX: 'auto',
-                        pt: 10,
-                        pb: 15,
-                        px: 2,
-                        height: '100%',
-                        '&::-webkit-scrollbar': {
-                          height: '8px',
-                          backgroundColor: '#f5f5f5'
-                        },
-                        '&::-webkit-scrollbar-track': {
-                          background: '#f1f1f1',
-                          borderRadius: '4px'
-                        },
-                        '&::-webkit-scrollbar-thumb': {
-                          background: '#888',
-                          borderRadius: '4px',
-                          '&:hover': {
-                            background: '#555'
-                          }
-                        }
-                      }}>
-                      {/* Add button at the start */}
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          px: 0.25,
-                          height: 60,
-                          opacity: 0,
-                          transition: 'opacity 0.2s, padding 0.2s',
-                          '&:hover': {
-                            opacity: 1,
-                            px: 0.5
-                          }
-                        }}>
-                        <Button
-                          onClick={() => handleAddStageClick(0)}
-                          disabled={stages.length >= MAX_STAGES}
-                          sx={{
-                            minWidth: '30px',
-                            width: '30px',
-                            height: '30px',
-                            p: 0,
-                            borderRadius: '50%',
-                            border: '2px dashed',
-                            borderColor: 'divider'
-                          }}>
-                          <AddIcon fontSize="small" />
-                        </Button>
-                      </Box>
-                      {stages.map((stage, index) => (
-                        <React.Fragment key={stage.id}>
-                          <Draggable
-                            draggableId={String(stage.id)}
-                            index={index}>
-                            {provided => (
-                              <Paper
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                sx={{
-                                  width: 200,
-                                  minWidth: 200,
-                                  height: 60,
-                                  minHeight: 50,
-                                  p: 1,
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  justifyContent: 'center',
-                                  gap: 0.5,
-                                  cursor: 'grab',
-                                  '&:active': {
-                                    cursor: 'grabbing'
-                                  },
-                                  '&:hover': {
-                                    boxShadow: 3
-                                  }
-                                }}>
-                                <Box
-                                  sx={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    height: '100%',
-                                    width: '100%'
-                                  }}>
-                                  <Box
-                                    {...provided.dragHandleProps}
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      flex: 1,
-                                      cursor: 'grab',
-                                      '&:active': {
-                                        cursor: 'grabbing'
-                                      }
-                                    }}>
-                                    <Typography
-                                      sx={{
-                                        width: '100%',
-                                        textAlign: 'center',
-                                        fontSize: '1.1rem',
-                                        fontWeight: 500,
-                                        py: 0.5
-                                      }}>
-                                      {index + 1}. {stage.name}
-                                    </Typography>
-                                  </Box>
-                                  <IconButton
-                                    size="small"
-                                    onClick={e => {
-                                      e.stopPropagation()
-                                      handleStageMenuOpen(e, stage.id)
-                                    }}
-                                    sx={{
-                                      padding: 0.5
-                                    }}>
-                                    <MoreVertIcon fontSize="small" />
-                                  </IconButton>
-                                  <Menu
-                                    anchorEl={stageMenuAnchorEl[stage.id]}
-                                    open={Boolean(stageMenuAnchorEl[stage.id])}
-                                    onClose={() =>
-                                      handleStageMenuClose(stage.id)
-                                    }
-                                    anchorOrigin={{
-                                      vertical: 'bottom',
-                                      horizontal: 'right'
-                                    }}
-                                    transformOrigin={{
-                                      vertical: 'top',
-                                      horizontal: 'right'
-                                    }}>
-                                    <MenuItem
-                                      onClick={() => {
-                                        handleStageMenuClose(stage.id)
-                                        handleStageEdit(stage)
-                                      }}>
-                                      <ListItemIcon>
-                                        <EditIcon fontSize="small" />
-                                      </ListItemIcon>
-                                      <ListItemText>수정</ListItemText>
-                                    </MenuItem>
-                                    <MenuItem
-                                      onClick={() => {
-                                        handleStageMenuClose(stage.id)
-                                        handleStageDeleteClick(stage.id)
-                                      }}>
-                                      <ListItemIcon>
-                                        <DeleteIcon fontSize="small" />
-                                      </ListItemIcon>
-                                      <ListItemText>삭제</ListItemText>
-                                    </MenuItem>
-                                  </Menu>
-                                </Box>
-                              </Paper>
-                            )}
-                          </Draggable>
-                          {/* Add button between stages */}
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              px: 0.25,
-                              height: 60,
-                              opacity: 0,
-                              transition: 'opacity 0.2s, padding 0.2s',
-                              '&:hover': {
-                                opacity: 1,
-                                px: 0.5
-                              }
-                            }}>
-                            <Button
-                              onClick={() => handleAddStageClick(index + 1)}
-                              disabled={stages.length >= MAX_STAGES}
-                              sx={{
-                                minWidth: '30px',
-                                width: '30px',
-                                height: '30px',
-                                p: 0,
-                                borderRadius: '50%',
-                                border: '2px dashed',
-                                borderColor: 'divider'
-                              }}>
-                              <AddIcon fontSize="small" />
-                            </Button>
-                          </Box>
-                        </React.Fragment>
-                      ))}
-                      {provided.placeholder}
-                    </Box>
-                  )}
-                </Droppable>
-              </DragDropContext>
-              {stages.length >= MAX_STAGES && (
-                <Typography
-                  color="error"
-                  variant="caption"
-                  sx={{ mt: 1, display: 'block', textAlign: 'center' }}>
-                  단계는 최대 10개까지만 생성할 수 있습니다.
-                </Typography>
-              )}
-            </Box>
-          </TabPanel>
-        </DialogContent>
-        <DialogActions>
-          {editTabValue === 0 && (
-            <>
-              <Button onClick={handleEditModalClose}>취소</Button>
-              <Button
-                variant="contained"
-                onClick={handleSaveChanges}
-                disabled={isUpdating}>
-                {isUpdating ? '저장 중...' : '저장'}
-              </Button>
-            </>
-          )}
-        </DialogActions>
-      </Dialog>
-
-      {/* Stage Edit Dialog */}
+      {/* 단계 수정 모달 */}
       <Dialog
         open={editingStage !== null}
         onClose={() => setEditingStage(null)}
         maxWidth="xs"
         fullWidth
-        disableEscapeKeyDown
-        onBackdropClick={e => e.preventDefault()}>
+        sx={{
+          '& .MuiDialog-paper': {
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)'
+          }
+        }}>
         <DialogTitle>단계 수정</DialogTitle>
         <DialogContent>
           <TextField
@@ -901,12 +565,13 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
         </DialogActions>
       </Dialog>
 
-      {/* Add Stage Dialog */}
+      {/* 단계 추가 모달 */}
       <Dialog
         open={isAddingStage}
         onClose={() => {
           setIsAddingStage(false)
-          setNewStageNameError('') // 모달 닫을 때 에러 메시지 초기화
+          setNewStageName('')
+          setNewStageNameError('')
         }}
         maxWidth="xs"
         fullWidth>
@@ -919,7 +584,7 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
             value={newStageName}
             onChange={e => {
               setNewStageName(e.target.value)
-              setNewStageNameError('') // 입력 시 에러 메시지 초기화
+              setNewStageNameError('')
             }}
             error={!!newStageNameError}
             helperText={newStageNameError}
@@ -930,6 +595,7 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
           <Button
             onClick={() => {
               setIsAddingStage(false)
+              setNewStageName('')
               setNewStageNameError('')
             }}>
             취소
@@ -939,6 +605,324 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
             variant="contained"
             disabled={!newStageName.trim() || !!newStageNameError}>
             저장
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 단계 관리 모달 */}
+      <Dialog
+        open={editModalOpen}
+        onClose={handleEditModalClose}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            height: '440px',
+            maxHeight: '80vh'
+          }
+        }}>
+        <DialogTitle>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+            <Typography variant="h6">단계 관리</Typography>
+            <IconButton
+              onClick={handleEditModalClose}
+              sx={{ color: 'text.secondary' }}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent
+          sx={{
+            overflowY: 'hidden',
+            height: '440px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            overflow: 'hidden'
+          }}>
+          <Box sx={{ width: '100%' }}>
+            <Box sx={{ mb: 3 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  mb: 1,
+                  fontSize: '0.875rem',
+                  lineHeight: 1.5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}>
+                • 단계는 최대 10개까지만 생성할 수 있습니다.
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  fontSize: '0.875rem',
+                  lineHeight: 1.5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}>
+                • 드래그앤드롭으로 단계의 순서를 변경할 수 있습니다.
+              </Typography>
+            </Box>
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable
+                droppableId="stages"
+                direction="horizontal">
+                {provided => (
+                  <Box
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    sx={{
+                      display: 'flex',
+                      gap: 2,
+                      overflowX: 'auto',
+                      overflowY: 'hidden',
+                      pt: 2,
+                      pb: 2,
+                      px: 2,
+                      mx: -2,
+                      '&::-webkit-scrollbar': {
+                        height: '8px',
+                        backgroundColor: '#f5f5f5'
+                      },
+                      '&::-webkit-scrollbar-track': {
+                        background: '#f1f1f1',
+                        borderRadius: '4px'
+                      },
+                      '&::-webkit-scrollbar-thumb': {
+                        background: '#888',
+                        borderRadius: '4px',
+                        '&:hover': {
+                          background: '#555'
+                        }
+                      }
+                    }}>
+                    {/* Add button at the start */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: '40px',
+                        height: '100px',
+                        opacity: 0,
+                        transition: 'opacity 0.2s',
+                        '&:hover': {
+                          opacity: 1
+                        }
+                      }}>
+                      <Button
+                        onClick={() => handleAddStageClick(0)}
+                        disabled={stages.length >= MAX_STAGES}
+                        sx={{
+                          minWidth: '32px',
+                          width: '32px',
+                          height: '32px',
+                          p: 0,
+                          borderRadius: '50%',
+                          border: '2px dashed',
+                          borderColor: 'divider',
+                          '&:hover': {
+                            borderColor: '#FFB800'
+                          }
+                        }}>
+                        <AddIcon fontSize="small" />
+                      </Button>
+                    </Box>
+                    {stages.map((stage, index) => (
+                      <React.Fragment key={stage.id}>
+                        <Draggable
+                          draggableId={String(stage.id)}
+                          index={index}>
+                          {provided => (
+                            <Paper
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              sx={{
+                                width: 280,
+                                minWidth: 280,
+                                height: 100,
+                                p: 2,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'center',
+                                cursor: 'grab',
+                                backgroundColor: '#fff',
+                                border: '1.5px solid #d1d5db',
+                                borderRadius: 2,
+                                boxShadow: 'none',
+                                '&:active': {
+                                  cursor: 'grabbing'
+                                },
+                                '&:hover': {
+                                  borderColor: '#FFB800'
+                                }
+                              }}>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  height: '100%',
+                                  width: '100%'
+                                }}>
+                                <Typography
+                                  sx={{
+                                    width: '100%',
+                                    textAlign: 'center',
+                                    fontSize: '1.1rem',
+                                    fontWeight: 500,
+                                    py: 0.5
+                                  }}>
+                                  {index + 1}. {stage.name}
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => {
+                                      handleStageEdit({
+                                        id: stage.id,
+                                        name: stage.name,
+                                        title: stage.name,
+                                        order: stage.order,
+                                        stageOrder: stage.stageOrder,
+                                        status: stage.status,
+                                        tasks: stage.tasks
+                                      })
+                                    }}
+                                    sx={{ color: 'text.primary' }}>
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() =>
+                                      handleStageDeleteClick({
+                                        id: stage.id,
+                                        name: stage.name,
+                                        title: stage.name,
+                                        order: stage.order,
+                                        stageOrder: stage.stageOrder,
+                                        status: stage.status,
+                                        tasks: stage.tasks
+                                      })
+                                    }
+                                    sx={{ color: 'text.primary' }}>
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </Box>
+                              </Box>
+                            </Paper>
+                          )}
+                        </Draggable>
+                        {/* Add button between stages */}
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minWidth: '40px',
+                            height: '100px',
+                            opacity: 0,
+                            transition: 'opacity 0.2s',
+                            '&:hover': {
+                              opacity: 1
+                            }
+                          }}>
+                          <Button
+                            onClick={() => handleAddStageClick(index + 1)}
+                            disabled={stages.length >= MAX_STAGES}
+                            sx={{
+                              minWidth: '32px',
+                              width: '32px',
+                              height: '32px',
+                              p: 0,
+                              borderRadius: '50%',
+                              border: '2px dashed',
+                              borderColor: 'divider',
+                              '&:hover': {
+                                borderColor: '#FFB800'
+                              }
+                            }}>
+                            <AddIcon fontSize="small" />
+                          </Button>
+                        </Box>
+                      </React.Fragment>
+                    ))}
+                    {provided.placeholder}
+                  </Box>
+                )}
+              </Droppable>
+            </DragDropContext>
+            {stages.length >= MAX_STAGES && (
+              <Typography
+                color="error"
+                variant="caption"
+                sx={{ mt: 1, display: 'block', textAlign: 'center' }}>
+                단계는 최대 10개까지만 생성할 수 있습니다.
+              </Typography>
+            )}
+          </Box>
+        </DialogContent>
+      </Dialog>
+
+      {/* 삭제 확인 모달 */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={handleDeleteCancel}
+        maxWidth="xs"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            width: '100%',
+            maxWidth: '400px'
+          }
+        }}>
+        <DialogTitle>단계 삭제</DialogTitle>
+        <DialogContent>
+          <Typography>정말 단계를 삭제하시겠습니까?</Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 1 }}>
+            {stageToDelete?.name} 단계와 관련된 모든 데이터가 삭제됩니다.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleDeleteCancel}
+            sx={{
+              color: 'text.secondary',
+              backgroundColor: '#fff',
+              border: '1.5px solid #d1d5db',
+              boxShadow: 'none',
+              '&:hover': {
+                backgroundColor: '#f5f5f5',
+                borderColor: '#2563eb'
+              }
+            }}>
+            취소
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            disabled={isDeleting}
+            sx={{
+              backgroundColor: '#DC2626',
+              color: '#fff',
+              '&:hover': {
+                backgroundColor: '#B91C1C'
+              }
+            }}>
+            {isDeleting ? '삭제 중...' : '삭제'}
           </Button>
         </DialogActions>
       </Dialog>

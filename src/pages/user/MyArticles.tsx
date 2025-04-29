@@ -139,12 +139,12 @@ const MyArticles: React.FC = () => {
         <Typography
           variant="h5"
           sx={{ mb: 3 }}>
-          내가 작성한 게시글
+          내가 작성한 질문 목록
         </Typography>
         <Paper
           elevation={0}
           sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
-          작성한 게시글이 없습니다.
+          작성한 질문이 없습니다.
         </Paper>
       </Box>
     )
@@ -152,11 +152,6 @@ const MyArticles: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography
-        variant="h5"
-        sx={{ mb: 3 }}>
-        내가 작성한 게시글
-      </Typography>
       <TableContainer
         component={Paper}
         elevation={0}>
