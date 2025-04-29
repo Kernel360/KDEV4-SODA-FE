@@ -18,9 +18,10 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Popover
 } from '@mui/material'
-import { Search, Add } from '@mui/icons-material'
+import { Search, Add, ArrowDropDown } from '@mui/icons-material'
 import { client } from '../../api/client'
 import dayjs from 'dayjs'
 import { useUserStore } from '../../stores/userStore'
@@ -78,6 +79,8 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL')
   const { user } = useUserStore()
   const [isClientMember, setIsClientMember] = useState(false)
+  const [anchorElStatus, setAnchorElStatus] =
+    useState<HTMLButtonElement | null>(null)
 
   const memoStages = useMemo(() => stages, [stages])
 
@@ -106,7 +109,9 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
       })
 
       const [totalResponse, ...stageResponses] = await Promise.all([
-        client.get(`/projects/${projectId}/requests?${totalQueryParams.toString()}`),
+        client.get(
+          `/projects/${projectId}/requests?${totalQueryParams.toString()}`
+        ),
         ...stagePromises
       ])
 
@@ -181,22 +186,22 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
 
   useEffect(() => {
     const fetchClientMembers = async () => {
-      if (!projectId || !user) return;
+      if (!projectId || !user) return
       try {
         const res = await client.get(`/projects/${projectId}/members`, {
           params: { companyRole: 'CLIENT_COMPANY' }
-        });
+        })
         if (res.data.status === 'success') {
-          const members = res.data.data.content;
-          const found = members.some((m: any) => m.memberId === user.memberId);
-          setIsClientMember(found);
+          const members = res.data.data.content
+          const found = members.some((m: any) => m.memberId === user.memberId)
+          setIsClientMember(found)
         }
       } catch (e) {
-        setIsClientMember(false);
+        setIsClientMember(false)
       }
-    };
-    fetchClientMembers();
-  }, [projectId, user]);
+    }
+    fetchClientMembers()
+  }, [projectId, user])
 
   const handleStatusChange = (event: SelectChangeEvent) => {
     setSelectedStatus(event.target.value)
@@ -240,6 +245,14 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
   const handleSearch = () => {
     setPage(0)
     fetchCurrentPageRequests()
+  }
+
+  const handleStatusClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorElStatus(event.currentTarget)
+  }
+
+  const handleStatusClose = () => {
+    setAnchorElStatus(null)
   }
 
   return (
@@ -352,7 +365,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
           size="small"
           placeholder="검색어를 입력하세요"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={e => setSearchTerm(e.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -360,7 +373,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
               </InputAdornment>
             )
           }}
-          onKeyPress={(e) => {
+          onKeyPress={e => {
             if (e.key === 'Enter') {
               handleSearch()
             }
@@ -371,25 +384,9 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
         <Button
           variant="contained"
           onClick={handleSearch}
-          size="small"
-        >
+          size="small">
           검색
         </Button>
-
-        <FormControl sx={{ minWidth: 120 }}>
-          <InputLabel id="status-select-label">상태</InputLabel>
-          <Select
-            labelId="status-select-label"
-            value={selectedStatus}
-            label="상태"
-            onChange={handleStatusChange}
-            size="small">
-            <MenuItem value="ALL">전체</MenuItem>
-            <MenuItem value="PENDING">대기중</MenuItem>
-            <MenuItem value="APPROVED">승인됨</MenuItem>
-            <MenuItem value="REJECTED">거절됨</MenuItem>
-          </Select>
-        </FormControl>
 
         {!isClientMember && (
           <Button
@@ -418,13 +415,77 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
         </Typography>
       )}
 
-      <TableContainer component={Paper}>
+      <TableContainer
+        component={Paper}
+        sx={{
+          boxShadow: 'none',
+          borderRadius: '8px',
+          border: '1px solid #E0E0E0',
+          overflow: 'hidden'
+        }}>
         <Table>
           <TableHead>
             <TableRow>
               <TableCell>단계</TableCell>
+
               <TableCell>제목</TableCell>
-              <TableCell>상태</TableCell>
+              <TableCell
+                align="center"
+                sx={{ width: '100px', cursor: 'pointer' }}>
+                <Button
+                  onClick={handleStatusClick}
+                  endIcon={<ArrowDropDown />}
+                  sx={{ color: 'inherit', textTransform: 'none' }}>
+                  {selectedStatus === 'ALL'
+                    ? '상태'
+                    : getStatusText(selectedStatus)}
+                </Button>
+                <Popover
+                  open={Boolean(anchorElStatus)}
+                  anchorEl={anchorElStatus}
+                  onClose={handleStatusClose}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'center'
+                  }}
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'center'
+                  }}>
+                  <MenuItem
+                    onClick={() => {
+                      setSelectedStatus('ALL')
+                      setPage(0)
+                      handleStatusClose()
+                    }}>
+                    전체
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setSelectedStatus('PENDING')
+                      setPage(0)
+                      handleStatusClose()
+                    }}>
+                    대기중
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setSelectedStatus('APPROVED')
+                      setPage(0)
+                      handleStatusClose()
+                    }}>
+                    승인됨
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      setSelectedStatus('REJECTED')
+                      setPage(0)
+                      handleStatusClose()
+                    }}>
+                    거절됨
+                  </MenuItem>
+                </Popover>
+              </TableCell>
               <TableCell>작성자</TableCell>
               <TableCell>작성일</TableCell>
             </TableRow>
@@ -458,7 +519,10 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
                     }
                     sx={{ cursor: 'pointer' }}>
                     <TableCell>
-                      {memoStages.find(s => s.id === group.parent.stageId)?.name}
+                      {
+                        memoStages.find(s => s.id === group.parent.stageId)
+                          ?.name
+                      }
                     </TableCell>
                     <TableCell>
                       {group.parent.parentId !== -1 ? (
@@ -468,7 +532,9 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
                             sx={{ color: '#666', mr: 1 }}>
                             └
                           </Typography>
-                          <Typography variant="body2" sx={{ color: '#666' }}>
+                          <Typography
+                            variant="body2"
+                            sx={{ color: '#666' }}>
                             {group.parent.title}
                           </Typography>
                         </Box>
