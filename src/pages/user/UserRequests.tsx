@@ -15,13 +15,18 @@ import {
   CircularProgress,
   TextField,
   InputAdornment,
-  Button
+  Button,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel
 } from '@mui/material'
 import { client } from '../../api/client'
 import { useUserStore } from '../../stores/userStore'
 import { useToast } from '../../contexts/ToastContext'
 import dayjs from 'dayjs'
 import { Search } from 'lucide-react'
+import { projectService } from '../../services/projectService'
 
 interface Request {
   requestId: number
@@ -41,26 +46,61 @@ const UserRequests: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeSearchTerm, setActiveSearchTerm] = useState('')
+  const [projectNames, setProjectNames] = useState<{ [projectId: number]: string }>({})
+  const [myProjects, setMyProjects] = useState<{ id: number; title: string }[]>([])
+  const [selectedProjectId, setSelectedProjectId] = useState<string | number>('')
 
   useEffect(() => {
     if (user?.memberId) {
       fetchRequests()
     }
-  }, [user?.memberId, page, activeSearchTerm])
+  // eslint-disable-next-line
+  }, [user?.memberId, page, activeSearchTerm, selectedProjectId])
+
+  useEffect(() => {
+    // 내 프로젝트 목록 불러오기
+    const fetchMyProjects = async () => {
+      try {
+        const projects = await projectService.getUserProjects()
+        setMyProjects(projects.map((p: any) => ({ id: p.id || p.projectId, title: p.title || p.projectName || p.name })))
+      } catch (e) {
+        setMyProjects([])
+      }
+    }
+    fetchMyProjects()
+  }, [])
 
   const fetchRequests = async () => {
     try {
       setLoading(true)
+      const params: any = {
+        page: page - 1,
+        size: 10,
+        keyword: activeSearchTerm.trim() || undefined
+      }
+      if (selectedProjectId) {
+        params.projectId = selectedProjectId
+      }
       const response = await client.get(`/members/${user.memberId}/requests`, {
-        params: {
-          page: page - 1,
-          size: 10,
-          keyword: activeSearchTerm.trim() || undefined
-        }
+        params
       })
       if (response.data.status === 'success') {
         setRequests(response.data.data.content)
         setTotalPages(response.data.data.page.totalPages)
+        // 프로젝트명 가져오기
+        const uniqueProjectIds = Array.from(new Set(response.data.data.content.map((r: Request) => r.projectId)))
+        const newProjectNames: { [projectId: number]: string } = { ...projectNames }
+        await Promise.all(uniqueProjectIds.map(async (projectId: number) => {
+          if (!newProjectNames[projectId]) {
+            try {
+              const project = await projectService.getProjectById(projectId)
+              newProjectNames[projectId] = project.title || project.projectName || project.name || `프로젝트 ${projectId}`
+            } catch {
+              newProjectNames[projectId] = `프로젝트 ${projectId}`
+            }
+          }
+        }))
+        setProjectNames(newProjectNames)
       }
     } catch (error) {
       console.error('요청사항 목록 조회 중 오류:', error)
@@ -133,7 +173,55 @@ const UserRequests: React.FC = () => {
         요청사항 목록
       </Typography>
 
-      <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+      <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center' }}>
+        <Box sx={{ position: 'relative', minWidth: 180 }}>
+          <span
+            id="project-select-label"
+            style={{
+              position: 'absolute',
+              top: -10,
+              left: 12,
+              fontSize: 13,
+              background: '#f6f7f8',
+              padding: '0 4px',
+              color: '#888',
+              zIndex: 2,
+              transition: 'color 0.2s',
+              pointerEvents: 'none',
+            }}
+            className={selectedProjectId !== '' ? 'project-label-active' : ''}
+          >
+            프로젝트
+          </span>
+          <FormControl size="small" sx={{ minWidth: 180, width: '100%' }}>
+            <Select
+              value={selectedProjectId}
+              onFocus={e => {
+                const label = document.getElementById('project-select-label')
+                if (label) label.style.color = '#FFB800'
+              }}
+              onBlur={e => {
+                const label = document.getElementById('project-select-label')
+                if (label) label.style.color = '#888'
+              }}
+              onChange={e => {
+                setSelectedProjectId(e.target.value === '' ? '' : Number(e.target.value))
+                setPage(1)
+              }}
+              displayEmpty
+              renderValue={selected =>
+                selected == '' || selected === undefined
+                  ? <span>전체</span>
+                  : myProjects.find(p => p.id === Number(selected))?.title
+              }
+            >
+              <MenuItem value="">전체</MenuItem>
+              {myProjects.map(project => (
+                <MenuItem key={project.id} value={project.id}>{project.title}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
         <TextField
           size="small"
           placeholder="검색어를 입력하세요"
@@ -156,6 +244,7 @@ const UserRequests: React.FC = () => {
         <Button
           variant="contained"
           onClick={handleSearch}
+          sx={{ minWidth: 80 }}
         >
           검색
         </Button>
@@ -165,6 +254,7 @@ const UserRequests: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell>프로젝트</TableCell>
               <TableCell>제목</TableCell>
               <TableCell>상태</TableCell>
               <TableCell>생성일</TableCell>
@@ -178,6 +268,7 @@ const UserRequests: React.FC = () => {
                 onClick={() => navigate(`/user/projects/${request.projectId}/requests/${request.requestId}`)}
                 style={{ cursor: 'pointer' }}
               >
+                <TableCell>{projectNames[request.projectId] || '-'}</TableCell>
                 <TableCell>{request.title}</TableCell>
                 <TableCell>
                   <Chip
