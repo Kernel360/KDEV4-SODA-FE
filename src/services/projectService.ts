@@ -255,7 +255,7 @@ export const projectService = {
   // 프로젝트 단계 조회
   async getProjectStages(projectId: number): Promise<ApiStage[]> {
     const response = await client.get(
-      `https://api.s0da.co.kr/projects/${projectId}/stages`
+      `http://localhost:8080/projects/${projectId}/stages`
     )
     return response.data.data
   },
