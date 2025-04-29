@@ -866,22 +866,36 @@ const ProjectDetail = () => {
 
   const handleAddNewMembers = async () => {
     try {
-      // 새로 선택된 멤버들만 필터링
-      const newManagers = selectedCompanyManagers.filter(
-        id =>
-          !selectedCompanyMembers.members.some(member => member.memberId === id)
-      )
-      const newMembers = selectedRegularMembers.filter(
-        id =>
-          !selectedCompanyMembers.members.some(member => member.memberId === id)
+      // 기존 멤버 id와 role 매핑
+      const existingMembersMap = new Map(
+        selectedCompanyMembers.members.map(m => [m.memberId, m.role])
       )
 
-      if (newManagers.length === 0 && newMembers.length === 0) {
-        showToast('추가할 멤버가 없습니다.', 'info')
+      // 선택된 담당자/일반멤버를 모두 합침
+      const allSelected = [
+        ...selectedCompanyManagers.map(id => ({ id, role: 'MANAGER' })),
+        ...selectedRegularMembers.map(id => ({ id, role: 'MEMBER' }))
+      ]
+
+      // 변경/추가 대상 찾기
+      const changedOrNew = allSelected.filter(sel => {
+        const prevRole = existingMembersMap.get(sel.id)
+        if (!prevRole) return true // 새 멤버
+        // 역할이 바뀐 경우
+        if (
+          (sel.role === 'MANAGER' && !prevRole.includes('MANAGER')) ||
+          (sel.role === 'MEMBER' && prevRole.includes('MANAGER'))
+        ) {
+          return true
+        }
+        return false
+      })
+
+      if (changedOrNew.length === 0) {
+        showToast('추가/변경할 멤버가 없습니다.', 'info')
         return
       }
 
-      // companyId 보정
       const companyIdToUse =
         selectedCompanyMembers.companyId || selectedNewCompany?.id || 0
       if (!companyIdToUse) {
@@ -889,29 +903,23 @@ const ProjectDetail = () => {
         return
       }
 
-      // API 호출 전 중복 체크
-      const existingMemberIds = selectedCompanyMembers.members.map(
-        member => member.memberId
-      )
-      const hasDuplicates = [...newManagers, ...newMembers].some(id =>
-        existingMemberIds.includes(id)
-      )
-
-      if (hasDuplicates) {
-        showToast('이미 프로젝트에 속한 멤버가 포함되어 있습니다.', 'error')
-        return
-      }
-
       const response = await projectService.addProjectMembers(Number(id), {
         companyId: companyIdToUse,
-        managerIds: newManagers,
-        memberIds: newMembers
+        managerIds: selectedCompanyManagers,
+        memberIds: selectedRegularMembers
       })
 
       if (response.status === 'success') {
-        showToast('멤버가 성공적으로 추가되었습니다.', 'success')
-
+        showToast('멤버가 성공적으로 추가/변경되었습니다.', 'success')
+        // 모달 닫기 및 상태 초기화
+        setShowAddCompanyMemberDialog(false)
+        setSelectedNewCompany(null)
+        setSelectedCompanyManagers([])
+        setSelectedRegularMembers([])
+        setMemberSearch('')
         // 멤버 목록 새로고침
+        await fetchMembers()
+        // 선택된 회사 멤버 목록도 새로고침
         const updatedMembers = await projectService.getProjectMembers(
           Number(id),
           {
@@ -922,26 +930,17 @@ const ProjectDetail = () => {
             companyId: companyIdToUse
           }
         )
-
-        // 프로젝트 멤버 목록도 새로고침
-        await fetchMembers()
-
-        // 상태 초기화
         setSelectedCompanyMembers(prev => ({
           ...prev,
           members: updatedMembers.content,
           companyId: companyIdToUse
         }))
-        setShowAddCompanyMemberDialog(false)
-        setSelectedCompanyManagers([])
-        setSelectedRegularMembers([])
-        setMemberSearch('')
       } else {
-        throw new Error('멤버 추가에 실패했습니다.')
+        throw new Error('멤버 추가/변경에 실패했습니다.')
       }
     } catch (error) {
-      console.error('멤버 추가 실패:', error)
-      showToast('멤버 추가 중 오류가 발생했습니다.', 'error')
+      console.error('멤버 추가/변경 실패:', error)
+      showToast('멤버 추가/변경 중 오류가 발생했습니다.', 'error')
     }
   }
 
@@ -2205,7 +2204,7 @@ const ProjectDetail = () => {
                   backgroundColor: 'rgba(226, 232, 240, 0.1)'
                 }
               }}>
-              멤버 추가
+              멤버 수정
             </Button>
           </Box>
         </DialogTitle>
