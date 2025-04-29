@@ -32,7 +32,7 @@ class NoticeService {
     this.controller = new AbortController()
 
     // SSE 연결 설정
-    fetchEventSource('http://localhost:8080/notifications/subscribe', {
+    fetchEventSource('https://api.s0da.co.kr/notifications/subscribe', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

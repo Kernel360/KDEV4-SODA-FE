@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const baseURL = 'http://localhost:8080/'
+const baseURL = 'https://api.s0da.co.kr/'
 
 export const client = axios.create({
   baseURL,
