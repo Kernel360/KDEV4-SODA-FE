@@ -155,62 +155,12 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
 
       if (response.data.status === 'success' && response.data.data) {
         const currentPageRequests = response.data.data.content
-
-        // 부모-자식 요청 그룹화 로직
-        const parentIds = currentPageRequests
-          .filter((req: Request) => req.parentId && req.parentId !== -1)
-          .map((req: Request) => req.parentId)
-          .filter(
-            (id: number, index: number, self: number[]) =>
-              self.indexOf(id) === index
-          )
-
-        if (parentIds.length > 0) {
-          const parentPromises = parentIds.map((id: number) =>
-            client.get(`/requests/${id}`)
-          )
-          const parentResponses = await Promise.all(parentPromises)
-          const parentRequests = parentResponses
-            .filter(res => res.data.status === 'success')
-            .map(res => res.data.data)
-
-          const groups: RequestGroup[] = []
-          currentPageRequests.forEach((request: Request) => {
-            if (request.parentId && request.parentId !== -1) {
-              const parentRequest = parentRequests.find(
-                p => p.requestId === request.parentId
-              )
-              if (parentRequest) {
-                const existingGroup = groups.find(
-                  g => g.parent.requestId === parentRequest.requestId
-                )
-                if (existingGroup) {
-                  existingGroup.children.push(request)
-                } else {
-                  groups.push({
-                    parent: parentRequest,
-                    children: [request]
-                  })
-                }
-              }
-            } else {
-              groups.push({
-                parent: request,
-                children: []
-              })
-            }
-          })
-
-          setRequestGroups(groups)
-        } else {
-          setRequestGroups(
-            currentPageRequests.map((request: Request) => ({
-              parent: request,
-              children: []
-            }))
-          )
-        }
-
+        setRequestGroups(
+          currentPageRequests.map((request: Request) => ({
+            parent: request,
+            children: []
+          }))
+        )
         setTotalPages(response.data.data.page.totalPages)
       }
     } catch (error) {
@@ -499,7 +449,6 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
             ) : (
               requestGroups.map(group => (
                 <React.Fragment key={group.parent.requestId}>
-                  {/* 부모 요청 */}
                   <TableRow
                     hover
                     onClick={() =>
@@ -511,7 +460,22 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
                     <TableCell>
                       {memoStages.find(s => s.id === group.parent.stageId)?.name}
                     </TableCell>
-                    <TableCell>{group.parent.title}</TableCell>
+                    <TableCell>
+                      {group.parent.parentId !== -1 ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Typography
+                            variant="body2"
+                            sx={{ color: '#666', mr: 1 }}>
+                            └
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#666' }}>
+                            {group.parent.title}
+                          </Typography>
+                        </Box>
+                      ) : (
+                        group.parent.title
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Box
                         sx={{
@@ -531,46 +495,6 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
                       {dayjs(group.parent.createdAt).format('YYYY-MM-DD HH:mm')}
                     </TableCell>
                   </TableRow>
-
-                  {/* 자식 요청들 */}
-                  {group.children.map(child => (
-                    <TableRow
-                      key={child.requestId}
-                      hover
-                      onClick={() =>
-                        navigate(
-                          `/user/projects/${projectId}/requests/${child.requestId}`
-                        )
-                      }
-                      sx={{ cursor: 'pointer' }}>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{ color: '#666', pl: 2 }}>
-                          └
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{child.title}</TableCell>
-                      <TableCell>
-                        <Box
-                          sx={{
-                            display: 'inline-block',
-                            px: 1.5,
-                            py: 0.5,
-                            borderRadius: 1,
-                            color: getStatusColor(child.status).color,
-                            bgcolor: getStatusColor(child.status).bgColor,
-                            fontWeight: 600
-                          }}>
-                          {getStatusText(child.status)}
-                        </Box>
-                      </TableCell>
-                      <TableCell>{child.memberName}</TableCell>
-                      <TableCell>
-                        {dayjs(child.createdAt).format('YYYY-MM-DD HH:mm')}
-                      </TableCell>
-                    </TableRow>
-                  ))}
                 </React.Fragment>
               ))
             )}
