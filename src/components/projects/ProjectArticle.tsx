@@ -795,7 +795,14 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
                 align="center"
                 sx={{ width: '120px', cursor: 'pointer' }}
                 onClick={handlePriorityClick}>
-                우선순위 ▼
+                {priorityType
+                  ? priorityType === 'HIGH'
+                    ? '높음'
+                    : priorityType === 'MEDIUM'
+                      ? '중간'
+                      : '낮음'
+                  : '우선순위'}{' '}
+                ▼
                 <Popover
                   open={Boolean(anchorElPriority)}
                   anchorEl={anchorElPriority}
@@ -846,7 +853,12 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
                 align="center"
                 sx={{ width: '100px', cursor: 'pointer' }}
                 onClick={handleStatusClick}>
-                상태 ▼
+                {statusFilter
+                  ? statusFilter === 'PENDING'
+                    ? '답변대기'
+                    : '답변완료'
+                  : '상태'}{' '}
+                ▼
                 <Popover
                   open={Boolean(anchorElStatus)}
                   anchorEl={anchorElStatus}
