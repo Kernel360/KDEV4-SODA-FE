@@ -110,8 +110,12 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
   const [formData, setFormData] = useState<ProjectFormData>(initialFormData)
   const [clientCompanySearch, setClientCompanySearch] = useState('')
   const [clientMembers, setClientMembers] = useState<CompanyMember[]>([])
-  const [selectedClientMembers, setSelectedClientMembers] = useState<number[]>([])
-  const [selectedResponsibleMembers, setSelectedResponsibleMembers] = useState<number[]>([])
+  const [selectedClientMembers, setSelectedClientMembers] = useState<number[]>(
+    []
+  )
+  const [selectedResponsibleMembers, setSelectedResponsibleMembers] = useState<
+    number[]
+  >([])
   const [clientMemberSearch, setClientMemberSearch] = useState('')
   const [, setIsMemberSelectionComplete] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -147,20 +151,26 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
     }
   }
 
-
-  const handleClientMemberToggle = (memberId: number, isResponsible: boolean) => {
+  const handleClientMemberToggle = (
+    memberId: number,
+    isResponsible: boolean
+  ) => {
     if (isResponsible) {
-      const newResponsibleMembers = selectedResponsibleMembers.includes(memberId)
+      const newResponsibleMembers = selectedResponsibleMembers.includes(
+        memberId
+      )
         ? selectedResponsibleMembers.filter(id => id !== memberId)
         : [...selectedResponsibleMembers, memberId]
       setSelectedResponsibleMembers(newResponsibleMembers)
       setFormData(prev => ({
         ...prev,
-        clientCompanies: prev.clientCompanies.map(company => 
+        clientCompanies: prev.clientCompanies.map(company =>
           company.id === selectedCompany?.id
             ? {
                 ...company,
-                responsibles: company.responsibles.filter(member => member.id !== memberId)
+                responsibles: company.responsibles.filter(
+                  member => member.id !== memberId
+                )
               }
             : company
         )
@@ -168,11 +178,13 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
       setSelectedClientMembers(prev => prev.filter(id => id !== memberId))
       setFormData(prev => ({
         ...prev,
-        clientCompanies: prev.clientCompanies.map(company => 
+        clientCompanies: prev.clientCompanies.map(company =>
           company.id === selectedCompany?.id
             ? {
                 ...company,
-                members: company.members.filter(member => member.id !== memberId)
+                members: company.members.filter(
+                  member => member.id !== memberId
+                )
               }
             : company
         )
@@ -184,11 +196,13 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
       setSelectedClientMembers(newMembers)
       setFormData(prev => ({
         ...prev,
-        clientCompanies: prev.clientCompanies.map(company => 
+        clientCompanies: prev.clientCompanies.map(company =>
           company.id === selectedCompany?.id
             ? {
                 ...company,
-                members: newMembers.map(id => company.members.find(m => m.id === id)!).filter(Boolean)
+                members: newMembers
+                  .map(id => company.members.find(m => m.id === id)!)
+                  .filter(Boolean)
               }
             : company
         )
@@ -196,18 +210,19 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
       setSelectedResponsibleMembers(prev => prev.filter(id => id !== memberId))
       setFormData(prev => ({
         ...prev,
-        clientCompanies: prev.clientCompanies.map(company => 
+        clientCompanies: prev.clientCompanies.map(company =>
           company.id === selectedCompany?.id
             ? {
                 ...company,
-                responsibles: company.responsibles.filter(member => member.id !== memberId)
+                responsibles: company.responsibles.filter(
+                  member => member.id !== memberId
+                )
               }
             : company
         )
       }))
     }
   }
-
 
   const handleClientCompanySelect = (companyId: string) => {
     const parsedId = parseInt(companyId)
@@ -250,24 +265,22 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
     }
   }
 
-
-
   const handleMemberSelectionComplete = () => {
     if (selectedResponsibleMembers.length === 0) {
       showToast('최소 1명의 담당자를 선택해주세요.', 'error')
       return
     }
 
-    const selectedMembers = clientMembers.filter(member => 
+    const selectedMembers = clientMembers.filter(member =>
       selectedClientMembers.includes(member.id)
     )
-    const selectedResponsibles = clientMembers.filter(member => 
+    const selectedResponsibles = clientMembers.filter(member =>
       selectedResponsibleMembers.includes(member.id)
     )
 
     setFormData(prev => ({
       ...prev,
-      clientCompanies: prev.clientCompanies.map(company => 
+      clientCompanies: prev.clientCompanies.map(company =>
         company.id === selectedCompany?.id
           ? {
               ...company,
@@ -370,7 +383,7 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                 label="시작일"
                 value={formData.startDate}
                 onChange={date => handleDateChange('startDate', date)}
-                sx={{ 
+                sx={{
                   flex: 1,
                   '& .MuiOutlinedInput-root': {
                     '& fieldset': {
@@ -387,7 +400,7 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                 value={formData.endDate}
                 onChange={date => handleDateChange('endDate', date)}
                 minDate={formData.startDate}
-                sx={{ 
+                sx={{
                   flex: 1,
                   '& .MuiOutlinedInput-root': {
                     '& fieldset': {
@@ -401,13 +414,15 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
               />
             </Box>
             <Divider sx={{ my: 2 }} />
-            <Typography variant="subtitle1" gutterBottom>
+            <Typography
+              variant="subtitle1"
+              gutterBottom>
               프로젝트 스테이지 설정
             </Typography>
             <Paper sx={{ p: 2 }}>
               <DragDropContext onDragEnd={onDragEnd}>
                 <Droppable droppableId="stages">
-                  {(provided) => (
+                  {provided => (
                     <List
                       {...provided.droppableProps}
                       ref={provided.innerRef}>
@@ -416,7 +431,7 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                           key={index}
                           draggableId={`stage-${index}`}
                           index={index}>
-                          {(provided) => (
+                          {provided => (
                             <ListItem
                               ref={provided.innerRef}
                               {...provided.draggableProps}
@@ -425,7 +440,8 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: 2,
-                                borderBottom: index < formData.stages.length - 1 ? 1 : 0,
+                                borderBottom:
+                                  index < formData.stages.length - 1 ? 1 : 0,
                                 borderColor: 'divider',
                                 py: 1,
                                 bgcolor: 'background.paper',
@@ -433,14 +449,22 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                                   bgcolor: 'action.hover'
                                 }
                               }}>
-                              <Typography sx={{ minWidth: 40 }}>{stage.order}.</Typography>
+                              <Typography sx={{ minWidth: 40 }}>
+                                {stage.order}.
+                              </Typography>
                               <TextField
                                 fullWidth
                                 value={stage.name}
-                                onChange={(e) => {
+                                onChange={e => {
                                   const newStages = [...formData.stages]
-                                  newStages[index] = { ...stage, name: e.target.value }
-                                  setFormData(prev => ({ ...prev, stages: newStages }))
+                                  newStages[index] = {
+                                    ...stage,
+                                    name: e.target.value
+                                  }
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    stages: newStages
+                                  }))
                                 }}
                                 size="small"
                               />
@@ -448,9 +472,13 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                                 size="small"
                                 color="error"
                                 onClick={() => {
-                                  const newStages = formData.stages.filter((_, i) => i !== index)
+                                  const newStages = formData.stages
+                                    .filter((_, i) => i !== index)
                                     .map((s, i) => ({ ...s, order: i + 1 }))
-                                  setFormData(prev => ({ ...prev, stages: newStages }))
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    stages: newStages
+                                  }))
                                 }}
                                 disabled={formData.stages.length <= 1}>
                                 삭제
@@ -492,8 +520,18 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                 {formData.clientCompanies.map((company, index) => (
                   <Card key={company.id}>
                     <CardContent>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 2
+                        }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1
+                          }}>
                           <Typography variant="subtitle1">
                             {company.name}
                           </Typography>
@@ -502,7 +540,9 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                             onClick={() => {
                               setFormData(prev => ({
                                 ...prev,
-                                clientCompanies: prev.clientCompanies.filter((_, i) => i !== index)
+                                clientCompanies: prev.clientCompanies.filter(
+                                  (_, i) => i !== index
+                                )
                               }))
                             }}>
                             삭제
@@ -511,10 +551,17 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                         <Divider sx={{ my: 2 }} />
                         {company.responsibles.length > 0 && (
                           <Box sx={{ mb: 3 }}>
-                            <Typography variant="subtitle2" gutterBottom>
+                            <Typography
+                              variant="subtitle2"
+                              gutterBottom>
                               담당자:
                             </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                gap: 1
+                              }}>
                               {company.responsibles.map(member => (
                                 <Chip
                                   key={member.id}
@@ -527,10 +574,17 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                         )}
                         {company.members.length > 0 && (
                           <Box sx={{ mb: 3 }}>
-                            <Typography variant="subtitle2" gutterBottom>
+                            <Typography
+                              variant="subtitle2"
+                              gutterBottom>
                               멤버:
                             </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                gap: 1
+                              }}>
                               {company.members.map(member => (
                                 <Chip
                                   key={member.id}
@@ -598,7 +652,9 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                           key={company.id}
                           button
                           style={style}
-                          onClick={() => handleClientCompanySelect(company.id.toString())}>
+                          onClick={() =>
+                            handleClientCompanySelect(company.id.toString())
+                          }>
                           <ListItemText
                             primary={company.name}
                             secondary={`${company.phoneNumber} | ${company.address}`}
@@ -631,10 +687,29 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                   </Button>
                 </Box>
                 <Divider sx={{ my: 2 }} />
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    회사 멤버 선택
-                  </Typography>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography
+                      variant="subtitle1"
+                      gutterBottom>
+                      회사 멤버 선택
+                    </Typography>
+                    {selectedResponsibleMembers.length === 0 && (
+                      <Typography
+                        color="error"
+                        sx={{
+                          fontSize: '0.875rem',
+                          fontWeight: 400
+                        }}>
+                        담당자는 반드시 추가해야 합니다
+                      </Typography>
+                    )}
+                  </Box>
                 </Box>
                 <TextField
                   fullWidth
@@ -669,22 +744,32 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                           />
                           <Box sx={{ display: 'flex', gap: 1 }}>
                             <Button
-                              variant={selectedClientMembers.includes(member.id) ? "contained" : "outlined"}
-                              size="small"
-                              color="primary"
-                              onClick={() => handleClientMemberToggle(member.id, false)}
-                              sx={{ minWidth: '60px' }}
-                            >
-                              멤버
-                            </Button>
-                            <Button
-                              variant={selectedResponsibleMembers.includes(member.id) ? "contained" : "outlined"}
+                              variant={
+                                selectedResponsibleMembers.includes(member.id)
+                                  ? 'contained'
+                                  : 'outlined'
+                              }
                               size="small"
                               color="secondary"
-                              onClick={() => handleClientMemberToggle(member.id, true)}
-                              sx={{ minWidth: '60px' }}
-                            >
+                              onClick={() =>
+                                handleClientMemberToggle(member.id, true)
+                              }
+                              sx={{ minWidth: '60px' }}>
                               담당자
+                            </Button>
+                            <Button
+                              variant={
+                                selectedClientMembers.includes(member.id)
+                                  ? 'contained'
+                                  : 'outlined'
+                              }
+                              size="small"
+                              color="primary"
+                              onClick={() =>
+                                handleClientMemberToggle(member.id, false)
+                              }
+                              sx={{ minWidth: '60px' }}>
+                              멤버
                             </Button>
                           </Box>
                         </ListItem>
@@ -794,7 +879,12 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
           onClose={() => setIsModalOpen(false)}
           maxWidth="md"
           fullWidth>
-          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <DialogTitle
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
             {modalStep === 0 ? '고객사 선택' : '멤버 선택'}
             <IconButton
               onClick={() => setIsModalOpen(false)}
@@ -802,15 +892,19 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
               <Close />
             </IconButton>
           </DialogTitle>
-          <DialogContent>
-            {renderModalContent()}
-          </DialogContent>
+          <DialogContent>{renderModalContent()}</DialogContent>
           {modalStep === 1 && (
             <DialogActions>
-              <Button 
-                variant="contained" 
-                color="success"
-                onClick={handleMemberSelectionComplete}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleMemberSelectionComplete}
+                sx={{
+                  backgroundColor: '#F59E0B',
+                  '&:hover': {
+                    backgroundColor: '#FBBF24'
+                  }
+                }}>
                 완료
               </Button>
             </DialogActions>
@@ -821,4 +915,4 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
   )
 }
 
-export default CreateProjectSteps 
+export default CreateProjectSteps
