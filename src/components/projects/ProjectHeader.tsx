@@ -361,19 +361,27 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
   }
 
   const handleStageEdit = (stage: Stage) => {
-    setEditingStage({ id: stage.id, name: stage.name })
+    console.log('Editing stage:', stage)
+    setEditingStage({
+      id: stage.id,
+      name: stage.name || stage.title
+    })
   }
 
   const handleStageEditSave = async () => {
-    if (editingStage) {
-      try {
-        console.log('Updating stage:', editingStage.id, editingStage.name)
-        const response = await updateStage(editingStage.id, editingStage.name)
-        await onStageEdit(editingStage.id, editingStage.name)
-        setEditingStage(null)
-      } catch (error) {
-        console.error('Failed to update stage:', error)
-      }
+    if (!editingStage) return
+
+    try {
+      await onStageEdit(editingStage.id, editingStage.name)
+      const updatedStages = stages.map(stage =>
+        stage.id === editingStage.id
+          ? { ...stage, name: editingStage.name }
+          : stage
+      )
+      onStagesChange(updatedStages)
+      setEditingStage(null)
+    } catch (error) {
+      console.error('Failed to update stage:', error)
     }
   }
 
@@ -425,7 +433,7 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
           </FormControl>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          {['고객사담당자', '관리자', '개발사담당자'].includes(
+          {['고객사담당자', 'ADMIN', '개발사담당자'].includes(
             project.currentUserProjectRole
           ) && (
             <Button
@@ -502,7 +510,90 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
         </Box>
       </Box>
 
-      {/* Edit Modal - Simplified for Stage Management Only */}
+      {/* 단계 수정 모달 */}
+      <Dialog
+        open={editingStage !== null}
+        onClose={() => setEditingStage(null)}
+        maxWidth="xs"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)'
+          }
+        }}>
+        <DialogTitle>단계 수정</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="단계 이름"
+            value={editingStage?.name || ''}
+            onChange={e =>
+              setEditingStage(prev =>
+                prev ? { ...prev, name: e.target.value } : null
+              )
+            }
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditingStage(null)}>취소</Button>
+          <Button
+            onClick={handleStageEditSave}
+            variant="contained">
+            저장
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 단계 추가 모달 */}
+      <Dialog
+        open={isAddingStage}
+        onClose={() => {
+          setIsAddingStage(false)
+          setNewStageName('')
+          setNewStageNameError('')
+        }}
+        maxWidth="xs"
+        fullWidth>
+        <DialogTitle>새 단계 추가</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="단계 이름"
+            value={newStageName}
+            onChange={e => {
+              setNewStageName(e.target.value)
+              setNewStageNameError('')
+            }}
+            error={!!newStageNameError}
+            helperText={newStageNameError}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setIsAddingStage(false)
+              setNewStageName('')
+              setNewStageNameError('')
+            }}>
+            취소
+          </Button>
+          <Button
+            onClick={handleAddStage}
+            variant="contained"
+            disabled={!newStageName.trim() || !!newStageNameError}>
+            저장
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 단계 관리 모달 */}
       <Dialog
         open={editModalOpen}
         onClose={handleEditModalClose}
@@ -510,7 +601,7 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
         fullWidth
         PaperProps={{
           sx: {
-            height: 'auto',
+            height: '440px',
             maxHeight: '80vh'
           }
         }}>
@@ -529,15 +620,43 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
             </IconButton>
           </Box>
         </DialogTitle>
-        <DialogContent>
-          <Box>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mb: 2 }}>
-              • 단계는 최대 10개까지만 생성할 수 있습니다.
-              <br />• 드래그앤드롭으로 단계의 순서를 변경할 수 있습니다.
-            </Typography>
+        <DialogContent
+          sx={{
+            overflowY: 'hidden',
+            height: '440px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            overflow: 'hidden'
+          }}>
+          <Box sx={{ width: '100%' }}>
+            <Box sx={{ mb: 3 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  mb: 1,
+                  fontSize: '0.875rem',
+                  lineHeight: 1.5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}>
+                • 단계는 최대 10개까지만 생성할 수 있습니다.
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  fontSize: '0.875rem',
+                  lineHeight: 1.5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}>
+                • 드래그앤드롭으로 단계의 순서를 변경할 수 있습니다.
+              </Typography>
+            </Box>
             <DragDropContext onDragEnd={handleDragEnd}>
               <Droppable
                 droppableId="stages"
@@ -548,11 +667,13 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
                     {...provided.droppableProps}
                     sx={{
                       display: 'flex',
-                      gap: 0,
+                      gap: 2,
                       overflowX: 'auto',
+                      overflowY: 'hidden',
                       pt: 2,
                       pb: 2,
                       px: 2,
+                      mx: -2,
                       '&::-webkit-scrollbar': {
                         height: '8px',
                         backgroundColor: '#f5f5f5'
@@ -574,26 +695,29 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
-                        px: 0.25,
-                        height: 60,
+                        justifyContent: 'center',
+                        minWidth: '40px',
+                        height: '100px',
                         opacity: 0,
-                        transition: 'opacity 0.2s, padding 0.2s',
+                        transition: 'opacity 0.2s',
                         '&:hover': {
-                          opacity: 1,
-                          px: 0.5
+                          opacity: 1
                         }
                       }}>
                       <Button
                         onClick={() => handleAddStageClick(0)}
                         disabled={stages.length >= MAX_STAGES}
                         sx={{
-                          minWidth: '30px',
-                          width: '30px',
-                          height: '30px',
+                          minWidth: '32px',
+                          width: '32px',
+                          height: '32px',
                           p: 0,
                           borderRadius: '50%',
                           border: '2px dashed',
-                          borderColor: 'divider'
+                          borderColor: 'divider',
+                          '&:hover': {
+                            borderColor: '#FFB800'
+                          }
                         }}>
                         <AddIcon fontSize="small" />
                       </Button>
@@ -609,21 +733,23 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
                               sx={{
-                                width: 200,
-                                minWidth: 200,
-                                height: 60,
-                                minHeight: 50,
-                                p: 1,
+                                width: 280,
+                                minWidth: 280,
+                                height: 100,
+                                p: 2,
                                 display: 'flex',
                                 flexDirection: 'column',
                                 justifyContent: 'center',
-                                gap: 0.5,
                                 cursor: 'grab',
+                                backgroundColor: '#fff',
+                                border: '1.5px solid #d1d5db',
+                                borderRadius: 2,
+                                boxShadow: 'none',
                                 '&:active': {
                                   cursor: 'grabbing'
                                 },
                                 '&:hover': {
-                                  boxShadow: 3
+                                  borderColor: '#FFB800'
                                 }
                               }}>
                               <Box
@@ -634,32 +760,30 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
                                   height: '100%',
                                   width: '100%'
                                 }}>
-                                <Box
-                                  {...provided.dragHandleProps}
+                                <Typography
                                   sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    flex: 1,
-                                    cursor: 'grab',
-                                    '&:active': {
-                                      cursor: 'grabbing'
-                                    }
+                                    width: '100%',
+                                    textAlign: 'center',
+                                    fontSize: '1.1rem',
+                                    fontWeight: 500,
+                                    py: 0.5
                                   }}>
-                                  <Typography
-                                    sx={{
-                                      width: '100%',
-                                      textAlign: 'center',
-                                      fontSize: '1.1rem',
-                                      fontWeight: 500,
-                                      py: 0.5
-                                    }}>
-                                    {index + 1}. {stage.name}
-                                  </Typography>
-                                </Box>
+                                  {index + 1}. {stage.name}
+                                </Typography>
                                 <Box sx={{ display: 'flex', gap: 1 }}>
                                   <IconButton
                                     size="small"
-                                    onClick={() => handleStageEdit(stage)}
+                                    onClick={() => {
+                                      handleStageEdit({
+                                        id: stage.id,
+                                        name: stage.name,
+                                        title: stage.name,
+                                        order: stage.order,
+                                        stageOrder: stage.stageOrder,
+                                        status: stage.status,
+                                        tasks: stage.tasks
+                                      })
+                                    }}
                                     sx={{ color: 'text.primary' }}>
                                     <EditIcon fontSize="small" />
                                   </IconButton>
@@ -681,26 +805,29 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
                           sx={{
                             display: 'flex',
                             alignItems: 'center',
-                            px: 0.25,
-                            height: 60,
+                            justifyContent: 'center',
+                            minWidth: '40px',
+                            height: '100px',
                             opacity: 0,
-                            transition: 'opacity 0.2s, padding 0.2s',
+                            transition: 'opacity 0.2s',
                             '&:hover': {
-                              opacity: 1,
-                              px: 0.5
+                              opacity: 1
                             }
                           }}>
                           <Button
                             onClick={() => handleAddStageClick(index + 1)}
                             disabled={stages.length >= MAX_STAGES}
                             sx={{
-                              minWidth: '30px',
-                              width: '30px',
-                              height: '30px',
+                              minWidth: '32px',
+                              width: '32px',
+                              height: '32px',
                               p: 0,
                               borderRadius: '50%',
                               border: '2px dashed',
-                              borderColor: 'divider'
+                              borderColor: 'divider',
+                              '&:hover': {
+                                borderColor: '#FFB800'
+                              }
                             }}>
                             <AddIcon fontSize="small" />
                           </Button>
@@ -769,50 +896,6 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
           </Box>
         </Box>
       </Modal>
-
-      {/* 단계 추가 모달 복구 */}
-      <Dialog
-        open={isAddingStage}
-        onClose={() => {
-          setIsAddingStage(false)
-          setNewStageName('')
-          setNewStageNameError('')
-        }}
-        maxWidth="xs"
-        fullWidth>
-        <DialogTitle>새 단계 추가</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            fullWidth
-            label="단계 이름"
-            value={newStageName}
-            onChange={e => {
-              setNewStageName(e.target.value)
-              setNewStageNameError('')
-            }}
-            error={!!newStageNameError}
-            helperText={newStageNameError}
-            sx={{ mt: 1 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setIsAddingStage(false)
-              setNewStageName('')
-              setNewStageNameError('')
-            }}>
-            취소
-          </Button>
-          <Button
-            onClick={handleAddStage}
-            variant="contained"
-            disabled={!newStageName.trim() || !!newStageNameError}>
-            저장
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   )
 }
