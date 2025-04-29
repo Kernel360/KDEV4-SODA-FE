@@ -23,6 +23,7 @@ import {
 import { Search, Add } from '@mui/icons-material'
 import { client } from '../../api/client'
 import dayjs from 'dayjs'
+import { useUserStore } from '../../stores/userStore'
 
 interface Request {
   requestId: number
@@ -75,6 +76,8 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
     {}
   )
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL')
+  const { user } = useUserStore()
+  const [isClientMember, setIsClientMember] = useState(false)
 
   const memoStages = useMemo(() => stages, [stages])
 
@@ -114,7 +117,8 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
       const stageCounts: { [key: number]: number } = {}
       stageResponses.forEach((response, index) => {
         if (response.data.status === 'success' && response.data.data) {
-          stageCounts[memoStages[index].id] = response.data.data.page.totalElements
+          // 모든 요청(부모/자식 포함) 카운트
+          stageCounts[memoStages[index].id] = response.data.data.content.length
         }
       })
       setStageRequests(stageCounts)
@@ -224,6 +228,25 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
   useEffect(() => {
     fetchCurrentPageRequests()
   }, [projectId, selectedStage, page, selectedStatus, searchTerm])
+
+  useEffect(() => {
+    const fetchClientMembers = async () => {
+      if (!projectId || !user) return;
+      try {
+        const res = await client.get(`/projects/${projectId}/members`, {
+          params: { companyRole: 'CLIENT_COMPANY' }
+        });
+        if (res.data.status === 'success') {
+          const members = res.data.data.content;
+          const found = members.some((m: any) => m.memberId === user.memberId);
+          setIsClientMember(found);
+        }
+      } catch (e) {
+        setIsClientMember(false);
+      }
+    };
+    fetchClientMembers();
+  }, [projectId, user]);
 
   const handleStatusChange = (event: SelectChangeEvent) => {
     setSelectedStatus(event.target.value)
@@ -418,21 +441,23 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
           </Select>
         </FormControl>
 
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() =>
-            navigate(`/user/projects/${projectId}/requests/create`)
-          }
-          sx={{
-            bgcolor: '#FFB800',
-            '&:hover': {
-              bgcolor: '#FFB800',
-              opacity: 0.8
+        {!isClientMember && (
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() =>
+              navigate(`/user/projects/${projectId}/requests/create`)
             }
-          }}>
-          새로운 요청 추가
-        </Button>
+            sx={{
+              bgcolor: '#FFB800',
+              '&:hover': {
+                bgcolor: '#FFB800',
+                opacity: 0.8
+              }
+            }}>
+            새로운 요청 추가
+          </Button>
+        )}
       </Box>
 
       {error && (

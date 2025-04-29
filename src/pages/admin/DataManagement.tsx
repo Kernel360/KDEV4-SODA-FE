@@ -17,9 +17,14 @@ import {
   TextField,
   Grid,
   InputAdornment,
-  Button
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  IconButton
 } from '@mui/material'
 import { Database, Search } from 'lucide-react'
+import VisibilityIcon from '@mui/icons-material/Visibility'
 import { logService } from '../../services/logService'
 import type { Log } from '../../types/log'
 import { formatDate } from '../../utils/dateUtils'
@@ -141,22 +146,30 @@ const formatFiles = (files: any[]): string => {
   return files.map(file => `- ${file.name}`).join('\n')
 }
 
+// 액션별 색상 함수 추가
+const getActionColor = (action: string) => {
+  switch (action) {
+    case 'CREATE': return { color: '#2563eb', bg: '#e0edff' } // 파랑
+    case 'UPDATE': return { color: '#f59e42', bg: '#fff7e6' } // 주황
+    case 'DELETE': return { color: '#dc2626', bg: '#ffeaea' } // 빨강
+    default: return { color: '#4b5563', bg: '#f3f4f6' }
+  }
+}
+
+// formatRequestData: 가독성 좋게 줄바꿈 포함(기존 방식)
 const formatRequestData = (data: any): JSX.Element => {
   const groupData = (entries: [string, any][]) => {
     const groups: { [key: string]: (string | JSX.Element)[] } = {
-      ids: [],      // ID 관련 정보
-      status: [],   // 상태 정보
-      content: [],  // 내용 정보
-      links: [],    // 링크 관련
-      files: [],    // 파일 관련
-      dates: []     // 날짜 관련
+      ids: [],
+      status: [],
+      content: [],
+      links: [],
+      files: [],
+      dates: []
     }
-
     entries.forEach(([key, value]) => {
       const fieldName = formatFieldName(key)
       let formattedValue: string | JSX.Element = ''
-
-      // 값이 비어있으면 출력하지 않음
       if (
         value === null ||
         value === undefined ||
@@ -166,7 +179,6 @@ const formatRequestData = (data: any): JSX.Element => {
       ) {
         return
       }
-
       if (typeof value === 'object' && value !== null && 'before' in value && 'after' in value) {
         const diffValue = value as DiffValue
         if (key === 'status') {
@@ -209,8 +221,6 @@ const formatRequestData = (data: any): JSX.Element => {
           formattedValue = `${fieldName}: ${formatValue(value)}`
         }
       }
-
-      // 데이터 분류
       if (key.toLowerCase().includes('id')) {
         groups.ids.push(formattedValue)
       } else if (key === 'status') {
@@ -225,7 +235,6 @@ const formatRequestData = (data: any): JSX.Element => {
         groups.content.push(formattedValue)
       }
     })
-
     return (
       <Box>
         {groups.ids.length > 0 && (
@@ -242,7 +251,6 @@ const formatRequestData = (data: any): JSX.Element => {
             </Box>
           </Box>
         )}
-
         {groups.status.length > 0 && (
           <Box mb={2}>
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
@@ -257,7 +265,6 @@ const formatRequestData = (data: any): JSX.Element => {
             </Box>
           </Box>
         )}
-
         {groups.content.length > 0 && (
           <Box mb={2}>
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
@@ -272,7 +279,6 @@ const formatRequestData = (data: any): JSX.Element => {
             </Box>
           </Box>
         )}
-
         {groups.links.length > 0 && (
           <Box mb={2}>
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
@@ -287,7 +293,6 @@ const formatRequestData = (data: any): JSX.Element => {
             </Box>
           </Box>
         )}
-
         {groups.files.length > 0 && (
           <Box mb={2}>
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
@@ -302,7 +307,6 @@ const formatRequestData = (data: any): JSX.Element => {
             </Box>
           </Box>
         )}
-
         {groups.dates.length > 0 && (
           <Box>
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
@@ -320,7 +324,6 @@ const formatRequestData = (data: any): JSX.Element => {
       </Box>
     )
   }
-
   if (data.diff) {
     return groupData(Object.entries(data.diff))
   }
@@ -345,6 +348,8 @@ const DataManagement: React.FC = () => {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [tempSearchTerm, setTempSearchTerm] = useState('')
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [detailLog, setDetailLog] = useState<Log | null>(null)
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -538,49 +543,50 @@ const DataManagement: React.FC = () => {
         </Typography>
       )}
 
-      <TableContainer component={Paper} sx={{ mb: 3 }}>
-        <Table size="small" sx={{ minWidth: 650 }}>
+      <TableContainer component={Paper} sx={{ mb: 3, boxShadow: 'none', borderRadius: 3, maxWidth: '98%', ml: 'auto', mr: 0 }}>
+        <Table size="small" sx={{ minWidth: 800 }}>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', fontWeight: 'bold' }}>시간</TableCell>
-              <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', fontWeight: 'bold' }}>데이터 종류</TableCell>
-              <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', fontWeight: 'bold' }}>액션</TableCell>
-              <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', fontWeight: 'bold' }}>작업자</TableCell>
-              <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', fontWeight: 'bold' }}>변경 내용</TableCell>
+              <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', fontWeight: 'bold', width: 120, minWidth: 100 }}>시간</TableCell>
+              <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', fontWeight: 'bold', width: 110, minWidth: 90 }}>데이터 종류</TableCell>
+              <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', fontWeight: 'bold', width: 80, minWidth: 70, textAlign: 'center' }}>액션</TableCell>
+              <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', fontWeight: 'bold', width: 110, minWidth: 90 }}>작업자</TableCell>
+              <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', fontWeight: 'bold', minWidth: 120, maxWidth: 200, width: 140 }}>작업 내용</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {logs.map((log) => (
               <TableRow key={log.id}>
-                <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px' }}>{formatDate(log.timestamp)}</TableCell>
-                <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px' }}>{log.entityName}</TableCell>
-                <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px' }}>
-                  {log.action === 'CREATE' ? '생성' :
-                   log.action === 'UPDATE' ? '수정' :
-                   log.action === 'DELETE' ? '삭제' : log.action}
-                </TableCell>
-                <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px' }}>{log.operator}</TableCell>
-                <TableCell sx={{ padding: '6px 8px', minWidth: 220, maxWidth: 400 }}>
-                  <Box
-                    sx={{
-                      minHeight: 48,
-                      display: 'flex',
-                      alignItems: 'center',
-                      whiteSpace: 'pre-line',
-                      wordBreak: 'break-all',
-                      width: '100%'
-                    }}
-                  >
-                    {log.action === 'CREATE' && log.afterData && (
-                      formatRequestData(log.afterData)
-                    )}
-                    {log.action === 'UPDATE' && log.diff && (
-                      formatRequestData({ diff: log.diff })
-                    )}
-                    {log.action === 'DELETE' && log.beforeData && (
-                      formatRequestData(log.beforeData)
-                    )}
+                <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', width: 120, minWidth: 100 }}>{formatDate(log.timestamp)}</TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', width: 110, minWidth: 90 }}>{log.entityName}</TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', width: 80, minWidth: 70, textAlign: 'center' }}>
+                  <Box sx={{
+                    display: 'inline-block',
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 1,
+                    fontWeight: 600,
+                    color: getActionColor(log.action).color,
+                    bgcolor: getActionColor(log.action).bg,
+                    fontSize: '1em',
+                    minWidth: 56,
+                    textAlign: 'center'
+                  }}>
+                    {log.action === 'CREATE' ? '생성' :
+                     log.action === 'UPDATE' ? '수정' :
+                     log.action === 'DELETE' ? '삭제' : log.action}
                   </Box>
+                </TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', width: 110, minWidth: 90 }}>{log.operator}</TableCell>
+                <TableCell sx={{ padding: '6px 8px', minWidth: 120, maxWidth: 200, width: 140 }}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<VisibilityIcon />}
+                    onClick={() => { setDetailLog(log); setDetailOpen(true); }}
+                  >
+                    상세보기
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -596,6 +602,31 @@ const DataManagement: React.FC = () => {
           color="primary"
         />
       </Box>
+
+      <Dialog open={detailOpen} onClose={() => setDetailOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.25rem', borderBottom: '1px solid #eee', bgcolor: '#f8fafc' }}>작업 내용 상세</DialogTitle>
+        <DialogContent sx={{ bgcolor: '#f9fbfd', p: 3 }}>
+          {detailLog && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {detailLog.action === 'CREATE' && detailLog.afterData && (
+                <Box sx={{ border: '1px solid #e0e7ef', borderRadius: 2, bgcolor: '#fff', p: 2, boxShadow: '0 1px 4px #f1f5f9' }}>
+                  {formatRequestData(detailLog.afterData)}
+                </Box>
+              )}
+              {detailLog.action === 'UPDATE' && detailLog.diff && (
+                <Box sx={{ border: '1px solid #e0e7ef', borderRadius: 2, bgcolor: '#f6faff', p: 2, boxShadow: '0 1px 4px #f1f5f9' }}>
+                  {formatRequestData({ diff: detailLog.diff })}
+                </Box>
+              )}
+              {detailLog.action === 'DELETE' && detailLog.beforeData && (
+                <Box sx={{ border: '1px solid #e0e7ef', borderRadius: 2, bgcolor: '#f9fafb', p: 2, boxShadow: '0 1px 4px #f1f5f9' }}>
+                  {formatRequestData(detailLog.beforeData)}
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   )
 }
