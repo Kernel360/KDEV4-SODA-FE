@@ -37,12 +37,12 @@ const UserSidebar: React.FC<UserSidebarProps> = ({ isOpen }) => {
     {
       path: '/user/requests',
       icon: <ClipboardList size={24} />,
-      text: '요청사항 목록'
+      text: '승인요청 목록'
     },
     {
       path: '/user/articles',
       icon: <FileText size={24} />,
-      text: '작성한 질문 목록'
+      text: '질문 목록'
     },
     {
       path: '/user/projects',

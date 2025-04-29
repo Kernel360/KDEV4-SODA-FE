@@ -373,127 +373,120 @@ export default function AdminMain() {
         </Grid>
 
         {/* 마감 임박 프로젝트와 최근 활동 프로젝트 섹션 */}
-        <Grid
-          container
-          spacing={3}
-          sx={{ mt: 2 }}>
+        <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
           {/* 마감 임박 프로젝트 */}
-          <Grid
-            item
-            xs={5.5}>
-            <Paper
-              elevation={0}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              border: '1px solid #e5e7eb',
+              borderRadius: 2,
+              bgcolor: '#fff',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+            }}>
+            <Box
               sx={{
-                p: 3,
-                border: '1px solid #e5e7eb',
-                borderRadius: 2,
-                bgcolor: '#fff',
-                height: '100%',
                 display: 'flex',
-                flexDirection: 'column',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: 3
               }}>
-              <Box
+              <Typography
                 sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 3
+                  fontSize: '1.25rem',
+                  fontWeight: 600,
+                  color: '#1a1a1a'
                 }}>
-                <Typography
-                  sx={{
-                    fontSize: '1.25rem',
-                    fontWeight: 600,
-                    color: '#1a1a1a'
-                  }}>
-                  마감 임박 프로젝트
-                </Typography>
-                <Button
-                  variant="outlined"
-                  onClick={handleViewMoreProjects}
-                  size="small"
-                  sx={{
-                    borderRadius: 2,
-                    borderColor: '#e5e7eb',
-                    color: '#666',
-                    '&:hover': {
-                      borderColor: '#666',
-                      bgcolor: 'transparent'
-                    }
-                  }}>
-                  더보기
-                </Button>
-              </Box>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell
-                        sx={{
-                          fontSize: '0.875rem',
-                          fontWeight: 600,
-                          color: '#1a1a1a',
-                          borderBottom: '2px solid #e5e7eb'
-                        }}>
-                        프로젝트
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontSize: '0.875rem',
-                          fontWeight: 600,
-                          color: '#1a1a1a',
-                          borderBottom: '2px solid #e5e7eb'
-                        }}>
-                        마감일
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontSize: '0.875rem',
-                          fontWeight: 600,
-                          color: '#1a1a1a',
-                          borderBottom: '2px solid #e5e7eb'
-                        }}>
-                        대시보드
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {projects
-                      .filter(p => p.status === 'IN_PROGRESS')
-                      .map(p => ({
-                        ...p,
-                        daysUntilEnd: dayjs(p.endDate)
-                          .startOf('day')
-                          .diff(dayjs().startOf('day'), 'day')
-                      }))
-                      .sort((a, b) => a.daysUntilEnd - b.daysUntilEnd)
-                      .slice(0, 3)
-                      .map(project => {
-                        const daysUntilEnd = project.daysUntilEnd
-                        const isOverdue = daysUntilEnd < 0
-                        const isUrgent = daysUntilEnd <= 7 && !isOverdue
+                마감 임박 프로젝트
+              </Typography>
+              <Button
+                variant="outlined"
+                onClick={handleViewMoreProjects}
+                size="small"
+                sx={{
+                  borderRadius: 2,
+                  borderColor: '#e5e7eb',
+                  color: '#666',
+                  '&:hover': {
+                    borderColor: '#666',
+                    bgcolor: 'transparent'
+                  }
+                }}>
+                더보기
+              </Button>
+            </Box>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#1a1a1a',
+                        borderBottom: '2px solid #e5e7eb'
+                      }}>
+                      프로젝트
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#1a1a1a',
+                        borderBottom: '2px solid #e5e7eb'
+                      }}>
+                      마감일
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#1a1a1a',
+                        borderBottom: '2px solid #e5e7eb'
+                      }}>
+                      대시보드
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {projects
+                    .filter(p => p.status === 'IN_PROGRESS')
+                    .map(p => ({
+                      ...p,
+                      daysUntilEnd: dayjs(p.endDate)
+                        .startOf('day')
+                        .diff(dayjs().startOf('day'), 'day')
+                    }))
+                    .sort((a, b) => a.daysUntilEnd - b.daysUntilEnd)
+                    .slice(0, 3)
+                    .map(project => {
+                      const daysUntilEnd = project.daysUntilEnd
+                      const isOverdue = daysUntilEnd < 0
+                      const isUrgent = daysUntilEnd <= 7 && !isOverdue
 
-                        return (
-                          <TableRow
-                            key={project.id}
-                            hover>
-                            <TableCell sx={{ maxWidth: '200px' }}>
-                              <Typography
-                                onClick={() =>
-                                  handleProjectManageClick(project.id)
-                                }
-                                sx={{
-                                  fontSize: '0.875rem',
-                                  cursor: 'pointer',
-                                  color: '#1a1a1a',
-                                  '&:hover': {
-                                    color: '#FBBF24',
-                                    textDecoration: 'underline'
-                                  },
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap'
-                                }}>
+                      return (
+                        <TableRow
+                          key={project.id}
+                          hover>
+                          <TableCell sx={{ maxWidth: '200px' }}>
+                            <Typography
+                              onClick={() =>
+                                handleProjectManageClick(project.id)
+                              }
+                              sx={{
+                                fontSize: '0.875rem',
+                                cursor: 'pointer',
+                                color: '#1a1a1a',
+                                '&:hover': {
+                                  color: '#FBBF24',
+                                  textDecoration: 'underline'
+                                },
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
                                 {project.title}
                               </Typography>
                             </TableCell>
@@ -557,12 +550,7 @@ export default function AdminMain() {
                 </Table>
               </TableContainer>
             </Paper>
-          </Grid>
-
-          {/* 최근 활동이 많은 프로젝트 */}
-          <Grid
-            item
-            xs={6.5}>
+            {/* 최근 활동이 많은 프로젝트 */}
             <Paper
               elevation={0}
               sx={{
@@ -570,7 +558,6 @@ export default function AdminMain() {
                 border: '1px solid #e5e7eb',
                 borderRadius: 2,
                 bgcolor: '#fff',
-                height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
@@ -751,8 +738,8 @@ export default function AdminMain() {
                 </Table>
               </TableContainer>
             </Paper>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* 프로젝트 생성 추이 그래프 */}
         <Grid
@@ -850,7 +837,7 @@ export default function AdminMain() {
             </Paper>
           </Grid>
         </Grid>
-      </Box>
+      
 
       {/* 회사 섹션 */}
       <Box>
