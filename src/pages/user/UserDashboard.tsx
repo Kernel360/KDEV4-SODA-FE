@@ -397,6 +397,7 @@ const UserDashboard: React.FC = () => {
               </ListItem>
               {index < projects.length - 1 && (
                 <Box
+                  key={`divider-${project.projectId}`}
                   sx={{
                     borderBottom: '1px solid',
                     borderColor: 'divider'
@@ -448,6 +449,7 @@ const UserDashboard: React.FC = () => {
                 </ListItem>
                 {index < recentRequests.length - 1 && (
                   <Box
+                    key={`divider-${request.requestId}`}
                     sx={{
                       borderBottom: '1px solid',
                       borderColor: 'divider'
@@ -562,6 +564,7 @@ const UserDashboard: React.FC = () => {
                 </ListItem>
                 {index < recentArticles.length - 1 && (
                   <Box
+                    key={`divider-${article.id}`}
                     sx={{
                       borderBottom: '1px solid',
                       borderColor: 'divider'
