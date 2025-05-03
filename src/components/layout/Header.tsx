@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Bell,
   User,
   LogOut,
   ChevronDown,
@@ -9,7 +8,6 @@ import {
   ChevronRight
 } from 'lucide-react'
 import {
-  Badge,
   IconButton,
   Menu,
   MenuItem,
@@ -19,14 +17,7 @@ import {
   Box
 } from '@mui/material'
 import { useUserStore } from '../../stores/userStore'
-
-interface Notification {
-  id: number
-  message: string
-  type: 'approval_request' | 'approval_accepted' | 'approval_rejected'
-  createdAt: string
-  isRead: boolean
-}
+import NotificationCenter from '../common/NotificationCenter'
 
 interface HeaderProps {
   onSidebarToggle: () => void
@@ -35,30 +26,8 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onSidebarToggle, isSidebarOpen }) => {
   const navigate = useNavigate()
-  const [notificationAnchor, setNotificationAnchor] =
-    useState<null | HTMLElement>(null)
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null)
   const { user, logout } = useUserStore()
-
-  // Mock data - replace with actual data from your backend
-  const notifications: Notification[] = [
-    {
-      id: 1,
-      message: '새로운 승인 요청이 있습니다',
-      type: 'approval_request',
-      createdAt: '2024-03-20T10:00:00Z',
-      isRead: false
-    },
-    {
-      id: 2,
-      message: '승인 요청이 반려되었습니다',
-      type: 'approval_rejected',
-      createdAt: '2024-03-19T15:30:00Z',
-      isRead: true
-    }
-  ]
-
-  const unreadNotifications = notifications.filter(n => !n.isRead).length
 
   const handleLogoClick = () => {
     const userData = localStorage.getItem('user')
@@ -70,16 +39,8 @@ const Header: React.FC<HeaderProps> = ({ onSidebarToggle, isSidebarOpen }) => {
     }
   }
 
-  const handleNotificationClick = (event: React.MouseEvent<HTMLElement>) => {
-    setNotificationAnchor(event.currentTarget)
-  }
-
   const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => {
     setProfileAnchor(event.currentTarget)
-  }
-
-  const handleNotificationClose = () => {
-    setNotificationAnchor(null)
   }
 
   const handleProfileClose = () => {
@@ -136,19 +97,7 @@ const Header: React.FC<HeaderProps> = ({ onSidebarToggle, isSidebarOpen }) => {
         </Typography>
         {user && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <IconButton
-              onClick={handleNotificationClick}
-              sx={{
-                color: 'text.secondary',
-                '&:hover': { color: 'primary.main' }
-              }}>
-              <Badge
-                variant="dot"
-                color="error"
-                invisible={unreadNotifications === 0}>
-                <Bell size={20} />
-              </Badge>
-            </IconButton>
+            <NotificationCenter />
 
             <Box
               onClick={handleProfileClick}
@@ -185,47 +134,6 @@ const Header: React.FC<HeaderProps> = ({ onSidebarToggle, isSidebarOpen }) => {
             </Box>
 
             <Menu
-              anchorEl={notificationAnchor}
-              open={Boolean(notificationAnchor)}
-              onClose={handleNotificationClose}
-              sx={{
-                '& .MuiPaper-root': {
-                  minWidth: '320px',
-                  marginTop: '8px',
-                  borderRadius: '8px',
-                  boxShadow:
-                    '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
-                }
-              }}>
-              {notifications.map(notification => (
-                <MenuItem
-                  key={notification.id}
-                  sx={{
-                    py: 1.5,
-                    px: 2,
-                    '&:hover': { backgroundColor: 'action.hover' },
-                    ...(!notification.isRead && {
-                      backgroundColor: 'action.selected'
-                    })
-                  }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                    <Typography
-                      variant="body2"
-                      color="text.primary">
-                      {notification.message}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ mt: 0.5 }}>
-                      {new Date(notification.createdAt).toLocaleDateString()}
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-            </Menu>
-
-            <Menu
               anchorEl={profileAnchor}
               open={Boolean(profileAnchor)}
               onClose={handleProfileClose}
@@ -239,18 +147,26 @@ const Header: React.FC<HeaderProps> = ({ onSidebarToggle, isSidebarOpen }) => {
                 }
               }}>
               <MenuItem onClick={handleMyPage}>
-                <User
-                  size={16}
-                  style={{ marginRight: 8 }}
-                />
-                마이페이지
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}>
+                  <User size={16} />
+                  <Typography variant="body2">마이페이지</Typography>
+                </Box>
               </MenuItem>
               <MenuItem onClick={handleLogout}>
-                <LogOut
-                  size={16}
-                  style={{ marginRight: 8 }}
-                />
-                로그아웃
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}>
+                  <LogOut size={16} />
+                  <Typography variant="body2">로그아웃</Typography>
+                </Box>
               </MenuItem>
             </Menu>
           </Box>
