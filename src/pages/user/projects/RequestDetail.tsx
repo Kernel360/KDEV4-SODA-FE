@@ -249,7 +249,7 @@ const RequestDetail = () => {
           if (requestData.parentId && requestData.parentId !== -1) {
             const parentResponse = await client.get(`/requests/${requestData.parentId}`);
             if (parentResponse.data.status === 'success') {
-              setParentRequest(parentResponse.data);
+              setParentRequest(parentResponse.data.data);
             }
           } else {
             setParentRequest(null);
