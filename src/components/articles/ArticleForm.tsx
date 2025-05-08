@@ -74,7 +74,7 @@ interface ArticleFormProps {
   isLoading?: boolean
   isReply?: boolean
   projectId: number
-  articleId: number
+  articleId: any
   validationErrors?: {
     title?: string
     content?: string

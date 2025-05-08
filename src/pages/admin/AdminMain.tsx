@@ -355,7 +355,7 @@ export default function AdminMain() {
             flexDirection: 'row',
             gap: 3,
             mx: 'auto',
-            maxWidth: '1200px',
+            maxWidth: '100%',
             px: 0,
             ml: 0
           }}>
