@@ -20,7 +20,10 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemIcon
+  ListItemIcon,
+  Chip,
+  Select,
+  MenuItem
 } from '@mui/material'
 import {
   ArrowBack as ArrowLeft,
@@ -84,6 +87,23 @@ const UserProjectDetail: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     return dayjs(dateString).format('YYYY-MM-DD')
+  }
+
+  const getProjectStatusColor = (status: string) => {
+    switch (status) {
+      case 'CONTRACT':
+        return { bg: '#fff', color: '#64748B', border: '1px solid #64748B' }
+      case 'IN_PROGRESS':
+        return { bg: '#fff', color: '#FFB800', border: '1px solid #FFB800' }
+      case 'DELIVERED':
+        return { bg: '#fff', color: '#22C55E', border: '1px solid #22C55E' }
+      case 'MAINTENANCE':
+        return { bg: '#fff', color: '#8B5CF6', border: '1px solid #8B5CF6' }
+      case 'ON_HOLD':
+        return { bg: '#fff', color: '#EF4444', border: '1px solid #EF4444' }
+      default:
+        return { bg: '#fff', color: '#FFB800', border: '1px solid #FFB800' }
+    }
   }
 
   if (loading) {
@@ -266,88 +286,31 @@ const UserProjectDetail: React.FC = () => {
               </Stack>
             </Grid>
 
-            <Grid
-              item
-              xs={12}
-              md={6}>
-              <Stack spacing={3}>
-                <Stack
-                  direction="row"
-                  spacing={2}
-                  alignItems="center">
-                  <Building2 sx={{ fontSize: 36, color: '#64748b' }} />
-                  <Stack>
-                    <Typography
-                      color="text.secondary"
-                      variant="caption">
-                      고객사
-                    </Typography>
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      flexWrap="wrap"
-                      useFlexGap>
-                      {project.clientCompanyNames.length > 0 ? (
-                        project.clientCompanyNames.map((companyName, index) => (
-                          <Typography
-                            key={index}
-                            variant="body1">
-                            {companyName}
-                          </Typography>
-                        ))
-                      ) : (
-                        <Typography
-                          variant="body1"
-                          color="text.secondary">
-                          고객사 없음
-                        </Typography>
-                      )}
-                    </Stack>
-                  </Stack>
-                </Stack>
-              </Stack>
-            </Grid>
-
-            <Grid
-              item
-              xs={12}
-              md={6}>
-              <Stack spacing={3}>
-                <Stack
-                  direction="row"
-                  spacing={2}
-                  alignItems="center">
-                  <Building2 sx={{ fontSize: 36, color: '#64748b' }} />
-                  <Stack>
-                    <Typography
-                      color="text.secondary"
-                      variant="caption">
-                      개발사
-                    </Typography>
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      flexWrap="wrap"
-                      useFlexGap>
-                      {project.devCompanyNames.length > 0 ? (
-                        project.devCompanyNames.map((companyName, index) => (
-                          <Typography
-                            key={index}
-                            variant="body1">
-                            {companyName}
-                          </Typography>
-                        ))
-                      ) : (
-                        <Typography
-                          variant="body1"
-                          color="text.secondary">
-                          개발사 없음
-                        </Typography>
-                      )}
-                    </Stack>
-                  </Stack>
-                </Stack>
-              </Stack>
+            <Grid container spacing={0} sx={{ mb: 4 }}>
+              <Grid item xs={12} md={4}>
+                <Typography color="text.secondary" variant="caption" sx={{ display: 'block', mb: 1 }}>
+                  고객사
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                  {project.clientCompanyNames.length > 0 ? project.clientCompanyNames.join(', ') : '고객사 없음'}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Typography color="text.secondary" variant="caption" sx={{ display: 'block', mb: 1 }}>
+                  개발사
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                  {project.devCompanyNames.length > 0 ? project.devCompanyNames.join(', ') : '개발사 없음'}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Typography color="text.secondary" variant="caption" sx={{ display: 'block', mb: 1 }}>
+                  기간
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                  {dayjs(project.startDate).format('YYYY. M. D.')} ~ {dayjs(project.endDate).format('YYYY. M. D.')}
+                </Typography>
+              </Grid>
             </Grid>
 
             <Grid

@@ -50,7 +50,7 @@ const getStatusColor = (status: string): string => {
     case 'CONTRACT':
       return '#64748B'
     case 'IN_PROGRESS':
-      return '#2563EB'
+      return '#FFB800'
     case 'DELIVERED':
       return '#059669'
     case 'MAINTENANCE':
@@ -199,6 +199,30 @@ const ProjectList: React.FC = () => {
           대시보드
         </Button>
       )
+    },
+    {
+      id: 'management',
+      label: '관리',
+      render: (row: Project) => (
+        <Button
+          variant="outlined"
+          startIcon={<LayoutDashboard size={14} />}
+          onClick={() => navigate(`/admin/projects/${row.id}`)}
+          sx={{
+            color: '#1E293B',
+            bgcolor: 'white',
+            border: '1px solid #E2E8F0',
+            '&:hover': {
+              bgcolor: '#FFF8E6',
+              border: '1px solid #E2E8F0'
+            },
+            fontSize: '0.875rem',
+            py: 0.5,
+            px: 1.5
+          }}>
+          관리
+        </Button>
+      )
     }
   ]
 
@@ -242,7 +266,6 @@ const ProjectList: React.FC = () => {
                     border: '1px solid',
                     borderColor:
                       selectedStatus === status.value ? statusColor : '#E2E8F0',
-                    borderLeft: `4px solid ${statusColor}`,
                     transition: 'all 0.2s ease',
                     '&:hover': {
                       bgcolor: `${statusColor}10`,
