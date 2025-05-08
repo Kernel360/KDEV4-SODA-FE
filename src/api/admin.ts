@@ -3,7 +3,7 @@ import type { ApiResponse, MemberListDto, PagedData } from '../types/api'
 
 export const getUsers = async (page: number, size: number, search?: string) => {
   const response = await instance.get<ApiResponse<PagedData<MemberListDto>>>(
-    '/admin/users',
+    '/admin/members',
     {
       params: {
         page,
@@ -16,13 +16,15 @@ export const getUsers = async (page: number, size: number, search?: string) => {
 }
 
 export const getUserDetail = async (userId: number) => {
-  const response = await instance.get<ApiResponse<any>>(`/admin/users/${userId}`)
+  const response = await instance.get<ApiResponse<any>>(
+    `/admin/members/${userId}`
+  )
   return response.data
 }
 
 export const updateUserStatus = async (userId: number, active: boolean) => {
   const response = await instance.put<ApiResponse<null>>(
-    `/admin/users/${userId}/status`,
+    `/admin/members/${userId}/status`,
     {
       active
     }
@@ -42,16 +44,19 @@ export const getCompanies = async () => {
 }
 
 // 사용자 정보 수정
-export const updateUser = async (userId: number, userData: {
-  name: string
-  email: string
-  role: string
-  companyId: number
-  position: string
-  phoneNumber: string
-}) => {
+export const updateUser = async (
+  userId: number,
+  userData: {
+    name: string
+    email: string
+    role: string
+    companyId: number
+    position: string
+    phoneNumber: string
+  }
+) => {
   try {
-    const response = await instance.put(`/admin/users/${userId}`, userData)
+    const response = await instance.put(`/admin/members/${userId}`, userData)
     return response.data
   } catch (error) {
     console.error('사용자 정보 수정 중 오류:', error)
