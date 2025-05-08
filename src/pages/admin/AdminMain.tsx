@@ -28,6 +28,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import isBetween from 'dayjs/plugin/isBetween'
 import CompanyCreationTrendChart from '../../components/charts/CompanyCreationTrendChart'
 import SettingsIcon from '@mui/icons-material/Settings'
+import { textAlign } from '@mui/system'
 
 interface ActiveProject {
   id: number
@@ -153,29 +154,6 @@ export default function AdminMain() {
         return '대기'
     }
   }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'IN_PROGRESS':
-        return theme.palette.success.main
-      case 'CONTRACT':
-        return theme.palette.warning.main
-      case 'COMPLETED':
-        return theme.palette.info.main
-      case 'MAINTENANCE':
-        return theme.palette.error.main
-      case 'STOPPED':
-        return theme.palette.error.dark
-      default:
-        return theme.palette.success.light
-    }
-  }
-
-  const handleTrendSearch = () => {
-    setTrendKey(prev => prev + 1)
-  }
-
-  const handleCompanyTrendSearch = () => setCompanyTrendKey(prev => prev + 1)
 
   if (isLoading) {
     return <LoadingSpinner />
@@ -455,7 +433,8 @@ export default function AdminMain() {
                         fontWeight: 600,
                         color: '#1a1a1a',
                         borderBottom: '2px solid #e5e7eb',
-                        minWidth: '90px'
+                        minWidth: '90px',
+                        textAlign: 'center'
                       }}>
                       대시보드
                     </TableCell>
@@ -464,7 +443,8 @@ export default function AdminMain() {
                         fontSize: '0.875rem',
                         fontWeight: 600,
                         color: '#1a1a1a',
-                        borderBottom: '2px solid #e5e7eb'
+                        borderBottom: '2px solid #e5e7eb',
+                        textAlign: 'center'
                       }}>
                       관리
                     </TableCell>
@@ -688,7 +668,8 @@ export default function AdminMain() {
                         fontWeight: 600,
                         color: '#1a1a1a',
                         borderBottom: '2px solid #e5e7eb',
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'nowrap',
+                        textAlign: 'center'
                       }}>
                       대시보드
                     </TableCell>
@@ -697,7 +678,8 @@ export default function AdminMain() {
                         fontSize: '0.875rem',
                         fontWeight: 600,
                         color: '#1a1a1a',
-                        borderBottom: '2px solid #e5e7eb'
+                        borderBottom: '2px solid #e5e7eb',
+                        textAlign: 'center'
                       }}>
                       관리
                     </TableCell>
@@ -904,12 +886,6 @@ export default function AdminMain() {
                 sx={{ minWidth: 80 }}>
                 월간
               </Button>
-              <Button
-                variant="contained"
-                onClick={handleTrendSearch}
-                sx={{ ml: 2 }}>
-                조회
-              </Button>
             </Box>
             <ProjectCreationTrendChart
               key={trendKey}
@@ -1008,12 +984,6 @@ export default function AdminMain() {
                   onClick={() => setCompanyTrendUnit('MONTH')}
                   sx={{ minWidth: 80 }}>
                   월간
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={handleCompanyTrendSearch}
-                  sx={{ ml: 2 }}>
-                  조회
                 </Button>
               </Box>
               <CompanyCreationTrendChart
