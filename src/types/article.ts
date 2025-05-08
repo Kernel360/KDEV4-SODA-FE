@@ -1,3 +1,5 @@
+import dayjs from 'dayjs'
+
 export enum ArticleStatus {
   DRAFT = 'DRAFT',
   PENDING = 'PENDING',
@@ -143,4 +145,12 @@ export interface ArticleLinkDTO {
   urlAddress: string
   urlDescription: string
   deleted?: boolean
+}
+
+export interface VoteForm {
+  title: string
+  voteItems: string[]
+  allowMultipleSelection: boolean
+  allowTextAnswer: boolean
+  deadLine: dayjs.Dayjs | null
 }
