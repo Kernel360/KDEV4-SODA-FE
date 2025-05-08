@@ -67,6 +67,7 @@ const ProjectList: React.FC = () => {
   const theme = useTheme()
   const [searchParams, setSearchParams] = useSearchParams()
   const [projects, setProjects] = useState<Project[]>([])
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
@@ -77,19 +78,38 @@ const ProjectList: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState(
     searchParams.get('status') || ''
   )
+  const [statusCounts, setStatusCounts] = useState<{ [key: string]: number }>({
+    '': 0,
+    CONTRACT: 0,
+    IN_PROGRESS: 0,
+    DELIVERED: 0,
+    MAINTENANCE: 0,
+    ON_HOLD: 0
+  })
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         setLoading(true)
         setError(null)
-        const status = searchParams.get('status') || ''
-        const keyword = searchParams.get('keyword') || ''
-        const response = await projectService.getAllProjects(status, keyword)
+        const response = await projectService.getAllProjects()
         if (Array.isArray(response)) {
           setProjects(response)
+          setFilteredProjects(response)
+          const counts = {
+            '': response.length,
+            CONTRACT: response.filter(p => p.status === 'CONTRACT').length,
+            IN_PROGRESS: response.filter(p => p.status === 'IN_PROGRESS')
+              .length,
+            DELIVERED: response.filter(p => p.status === 'DELIVERED').length,
+            MAINTENANCE: response.filter(p => p.status === 'MAINTENANCE')
+              .length,
+            ON_HOLD: response.filter(p => p.status === 'ON_HOLD').length
+          }
+          setStatusCounts(counts)
         } else {
           setProjects([])
+          setFilteredProjects([])
         }
       } catch (err) {
         console.error('프로젝트 로딩 에러:', err)
@@ -100,7 +120,18 @@ const ProjectList: React.FC = () => {
     }
 
     fetchProjects()
-  }, [searchParams])
+  }, [])
+
+  useEffect(() => {
+    const status = searchParams.get('status') || ''
+    const keyword = searchParams.get('keyword') || ''
+    const filtered = projects.filter(project => {
+      const matchesStatus = status ? project.status === status : true
+      const matchesKeyword = keyword ? project.title.includes(keyword) : true
+      return matchesStatus && matchesKeyword
+    })
+    setFilteredProjects(filtered)
+  }, [searchParams, projects])
 
   const handleSearch = () => {
     const params = new URLSearchParams()
@@ -240,10 +271,7 @@ const ProjectList: React.FC = () => {
             alignItems="center"
             sx={{ mb: 2, width: '100%' }}>
             {PROJECT_STATUSES.map(status => {
-              const count =
-                status.value === ''
-                  ? projects.length
-                  : projects.filter(p => p.status === status.value).length
+              const count = statusCounts[status.value]
               const statusColor =
                 status.value === '' ? '#64748B' : getStatusColor(status.value)
 
@@ -357,14 +385,14 @@ const ProjectList: React.FC = () => {
 
       <DataTable
         columns={columns}
-        data={projects.slice(
+        data={filteredProjects.slice(
           page * rowsPerPage,
           page * rowsPerPage + rowsPerPage
         )}
         loading={loading}
         page={page}
         rowsPerPage={rowsPerPage}
-        totalCount={projects.length}
+        totalCount={filteredProjects.length}
         onPageChange={setPage}
         onRowsPerPageChange={setRowsPerPage}
       />

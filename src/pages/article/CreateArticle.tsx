@@ -40,8 +40,8 @@ const CreateArticle: React.FC = () => {
     stageId: '',
     priority: PriorityType.MEDIUM,
     deadLine: null,
-    files: [],
-    links: []
+    fileList: [],
+    linkList: []
   })
 
   useEffect(() => {
@@ -117,22 +117,22 @@ const CreateArticle: React.FC = () => {
           stageId: Number(formData.stageId),
           priority: formData.priority,
           deadLine: formData.deadLine?.toISOString(),
-          linkList: formData.links.map(link => ({
-            urlAddress: link.url,
-            urlDescription: link.title
+          linkList: formData.linkList.map(link => ({
+            urlAddress: link.urlAddress,
+            urlDescription: link.urlDescription
           }))
         }
       )
 
       // 파일 업로드
-      const newFiles = formData.files.filter(file => !file.id)
+      const newFiles = formData.fileList.filter(file => !file.id)
       if (newFiles.length > 0) {
         try {
           const fileObjects = await Promise.all(
             newFiles.map(async file => {
               const response = await fetch(file.url)
               const blob = await response.blob()
-              return new File([blob], file.name, { type: file.type })
+              return new File([blob], file.name, { type: file.type || '' })
             })
           )
           await projectService.uploadArticleFiles(
@@ -148,18 +148,27 @@ const CreateArticle: React.FC = () => {
       // 투표 생성
       if (voteData && voteData.title) {
         try {
+          const voteItems = voteData.allowTextAnswer
+            ? []
+            : voteData.voteItems.filter(item => item.trim() !== '')
+
+          if (!voteData.title.trim()) {
+            throw new Error('투표 제목을 입력해주세요.')
+          }
+          if (!voteData.allowTextAnswer && voteItems.length === 0) {
+            throw new Error('투표 항목을 입력해주세요.')
+          }
+
           await projectService.createVote(articleResponse.data.id, {
             title: voteData.title,
-            voteItems: voteData.allowTextAnswer
-              ? []
-              : voteData.voteItems.filter(item => item.trim() !== ''),
+            voteItems: voteItems,
             allowMultipleSelection: voteData.allowMultipleSelection,
             allowTextAnswer: voteData.allowTextAnswer,
             deadLine: voteData.deadLine?.toISOString()
           })
         } catch (error) {
           console.error('투표 생성 중 오류 발생:', error)
-          toast.error('투표 생성에 실패했습니다.')
+          toast.error(error.message || '투표 생성에 실패했습니다.')
         }
       }
 
@@ -197,6 +206,7 @@ const CreateArticle: React.FC = () => {
         onChange={setFormData}
         onCancel={handleCancel}
         projectId={Number(projectId)}
+        articleId={undefined}
       />
     </Box>
   )

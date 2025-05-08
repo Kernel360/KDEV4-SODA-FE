@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Box,
   Typography,
@@ -13,14 +13,19 @@ import {
   styled,
   Checkbox,
   FormControlLabel,
-  Divider
+  Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle
 } from '@mui/material'
 import { DateTimePicker } from '@mui/x-date-pickers'
 import { Stage } from '../../types/stage'
 import { PriorityType } from '../../types/article'
 import { ArrowLeft, Link2, Upload, FileText, Trash2, Plus } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
+import { projectService } from '../../services/projectService'
 
 const UploadBox = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -44,14 +49,14 @@ export interface ArticleFormData {
   stageId: string
   priority: PriorityType
   deadLine: dayjs.Dayjs | null
-  files: Array<{
+  fileList: Array<{
     id?: number
     name: string
     url: string
-    type: string
+    type?: string
   }>
-  links: { id?: number; url: string; title: string }[]
-  articleId?: string
+  linkList: { id?: number; urlAddress: string; urlDescription: string }[]
+  articleId?: number
 }
 
 interface VoteForm {
@@ -69,6 +74,7 @@ interface ArticleFormProps {
   isLoading?: boolean
   isReply?: boolean
   projectId: number
+  articleId: any
   validationErrors?: {
     title?: string
     content?: string
@@ -88,6 +94,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   isLoading,
   isReply = false,
   projectId,
+  articleId,
   validationErrors = {},
   onChange,
   onSubmit,
@@ -95,7 +102,13 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   onDeleteLink,
   onDeleteFile
 }) => {
-  const [localFormData, setLocalFormData] = useState<ArticleFormData>(formData)
+  const { articleId: urlArticleId } = useParams<{ articleId: string }>()
+  console.log('Extracted articleId from URL:', articleId)
+
+  const [localFormData, setLocalFormData] = useState<ArticleFormData>({
+    ...formData,
+    articleId: articleId || Number(urlArticleId)
+  })
   const [linkTitle, setLinkTitle] = useState('')
   const [linkUrl, setLinkUrl] = useState('')
   const [, setIsDeletingLink] = useState(false)
@@ -108,9 +121,26 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     deadLine: null
   })
   const navigate = useNavigate()
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
+  const [linkToDelete, setLinkToDelete] = useState<number | null>(null)
+  const [openFileDeleteDialog, setOpenFileDeleteDialog] = useState(false)
+  const [fileToDelete, setFileToDelete] = useState<number | null>(null)
 
   useEffect(() => {
-    setLocalFormData(formData)
+    setLocalFormData(prev => ({
+      ...prev,
+      ...formData,
+      articleId: articleId || Number(urlArticleId)
+    }))
+  }, [formData, articleId, urlArticleId])
+
+  useEffect(() => {
+    // Ensure each link in linkList has an id
+    const updatedLinkList = formData.linkList.map((link, index) => ({
+      ...link,
+      id: link.id || index // Assign index as id if id is missing
+    }))
+    setLocalFormData({ ...formData, linkList: updatedLinkList })
   }, [formData])
 
   const handleChange = (
@@ -123,9 +153,9 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
           id?: number
           name: string
           url: string
-          type: string
+          type?: string
         }>
-      | { title: string; url: string }[]
+      | { urlAddress: string; urlDescription: string }[]
   ) => {
     const newFormData = { ...localFormData, [field]: value }
     setLocalFormData(newFormData)
@@ -139,15 +169,15 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         url: URL.createObjectURL(file),
         type: file.type
       }))
-      handleChange('files', [...(localFormData.files || []), ...files])
+      handleChange('fileList', [...(localFormData.fileList || []), ...files])
     }
   }
 
   const handleAddLink = () => {
     if (linkTitle && linkUrl) {
       // 중복 링크 체크
-      const isDuplicate = localFormData.links.some(
-        link => link.url === linkUrl && link.title === linkTitle
+      const isDuplicate = localFormData.linkList.some(
+        link => link.urlAddress === linkUrl && link.urlDescription === linkTitle
       )
 
       if (isDuplicate) {
@@ -157,11 +187,14 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 
       console.log('새 링크 추가:', { title: linkTitle, url: linkUrl })
       const newLinks = [
-        ...(localFormData.links || []),
-        { title: linkTitle, url: linkUrl }
+        ...(localFormData.linkList || []).map(link => ({
+          urlAddress: link.urlAddress,
+          urlDescription: link.urlDescription
+        })),
+        { urlAddress: linkUrl, urlDescription: linkTitle }
       ]
       console.log('추가 후 링크 목록:', newLinks)
-      handleChange('links', newLinks)
+      handleChange('linkList', newLinks)
       setLinkTitle('')
       setLinkUrl('')
     }
@@ -173,11 +206,11 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         index,
         linkId,
         mode,
-        links: localFormData.links
+        linkList: localFormData.linkList
       })
       setIsDeletingLink(true)
 
-      const targetLink = localFormData.links?.[index]
+      const targetLink = localFormData.linkList?.[index]
       console.log('삭제할 링크 정보:', targetLink)
 
       if (mode === 'edit' && onDeleteLink) {
@@ -189,22 +222,22 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
           console.log('링크 삭제 API 호출 완료')
 
           // API 호출 성공 후 로컬 상태에서 링크 제거
-          const updatedLinks = localFormData.links.filter(
+          const updatedLinks = localFormData.linkList.filter(
             link => link.id !== targetLink.id
           )
           console.log('업데이트된 링크 목록:', updatedLinks)
-          handleChange('links', updatedLinks)
+          handleChange('linkList', updatedLinks)
         } else {
           console.log('새로 추가된 링크 삭제:', { index })
-          const links = [...(localFormData.links || [])]
+          const links = [...(localFormData.linkList || [])]
           links.splice(index, 1)
-          handleChange('links', links)
+          handleChange('linkList', links)
         }
       } else {
         console.log('생성 모드에서 로컬 링크 삭제:', { index })
-        const links = [...(localFormData.links || [])]
+        const links = [...(localFormData.linkList || [])]
         links.splice(index, 1)
-        handleChange('links', links)
+        handleChange('linkList', links)
       }
     } catch (error) {
       console.error('링크 삭제 중 에러 발생:', error)
@@ -213,39 +246,40 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     }
   }
 
-  const handleRemoveFile = async (fileId: number | undefined) => {
-    try {
-      console.log('파일 삭제 시작:', { fileId, files: localFormData.files })
-      const targetFile = localFormData.files?.find(file => file.id === fileId)
-      console.log('삭제할 파일 정보:', targetFile)
+  const handleOpenFileDeleteDialog = (fileId: number) => {
+    setFileToDelete(fileId)
+    setOpenFileDeleteDialog(true)
+  }
 
-      if (mode === 'edit' && onDeleteFile) {
-        if (targetFile?.id) {
-          console.log('수정 모드에서 파일 삭제 API 호출:', {
-            fileId: targetFile.id
-          })
-          await onDeleteFile(targetFile.id)
-          console.log('파일 삭제 API 호출 완료')
-        } else {
-          console.log('새로 추가된 파일 삭제')
-          const files = [...(localFormData.files || [])]
-          const fileIndex = files.findIndex(file => !file.id)
-          if (fileIndex !== -1) {
-            files.splice(fileIndex, 1)
-            handleChange('files', files)
-          }
-        }
-      } else {
-        console.log('생성 모드에서 로컬 파일 삭제')
-        const files = [...(localFormData.files || [])]
-        const fileIndex = files.findIndex(file => !file.id)
-        if (fileIndex !== -1) {
-          files.splice(fileIndex, 1)
-          handleChange('files', files)
-        }
+  const handleCloseFileDeleteDialog = () => {
+    setFileToDelete(null)
+    setOpenFileDeleteDialog(false)
+  }
+
+  const confirmDeleteFile = async () => {
+    if (fileToDelete !== null) {
+      try {
+        console.log('Deleting file with ID:', fileToDelete)
+        await projectService.deleteArticleFile(articleId, fileToDelete)
+        console.log('File deletion API call successful')
+
+        const updatedFiles = localFormData.fileList.filter(
+          file => file.id !== fileToDelete
+        )
+        handleChange('fileList', updatedFiles)
+      } catch (error) {
+        console.error('Error during file deletion API call:', error)
+      } finally {
+        handleCloseFileDeleteDialog()
       }
-    } catch (error) {
-      console.error('파일 삭제 중 에러 발생:', error)
+    }
+  }
+
+  const handleRemoveFile = (fileId: number | undefined) => {
+    if (fileId) {
+      handleOpenFileDeleteDialog(fileId)
+    } else {
+      console.log('No file ID provided for deletion')
     }
   }
 
@@ -287,6 +321,43 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSubmit(e, showVoteForm ? voteForm : undefined)
+  }
+
+  const handleOpenDeleteDialog = (linkId: number) => {
+    setLinkToDelete(linkId)
+    setOpenDeleteDialog(true)
+  }
+
+  const handleCloseDeleteDialog = () => {
+    setLinkToDelete(null)
+    setOpenDeleteDialog(false)
+  }
+
+  const confirmDeleteLink = async () => {
+    if (linkToDelete !== null) {
+      try {
+        console.log('Using articleId prop:', articleId)
+
+        if (typeof articleId !== 'number') {
+          throw new Error('Article ID is missing or not a number')
+        }
+
+        // Ensure linkToDelete is the correct linkId
+        const linkId = linkToDelete
+
+        await projectService.deleteArticleLink(articleId, linkId)
+        console.log('링크 삭제 API 호출 완료')
+
+        const updatedLinks = localFormData.linkList.filter(
+          link => link.id !== linkId
+        )
+        handleChange('linkList', updatedLinks)
+      } catch (error) {
+        console.error('링크 삭제 API 호출 중 에러 발생:', error)
+      } finally {
+        handleCloseDeleteDialog()
+      }
+    }
   }
 
   return (
@@ -450,13 +521,13 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   disabled={
                     !linkTitle ||
                     !linkUrl ||
-                    (localFormData.links?.length ?? 0) >= 10
+                    (localFormData.linkList?.length ?? 0) >= 10
                   }
                   size="small">
                   추가
                 </Button>
               </Stack>
-              {localFormData.links && localFormData.links.length > 0 && (
+              {localFormData.linkList && localFormData.linkList.length > 0 && (
                 <Box>
                   <Typography
                     variant="caption"
@@ -465,7 +536,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                     추가된 링크
                   </Typography>
                   <Stack spacing={1}>
-                    {localFormData.links.map((link, index) => (
+                    {localFormData.linkList.map((link, index) => (
                       <Box
                         key={link.id || index}
                         sx={{
@@ -478,16 +549,18 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                         }}>
                         <Link2 size={16} />
                         <Box sx={{ flex: 1 }}>
-                          <Typography variant="body2">{link.title}</Typography>
+                          <Typography variant="body2">
+                            {link.urlDescription}
+                          </Typography>
                           <Typography
                             variant="caption"
                             color="text.secondary">
-                            {link.url}
+                            {link.urlAddress}
                           </Typography>
                         </Box>
                         <IconButton
                           size="small"
-                          onClick={() => handleRemoveLink(index, link.id)}>
+                          onClick={() => handleOpenDeleteDialog(link.id || 0)}>
                           <Trash2 size={16} />
                         </IconButton>
                       </Box>
@@ -522,7 +595,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 </Typography>
               </UploadBox>
             </label>
-            {localFormData.files && localFormData.files.length > 0 && (
+            {localFormData.fileList && localFormData.fileList.length > 0 && (
               <Box sx={{ mt: 2 }}>
                 <Typography
                   variant="caption"
@@ -531,7 +604,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   첨부된 파일
                 </Typography>
                 <Stack spacing={1}>
-                  {localFormData.files.map((file, index) => (
+                  {localFormData.fileList.map((file, index) => (
                     <Box
                       key={index}
                       sx={{
@@ -707,6 +780,48 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
           </Button>
         </Box>
       </form>
+
+      <Dialog
+        open={openDeleteDialog}
+        onClose={handleCloseDeleteDialog}>
+        <DialogTitle>삭제 확인</DialogTitle>
+        <DialogContent>
+          <Typography>정말로 이 링크를 삭제하시겠습니까?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleCloseDeleteDialog}
+            color="primary">
+            취소
+          </Button>
+          <Button
+            onClick={confirmDeleteLink}
+            color="error">
+            삭제
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openFileDeleteDialog}
+        onClose={handleCloseFileDeleteDialog}>
+        <DialogTitle>파일 삭제 확인</DialogTitle>
+        <DialogContent>
+          <Typography>정말로 이 파일을 삭제하시겠습니까?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleCloseFileDeleteDialog}
+            color="primary">
+            취소
+          </Button>
+          <Button
+            onClick={confirmDeleteFile}
+            color="error">
+            삭제
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

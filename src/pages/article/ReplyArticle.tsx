@@ -35,8 +35,8 @@ const ReplyArticle: React.FC = () => {
     priority: PriorityType.MEDIUM,
     deadLine: null,
     stageId: '',
-    links: [],
-    files: []
+    linkList: [],
+    fileList: []
   })
 
   useEffect(() => {
@@ -90,8 +90,8 @@ const ReplyArticle: React.FC = () => {
           ),
           priority: articleResponse.priority as unknown as PriorityType, // Double cast to ensure type safety
           deadLine: null,
-          files: [],
-          links: []
+          fileList: [],
+          linkList: []
         })
       } catch (error) {
         console.error('Error fetching data:', error)
@@ -134,9 +134,9 @@ const ReplyArticle: React.FC = () => {
         deadLine: formData.deadLine?.toISOString() || '',
         parentArticleId: Number(articleId),
         linkList:
-          formData.links?.map(link => ({
-            urlAddress: link.url,
-            urlDescription: link.title
+          formData.linkList?.map(link => ({
+            urlAddress: link.urlAddress,
+            urlDescription: link.urlDescription
           })) || []
       }
 
@@ -159,10 +159,10 @@ const ReplyArticle: React.FC = () => {
       const newArticleId = articleResponse.data.id
 
       // 2. 파일이 있는 경우, 생성된 답글의 ID로 파일을 업로드합니다
-      if (formData.files && formData.files.length > 0) {
+      if (formData.fileList && formData.fileList.length > 0) {
         try {
           const fileObjects = await Promise.all(
-            formData.files.map(async file => {
+            formData.fileList.map(async file => {
               const response = await fetch(file.url)
               const blob = await response.blob()
               return new File([blob], file.name, { type: file.type })
@@ -210,6 +210,7 @@ const ReplyArticle: React.FC = () => {
         navigate(`/user/projects/${projectId}/articles/${articleId}`)
       }
       projectId={Number(projectId)}
+      articleId={Number(articleId)}
     />
   )
 }

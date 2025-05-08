@@ -305,6 +305,13 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
     member.name.toLowerCase().includes(clientMemberSearch.toLowerCase())
   )
 
+  const projectNameError = formData.title.length > 100
+  const descriptionError = formData.description.length > 1000
+  const dateError =
+    formData.startDate &&
+    formData.endDate &&
+    new Date(formData.startDate) > new Date(formData.endDate)
+
   const isStepValid = () => {
     switch (activeStep) {
       case 0:
@@ -314,7 +321,10 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
           formData.startDate !== '' &&
           formData.endDate !== '' &&
           formData.stages.length > 0 &&
-          formData.stages.every(stage => stage.name.trim() !== '')
+          formData.stages.every(stage => stage.name.trim() !== '') &&
+          !projectNameError &&
+          !descriptionError &&
+          !dateError
         )
       case 1:
         return formData.clientCompanies.length > 0
@@ -367,6 +377,12 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
               value={formData.title}
               onChange={handleChange}
               required
+              error={projectNameError}
+              helperText={
+                projectNameError
+                  ? '프로젝트명은 100자 이내로 작성할 수 있습니다'
+                  : `${formData.title.length}/100`
+              }
             />
             <TextField
               fullWidth
@@ -377,6 +393,12 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
               multiline
               rows={4}
               required
+              error={descriptionError}
+              helperText={
+                descriptionError
+                  ? '설명은 1000자 이내로 작성할 수 있습니다'
+                  : `${formData.description.length}/1000`
+              }
             />
             <Box sx={{ display: 'flex', gap: 2 }}>
               <DatePicker
@@ -413,6 +435,11 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                 }}
               />
             </Box>
+            {dateError && (
+              <Typography color="error">
+                시작일이 종료일보다 미래일 수 없습니다
+              </Typography>
+            )}
             <Divider sx={{ my: 2 }} />
             <Typography
               variant="subtitle1"
