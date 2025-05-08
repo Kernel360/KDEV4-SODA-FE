@@ -1,8 +1,21 @@
+import React from 'react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Article, PriorityType } from '../../types/article'
 import { projectService } from '../../services/projectService'
-import { Box, Typography } from '@mui/material'
+import {
+  Box,
+  Typography,
+  TextField,
+  FormControlLabel,
+  Checkbox,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle
+} from '@mui/material'
 import ArticleForm, {
   ArticleFormData
 } from '../../components/articles/ArticleForm'
@@ -13,6 +26,7 @@ import dayjs from 'dayjs'
 import { toast } from 'react-hot-toast'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ErrorMessage from '../../components/common/ErrorMessage'
+import { VoteForm } from '../../types/article'
 
 const EditArticle: React.FC = () => {
   const { projectId, articleId } = useParams<{
@@ -32,11 +46,14 @@ const EditArticle: React.FC = () => {
     stageId: '',
     priority: PriorityType.MEDIUM,
     deadLine: null,
-    files: [],
-    links: []
+    fileList: [],
+    linkList: []
   })
   const [deletedFiles, setDeletedFiles] = useState<number[]>([])
   const [deletedLinks, setDeletedLinks] = useState<number[]>([])
+  const [voteData, setVoteData] = useState<VoteForm | null>(null)
+  const [openDeleteModal, setOpenDeleteModal] = useState(false)
+  const [linkToDelete, setLinkToDelete] = useState<number | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -87,8 +104,12 @@ const EditArticle: React.FC = () => {
           deadLine: articleResponse.deadLine
             ? dayjs(articleResponse.deadLine)
             : null,
-          files: [],
-          links: []
+          fileList: [],
+          linkList: articleResponse.linkList.map(link => ({
+            id: link.id,
+            urlAddress: link.urlAddress,
+            urlDescription: link.urlDescription
+          }))
         }
 
         setFormData(initialFormData)
@@ -104,16 +125,25 @@ const EditArticle: React.FC = () => {
     fetchData()
   }, [projectId, articleId, user, navigate, showToast])
 
-  const handleDeleteLink = (linkId: number) => {
-    if (!linkId) {
-      toast.error('링크 ID가 없습니다.')
-      return
+  const handleOpenDeleteModal = (linkId: number) => {
+    setLinkToDelete(linkId)
+    setOpenDeleteModal(true)
+  }
+
+  const handleCloseDeleteModal = () => {
+    setOpenDeleteModal(false)
+    setLinkToDelete(null)
+  }
+
+  const confirmDeleteLink = () => {
+    if (linkToDelete !== null) {
+      setDeletedLinks(prev => [...prev, linkToDelete])
+      setFormData(prev => ({
+        ...prev,
+        linkList: prev.linkList.filter(link => link.id !== linkToDelete)
+      }))
+      handleCloseDeleteModal()
     }
-    setDeletedLinks(prev => [...prev, linkId])
-    setFormData(prev => ({
-      ...prev,
-      links: prev.links.filter(link => link.id !== linkId)
-    }))
   }
 
   const handleDeleteFile = (fileId: number) => {
@@ -124,7 +154,7 @@ const EditArticle: React.FC = () => {
     setDeletedFiles(prev => [...prev, fileId])
     setFormData(prev => ({
       ...prev,
-      files: prev.files.filter(file => file.id !== fileId)
+      fileList: prev.fileList.filter(file => file.id !== fileId)
     }))
   }
 
@@ -169,16 +199,16 @@ const EditArticle: React.FC = () => {
         stageId: Number(formData.stageId),
         priority: formData.priority,
         linkList:
-          formData.links?.map(link => ({
-            urlAddress: link.url,
-            urlDescription: link.title
+          formData.linkList?.map(link => ({
+            urlAddress: link.urlAddress,
+            urlDescription: link.urlDescription
           })) || []
       }
 
       await projectService.updateArticle(Number(articleId), request)
 
       // 4. 새로 추가된 파일 업로드
-      const newFiles = formData.files.filter(file => !file.id)
+      const newFiles = formData.fileList.filter(file => !file.id)
       if (newFiles.length > 0) {
         try {
           const fileObjects = await Promise.all(
@@ -196,6 +226,33 @@ const EditArticle: React.FC = () => {
         } catch (uploadError) {
           console.error('파일 업로드 에러:', uploadError)
           toast.error('파일 업로드에 실패했습니다.')
+        }
+      }
+
+      // 5. 투표 생성
+      if (voteData && voteData.title) {
+        try {
+          const voteItems = voteData.allowTextAnswer
+            ? []
+            : voteData.voteItems.filter(item => item.trim() !== '')
+
+          if (!voteData.title.trim()) {
+            throw new Error('투표 제목을 입력해주세요.')
+          }
+          if (!voteData.allowTextAnswer && voteItems.length === 0) {
+            throw new Error('투표 항목을 입력해주세요.')
+          }
+
+          await projectService.createVote(Number(articleId), {
+            title: voteData.title,
+            voteItems: voteItems,
+            allowMultipleSelection: voteData.allowMultipleSelection,
+            allowTextAnswer: voteData.allowTextAnswer,
+            deadLine: voteData.deadLine?.toISOString()
+          })
+        } catch (error) {
+          console.error('투표 생성 중 오류 발생:', error)
+          toast.error(error.message || '투표 생성에 실패했습니다.')
         }
       }
 
@@ -225,24 +282,46 @@ const EditArticle: React.FC = () => {
 
   return (
     <Box>
-      <Typography
-        variant="h5"
-        sx={{ mb: 3 }}>
-        게시글 수정
-      </Typography>
       <ArticleForm
         mode="edit"
         formData={formData}
         onChange={setFormData}
         stages={stages}
         projectId={Number(projectId)}
+        articleId={Number(articleId)}
         onSubmit={handleSubmit}
         onCancel={() =>
           navigate(`/user/projects/${projectId}/articles/${articleId}`)
         }
-        onDeleteLink={handleDeleteLink}
+        onDeleteLink={handleOpenDeleteModal}
         onDeleteFile={handleDeleteFile}
       />
+
+      <Dialog
+        open={openDeleteModal}
+        onClose={handleCloseDeleteModal}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description">
+        <DialogTitle id="alert-dialog-title">{'링크 삭제'}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            해당 링크를 삭제하겠습니까?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleCloseDeleteModal}
+            color="primary">
+            취소
+          </Button>
+          <Button
+            onClick={confirmDeleteLink}
+            color="primary"
+            autoFocus>
+            삭제
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

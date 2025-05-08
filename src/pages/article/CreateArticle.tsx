@@ -40,8 +40,8 @@ const CreateArticle: React.FC = () => {
     stageId: '',
     priority: PriorityType.MEDIUM,
     deadLine: null,
-    files: [],
-    links: []
+    fileList: [],
+    linkList: []
   })
 
   useEffect(() => {
@@ -117,15 +117,15 @@ const CreateArticle: React.FC = () => {
           stageId: Number(formData.stageId),
           priority: formData.priority,
           deadLine: formData.deadLine?.toISOString(),
-          linkList: formData.links.map(link => ({
-            urlAddress: link.url,
-            urlDescription: link.title
+          linkList: formData.linkList.map(link => ({
+            urlAddress: link.urlAddress,
+            urlDescription: link.urlDescription
           }))
         }
       )
 
       // 파일 업로드
-      const newFiles = formData.files.filter(file => !file.id)
+      const newFiles = formData.fileList.filter(file => !file.id)
       if (newFiles.length > 0) {
         try {
           const fileObjects = await Promise.all(
@@ -206,6 +206,7 @@ const CreateArticle: React.FC = () => {
         onChange={setFormData}
         onCancel={handleCancel}
         projectId={Number(projectId)}
+        articleId={undefined}
       />
     </Box>
   )
