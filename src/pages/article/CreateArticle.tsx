@@ -148,18 +148,27 @@ const CreateArticle: React.FC = () => {
       // 투표 생성
       if (voteData && voteData.title) {
         try {
+          const voteItems = voteData.allowTextAnswer
+            ? []
+            : voteData.voteItems.filter(item => item.trim() !== '')
+
+          if (!voteData.title.trim()) {
+            throw new Error('투표 제목을 입력해주세요.')
+          }
+          if (!voteData.allowTextAnswer && voteItems.length === 0) {
+            throw new Error('투표 항목을 입력해주세요.')
+          }
+
           await projectService.createVote(articleResponse.data.id, {
             title: voteData.title,
-            voteItems: voteData.allowTextAnswer
-              ? []
-              : voteData.voteItems.filter(item => item.trim() !== ''),
+            voteItems: voteItems,
             allowMultipleSelection: voteData.allowMultipleSelection,
             allowTextAnswer: voteData.allowTextAnswer,
             deadLine: voteData.deadLine?.toISOString()
           })
         } catch (error) {
           console.error('투표 생성 중 오류 발생:', error)
-          toast.error('투표 생성에 실패했습니다.')
+          toast.error(error.message || '투표 생성에 실패했습니다.')
         }
       }
 
