@@ -57,6 +57,7 @@ import {
 import { useTheme } from '@mui/material/styles'
 import { companyService } from '../../../services/companyService'
 import useProjectStore from '../../../stores/projectStore'
+import dayjs from 'dayjs'
 
 interface Company {
   id: number
@@ -1375,8 +1376,11 @@ const ProjectDetail = () => {
                             <Typography
                               variant="body1"
                               sx={{ fontSize: '1rem', fontWeight: 500 }}>
-                              {formatDate(project.startDate)} -{' '}
-                              {formatDate(project.endDate)}
+                              {dayjs(project.startDate).format(
+                                'YYYY년 M월 D일'
+                              )}{' '}
+                              -{' '}
+                              {dayjs(project.endDate).format('YYYY년 M월 D일')}
                             </Typography>
                           </Stack>
                         </Stack>
