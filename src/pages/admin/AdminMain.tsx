@@ -356,7 +356,7 @@ export default function AdminMain() {
                   sx={{ fontSize: '1.25rem', color: '#1a1a1a', mb: 1 }}>
                   일시중단
                 </Typography>
-        <Typography
+                <Typography
                   sx={{
                     fontSize: '1.25rem',
                     fontWeight: 700,
@@ -370,8 +370,17 @@ export default function AdminMain() {
         </Grid>
 
         {/* 마감 임박 프로젝트와 최근 활동 프로젝트 섹션 */}
-        <Box sx={{ mt: 2, display: 'flex', flexDirection: 'row', gap: 3, mx: 'auto', maxWidth: '1200px', px: 0, ml: -2 }}>
-          {/* 마감 임박 프로젝트 */}
+        <Box
+          sx={{
+            mt: 6,
+            display: 'flex',
+            flexDirection: 'row',
+            gap: 3,
+            mx: 'auto',
+            maxWidth: '1200px',
+            px: 0,
+            ml: 0
+          }}>
           <Paper
             elevation={0}
             sx={{
@@ -381,15 +390,17 @@ export default function AdminMain() {
               bgcolor: '#fff',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+              width: '60%',
+              mx: 'auto'
             }}>
             <Box
-          sx={{
+              sx={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-            mb: 3
-          }}>
+                mb: 3
+              }}>
               <Typography
                 sx={{
                   fontSize: '1.25rem',
@@ -397,7 +408,7 @@ export default function AdminMain() {
                   color: '#1a1a1a'
                 }}>
                 마감 임박 프로젝트
-        </Typography>
+              </Typography>
               <Button
                 variant="outlined"
                 onClick={handleViewMoreProjects}
@@ -415,9 +426,9 @@ export default function AdminMain() {
               </Button>
             </Box>
             <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
+              <Table>
+                <TableHead>
+                  <TableRow>
                     <TableCell
                       sx={{
                         fontSize: '0.875rem',
@@ -457,9 +468,9 @@ export default function AdminMain() {
                       }}>
                       관리
                     </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
                   {projects
                     .filter(p => p.status === 'IN_PROGRESS')
                     .map(p => ({
@@ -476,106 +487,450 @@ export default function AdminMain() {
                       const isUrgent = daysUntilEnd <= 7 && !isOverdue
 
                       return (
-                        <TableRow
-                          key={project.id}
-                          hover>
+                        <TableRow key={project.id}>
                           <TableCell sx={{ maxWidth: '200px' }}>
                             <Typography
-                              onClick={() => handleProjectManageClick(project.id)}
                               sx={{
                                 fontSize: '0.875rem',
                                 cursor: 'pointer',
                                 color: '#1a1a1a',
-                                '&:hover': {
-                                  color: '#FBBF24',
-                                  textDecoration: 'underline'
-                                },
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
                                 maxWidth: '150px'
                               }}>
-                                {project.title}
-                              </Typography>
-                            </TableCell>
-                  <TableCell>
-                    <Typography
+                              {project.title}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography
+                              sx={{
+                                fontSize: '0.875rem',
+                                color: isOverdue
+                                  ? '#4b5563'
+                                  : isUrgent
+                                    ? '#4b5563'
+                                    : '#4b5563',
+                                fontWeight: isOverdue || isUrgent ? 400 : 400,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1.5,
+                                whiteSpace: 'nowrap'
+                              }}>
+                              {dayjs(project.endDate).format('YY.MM.DD')}
+                              <Typography
+                                component="span"
                                 sx={{
-                                  fontSize: '0.875rem',
-                                  color: isOverdue ? '#4b5563' : isUrgent ? '#4b5563' : '#4b5563',
-                                  fontWeight: isOverdue || isUrgent ? 400 : 400,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 1.5,
+                                  fontSize: '0.938rem',
+                                  color: isOverdue
+                                    ? '#DE4444'
+                                    : isUrgent
+                                      ? '#DE4444'
+                                      : '#4b5563',
+                                  fontWeight: 600,
                                   whiteSpace: 'nowrap'
                                 }}>
-                                  {dayjs(project.endDate).format('YY.MM.DD')}
-                                  <Typography
-                                    component="span"
-                                    sx={{
-                                      fontSize: '0.938rem',
-                                      color: isOverdue ? '#DE4444' : isUrgent ? '#DE4444' : '#4b5563',
-                                      fontWeight: 600,
-                                      whiteSpace: 'nowrap'
-                                    }}
-                                  >
-                                    ({isOverdue ? 'D+' : 'D-'}
-                                    {Math.abs(daysUntilEnd)})
-                                  </Typography>
-                                </Typography>
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  startIcon={<LayoutDashboard size={14} />}
-                      onClick={() => handleProjectClick(project.id)}
+                                ({isOverdue ? 'D+' : 'D-'}
+                                {Math.abs(daysUntilEnd)})
+                              </Typography>
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              onClick={() => handleProjectClick(project.id)}
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#1E293B',
+                                bgcolor: 'white',
+                                border: '1px solid #E2E8F0',
+                                '&:hover': {
+                                  bgcolor: '#FFF8E6'
+                                },
+                                fontSize: '0.875rem',
+                                width: '40px',
+                                height: '40px',
+                                minWidth: '40px',
+                                minHeight: '40px',
+                                m: 'auto'
+                              }}>
+                              <LayoutDashboard size={18} />
+                            </Button>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              onClick={() =>
+                                navigate(`/admin/projects/${project.id}`)
+                              }
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#1E293B',
+                                bgcolor: 'white',
+                                border: '1px solid #E2E8F0',
+                                '&:hover': {
+                                  bgcolor: '#FFF8E6'
+                                },
+                                fontSize: '0.875rem',
+                                width: '5px',
+                                height: '40px',
+                                minWidth: '40px',
+                                minHeight: '40px',
+                                m: 'auto'
+                              }}>
+                              <SettingsIcon fontSize="small" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              border: '1px solid #e5e7eb',
+              borderRadius: 2,
+              bgcolor: '#fff',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+              width: '100%',
+              mx: 'auto'
+            }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: 3
+              }}>
+              <Typography
+                sx={{
+                  fontSize: '1.25rem',
+                  fontWeight: 600,
+                  color: '#1a1a1a'
+                }}>
+                최근 활동이 많은 프로젝트 (일주일 기준)
+              </Typography>
+              <Button
+                variant="outlined"
+                onClick={handleViewMoreProjects}
+                size="small"
+                sx={{
+                  borderRadius: 2,
+                  borderColor: '#e5e7eb',
+                  color: '#666',
+                  '&:hover': {
+                    borderColor: '#666',
+                    bgcolor: 'transparent'
+                  }
+                }}>
+                더보기
+              </Button>
+            </Box>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell
                       sx={{
-                                    color: '#1E293B',
-                                    bgcolor: 'white',
-                                    border: '1px solid #E2E8F0',
-                                    '&:hover': {
-                                      bgcolor: '#FFF8E6'
-                                    },
-                                    fontSize: '0.875rem',
-                                    width: '40px',
-                                    height: '40px',
-                                    minWidth: '40px',
-                                    minHeight: '40px',
-                                    m: 'auto'
-                                  }}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  startIcon={<SettingsIcon />}
-                                  onClick={() => navigate(`/admin/projects/${project.id}`)}
-                                  sx={{
-                                    color: '#1E293B',
-                                    bgcolor: 'white',
-                                    border: '1px solid #E2E8F0',
-                                    '&:hover': {
-                                      bgcolor: '#FFF8E6'
-                                    },
-                                    fontSize: '0.875rem',
-                                    width: '5px',
-                                    height: '40px',
-                                    minWidth: '40px',
-                                    minHeight: '40px',
-                                    m: 'auto'
-                                  }}
-                                />
-                              </TableCell>
-                            </TableRow>
-                          )
-                        })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
-            {/* 최근 활동이 많은 프로젝트 */}
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#1a1a1a',
+                        borderBottom: '2px solid #e5e7eb',
+                        whiteSpace: 'nowrap'
+                      }}>
+                      프로젝트
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#1a1a1a',
+                        borderBottom: '2px solid #e5e7eb',
+                        whiteSpace: 'nowrap'
+                      }}>
+                      승인요청
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#1a1a1a',
+                        borderBottom: '2px solid #e5e7eb',
+                        whiteSpace: 'nowrap'
+                      }}>
+                      질문
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#1a1a1a',
+                        borderBottom: '2px solid #e5e7eb',
+                        whiteSpace: 'nowrap'
+                      }}>
+                      마지막 활동
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#1a1a1a',
+                        borderBottom: '2px solid #e5e7eb',
+                        whiteSpace: 'nowrap'
+                      }}>
+                      대시보드
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#1a1a1a',
+                        borderBottom: '2px solid #e5e7eb'
+                      }}>
+                      관리
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {loadingActiveProjects ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        align="center">
+                        <LoadingSpinner />
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    activeProjects.slice(0, 3).map(project => (
+                      <TableRow key={project.id}>
+                        <TableCell sx={{ maxWidth: '250px' }}>
+                          <Typography
+                            sx={{
+                              fontSize: '0.875rem',
+                              cursor: 'pointer',
+                              color: '#1a1a1a',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              maxWidth: '150px'
+                            }}>
+                            {project.title}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Box
+                            sx={{
+                              fontSize: '0.813rem',
+                              color: '#000',
+                              fontWeight: 700
+                            }}>
+                            {project.weeklyRequestCount}건
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Box
+                            sx={{
+                              fontSize: '0.813rem',
+                              color: '#000',
+                              fontWeight: 700
+                            }}>
+                            {project.weeklyArticleCount}건
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            sx={{
+                              fontSize: '0.875rem',
+                              color: '#4b5563'
+                            }}>
+                            {project.recentActivityDate
+                              ? dayjs(project.recentActivityDate).format(
+                                  'YY.MM.DD'
+                                )
+                              : '-'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleProjectClick(project.id)}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#1E293B',
+                              bgcolor: 'white',
+                              border: '1px solid #E2E8F0',
+                              '&:hover': {
+                                bgcolor: '#FFF8E6'
+                              },
+                              fontSize: '0.875rem',
+                              width: '40px',
+                              height: '40px',
+                              minWidth: '40px',
+                              minHeight: '40px',
+                              m: 'auto'
+                            }}>
+                            <LayoutDashboard size={18} />
+                          </Button>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() =>
+                              navigate(`/admin/projects/${project.id}`)
+                            }
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#1E293B',
+                              bgcolor: 'white',
+                              border: '1px solid #E2E8F0',
+                              '&:hover': {
+                                bgcolor: '#FFF8E6'
+                              },
+                              fontSize: '0.875rem',
+                              width: '5px',
+                              height: '40px',
+                              minWidth: '40px',
+                              minHeight: '40px',
+                              m: 'auto'
+                            }}>
+                            <SettingsIcon fontSize="small" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </Box>
+      </Box>
+
+      {/* 프로젝트 생성 추이 그래프 */}
+      <Grid
+        container
+        spacing={3}
+        sx={{ mt: 2 }}>
+        <Grid
+          item
+          xs={12}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              border: '1px solid #e5e7eb',
+              borderRadius: 2,
+              bgcolor: '#fff',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+            }}>
+            <Typography
+              sx={{
+                fontSize: '1.25rem',
+                fontWeight: 600,
+                color: '#1a1a1a',
+                mb: 2
+              }}>
+              프로젝트 생성 추이
+            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                mb: 3,
+                flexWrap: 'wrap'
+              }}>
+              <DatePicker
+                label="시작일"
+                value={trendStartDate}
+                onChange={v => v && setTrendStartDate(v)}
+                format="YYYY-MM-DD"
+                sx={{
+                  minWidth: 110,
+                  '& .MuiInputBase-root': {
+                    fontSize: '0.95rem',
+                    py: 0.5,
+                    height: 36
+                  }
+                }}
+              />
+              <DatePicker
+                label="종료일"
+                value={trendEndDate}
+                onChange={v => v && setTrendEndDate(v)}
+                format="YYYY-MM-DD"
+                sx={{
+                  minWidth: 110,
+                  '& .MuiInputBase-root': {
+                    fontSize: '0.95rem',
+                    py: 0.5,
+                    height: 36
+                  }
+                }}
+              />
+              <Button
+                variant={trendTimeUnit === 'DAY' ? 'contained' : 'outlined'}
+                onClick={() => setTrendTimeUnit('DAY')}
+                sx={{ minWidth: 80 }}>
+                일간
+              </Button>
+              <Button
+                variant={trendTimeUnit === 'WEEK' ? 'contained' : 'outlined'}
+                onClick={() => setTrendTimeUnit('WEEK')}
+                sx={{ minWidth: 80 }}>
+                주간
+              </Button>
+              <Button
+                variant={trendTimeUnit === 'MONTH' ? 'contained' : 'outlined'}
+                onClick={() => setTrendTimeUnit('MONTH')}
+                sx={{ minWidth: 80 }}>
+                월간
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleTrendSearch}
+                sx={{ ml: 2 }}>
+                조회
+              </Button>
+            </Box>
+            <ProjectCreationTrendChart
+              key={trendKey}
+              startDate={trendStartDate.format('YYYY-MM-DD')}
+              endDate={trendEndDate.format('YYYY-MM-DD')}
+              timeUnit={trendTimeUnit}
+            />
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* 회사 섹션 */}
+      <Box>
+        {/* 회사 생성 추이 */}
+        <Grid
+          container
+          spacing={3}
+          sx={{ mt: 2 }}>
+          <Grid
+            item
+            xs={12}>
             <Paper
               elevation={0}
               sx={{
@@ -583,426 +938,93 @@ export default function AdminMain() {
                 border: '1px solid #e5e7eb',
                 borderRadius: 2,
                 bgcolor: '#fff',
-                display: 'flex',
-                flexDirection: 'column',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
               }}>
+              <Typography
+                sx={{
+                  fontSize: '1.25rem',
+                  fontWeight: 600,
+                  color: '#1a1a1a',
+                  mb: 2
+                }}>
+                회사 등록 추이
+              </Typography>
               <Box
                 sx={{
                   display: 'flex',
-                  justifyContent: 'space-between',
                   alignItems: 'center',
-                  mb: 3
+                  gap: 2,
+                  mb: 3,
+                  flexWrap: 'wrap'
                 }}>
-                <Typography
+                <DatePicker
+                  label="시작일"
+                  value={companyTrendStartDate}
+                  onChange={v => v && setCompanyTrendStartDate(v)}
+                  format="YYYY-MM-DD"
                   sx={{
-                    fontSize: '1.25rem',
-                    fontWeight: 600,
-                    color: '#1a1a1a'
-                  }}>
-                  최근 활동이 많은 프로젝트 (일주일 기준)
-                </Typography>
-                <Button
-                  variant="outlined"
-                  onClick={handleViewMoreProjects}
-                  size="small"
-                  sx={{
-                    borderRadius: 2,
-                    borderColor: '#e5e7eb',
-                    color: '#666',
-                        '&:hover': {
-                      borderColor: '#666',
-                      bgcolor: 'transparent'
+                    minWidth: 110,
+                    '& .MuiInputBase-root': {
+                      fontSize: '0.95rem',
+                      py: 0.5,
+                      height: 36
                     }
-                  }}>
-                  더보기
+                  }}
+                />
+                <DatePicker
+                  label="종료일"
+                  value={companyTrendEndDate}
+                  onChange={v => v && setCompanyTrendEndDate(v)}
+                  format="YYYY-MM-DD"
+                  sx={{
+                    minWidth: 110,
+                    '& .MuiInputBase-root': {
+                      fontSize: '0.95rem',
+                      py: 0.5,
+                      height: 36
+                    }
+                  }}
+                />
+                <Button
+                  variant={
+                    companyTrendUnit === 'DAY' ? 'contained' : 'outlined'
+                  }
+                  onClick={() => setCompanyTrendUnit('DAY')}
+                  sx={{ minWidth: 80 }}>
+                  일간
+                </Button>
+                <Button
+                  variant={
+                    companyTrendUnit === 'WEEK' ? 'contained' : 'outlined'
+                  }
+                  onClick={() => setCompanyTrendUnit('WEEK')}
+                  sx={{ minWidth: 80 }}>
+                  주간
+                </Button>
+                <Button
+                  variant={
+                    companyTrendUnit === 'MONTH' ? 'contained' : 'outlined'
+                  }
+                  onClick={() => setCompanyTrendUnit('MONTH')}
+                  sx={{ minWidth: 80 }}>
+                  월간
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleCompanyTrendSearch}
+                  sx={{ ml: 2 }}>
+                  조회
                 </Button>
               </Box>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell
-                        sx={{
-                          fontSize: '0.875rem',
-                          fontWeight: 600,
-                          color: '#1a1a1a',
-                          borderBottom: '2px solid #e5e7eb',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          프로젝트
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            fontSize: '0.875rem',
-                            fontWeight: 600,
-                            color: '#1a1a1a',
-                            borderBottom: '2px solid #e5e7eb',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            승인요청
-                          </TableCell>
-                          <TableCell
-                            sx={{
-                              fontSize: '0.875rem',
-                              fontWeight: 600,
-                              color: '#1a1a1a',
-                              borderBottom: '2px solid #e5e7eb',
-                              whiteSpace: 'nowrap'
-                            }}>
-                              질문
-                            </TableCell>
-                            <TableCell
-                              sx={{
-                                fontSize: '0.875rem',
-                                fontWeight: 600,
-                                color: '#1a1a1a',
-                                borderBottom: '2px solid #e5e7eb',
-                                whiteSpace: 'nowrap'
-                              }}>
-                                마지막 활동
-                              </TableCell>
-                              <TableCell
-                                sx={{
-                                  fontSize: '0.875rem',
-                                  fontWeight: 600,
-                                  color: '#1a1a1a',
-                                  borderBottom: '2px solid #e5e7eb',
-                                  whiteSpace: 'nowrap',
-                                }}>
-                                  대시보드
-                                </TableCell>
-                                <TableCell
-                                  sx={{
-                                    fontSize: '0.875rem',
-                                    fontWeight: 600,
-                                    color: '#1a1a1a',
-                                    borderBottom: '2px solid #e5e7eb'
-                                  }}>
-                                    관리
-                                  </TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {loadingActiveProjects ? (
-                                  <TableRow>
-                                    <TableCell
-                                      colSpan={5}
-                                      align="center">
-                                      <LoadingSpinner />
-                                    </TableCell>
-                                  </TableRow>
-                                ) : (
-                                  activeProjects.slice(0, 3).map(project => (
-                                    <TableRow
-                                      key={project.id}
-                                      hover>
-                                      <TableCell sx={{ maxWidth: '250px' }}>
-                                        <Typography
-                                          onClick={() =>
-                                            handleProjectManageClick(project.id)
-                                          }
-                                          sx={{
-                                            fontSize: '0.875rem',
-                                            cursor: 'pointer',
-                                            color: '#1a1a1a',
-                                            '&:hover': {
-                                              color: '#FBBF24',
-                                              textDecoration: 'underline'
-                                            },
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            whiteSpace: 'nowrap',
-                                            maxWidth: '150px'
-                      }}>
-                      {project.title}
-                    </Typography>
-                  </TableCell>
-                                        <TableCell>
-                                          <Box
-                                            sx={{
-                                              fontSize: '0.813rem',
-                                              color: '#000',
-                                              fontWeight: 700
-                                            }}>
-                                              {project.weeklyRequestCount}건
-                                            </Box>
-                                          </TableCell>
-                                          <TableCell>
-                                            <Box
-                                              sx={{
-                                                fontSize: '0.813rem',
-                                                color: '#000',
-                                                fontWeight: 700
-                                              }}>
-                                                {project.weeklyArticleCount}건
-                                              </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                              <Typography
-                                                sx={{
-                                                  fontSize: '0.875rem',
-                                                  color: '#4b5563'
-                                                }}>
-                                                  {project.recentActivityDate ? dayjs(project.recentActivityDate).format('YY.MM.DD') : '-'}
-                                                </Typography>
-                                              </TableCell>
-                                              <TableCell>
-                                                <Button
-                                                  variant="outlined"
-                                                  size="small"
-                                                  startIcon={<LayoutDashboard size={14} />}
-                                                  onClick={() => handleProjectClick(project.id)}
-                                                  sx={{
-                                                    color: '#1E293B',
-                                                    bgcolor: 'white',
-                                                    border: '1px solid #E2E8F0',
-                                                    '&:hover': {
-                                                      bgcolor: '#FFF8E6'
-                                                    },
-                                                    fontSize: '0.875rem',
-                                                    width: '40px',
-                                                    height: '30px',
-                                                    minWidth: '40px',
-                                                    minHeight: '10px',
-                                                    m: 'auto'
-                                                  }}
-                                                />
-                                              </TableCell>
-                                              <TableCell>
-                                                <Button
-                                                  variant="outlined"
-                                                  size="small"
-                                                  startIcon={<SettingsIcon />}
-                                                  onClick={() => navigate(`/admin/projects/${project.id}`)}
-                                                  sx={{
-                                                    color: '#1E293B',
-                                                    bgcolor: 'white',
-                                                    border: '1px solid #E2E8F0',
-                                                    '&:hover': {
-                                                      bgcolor: '#FFF8E6'
-                                                    },
-                                                    fontSize: '0.875rem',
-                                                    width: '40px',
-                                                    height: '40px',
-                                                    minWidth: '40px',
-                                                    minHeight: '40px',
-                                                    m: 'auto'
-                                                  }}
-                                                />
-                                              </TableCell>
-                </TableRow>
-                                          ))
-                                        )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-                                </Paper>
-                              </Box>
-      </Box>
-
-                            {/* 프로젝트 생성 추이 그래프 */}
-                            <Grid
-                              container
-                              spacing={3}
-                              sx={{ mt: 2 }}>
-                              <Grid
-                                item
-                                xs={12}>
-                                <Paper
-                                  elevation={0}
-                                  sx={{
-                                    p: 3,
-                                    border: '1px solid #e5e7eb',
-                                    borderRadius: 2,
-                                    bgcolor: '#fff',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                                  }}>
-        <Typography
-          sx={{
-                                      fontSize: '1.25rem',
-            fontWeight: 600,
-                                      color: '#1a1a1a',
-                                      mb: 2
-          }}>
-                                    프로젝트 생성 추이
-        </Typography>
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 2,
-                                      mb: 3,
-                                      flexWrap: 'wrap'
-                                    }}>
-                                    <DatePicker
-                                      label="시작일"
-                                      value={trendStartDate}
-                                      onChange={v => v && setTrendStartDate(v)}
-                                      format="YYYY-MM-DD"
-                                      sx={{
-                                        minWidth: 110,
-                                        '& .MuiInputBase-root': {
-                                          fontSize: '0.95rem',
-                                          py: 0.5,
-                                          height: 36
-                                        }
-                                      }}
-                                    />
-                                    <DatePicker
-                                      label="종료일"
-                                      value={trendEndDate}
-                                      onChange={v => v && setTrendEndDate(v)}
-                                      format="YYYY-MM-DD"
-                                      sx={{
-                                        minWidth: 110,
-                                        '& .MuiInputBase-root': {
-                                          fontSize: '0.95rem',
-                                          py: 0.5,
-                                          height: 36
-                                        }
-                                      }}
-                                    />
-                                    <Button
-                                      variant={trendTimeUnit === 'DAY' ? 'contained' : 'outlined'}
-                                      onClick={() => setTrendTimeUnit('DAY')}
-                                      sx={{ minWidth: 80 }}>
-                                      일간
-                                    </Button>
-                                    <Button
-                                      variant={trendTimeUnit === 'WEEK' ? 'contained' : 'outlined'}
-                                      onClick={() => setTrendTimeUnit('WEEK')}
-                                      sx={{ minWidth: 80 }}>
-                                      주간
-                                    </Button>
-                                    <Button
-                                      variant={trendTimeUnit === 'MONTH' ? 'contained' : 'outlined'}
-                                      onClick={() => setTrendTimeUnit('MONTH')}
-                                      sx={{ minWidth: 80 }}>
-                                      월간
-                                    </Button>
-                                    <Button
-                                      variant="contained"
-                                      onClick={handleTrendSearch}
-                                      sx={{ ml: 2 }}>
-                                      조회
-                                    </Button>
-                                  </Box>
-                                  <ProjectCreationTrendChart
-                                    key={trendKey}
-                                    startDate={trendStartDate.format('YYYY-MM-DD')}
-                                    endDate={trendEndDate.format('YYYY-MM-DD')}
-                                    timeUnit={trendTimeUnit}
-                                  />
-                                </Paper>
-                              </Grid>
-                            </Grid>
-                          
-
-                          {/* 회사 섹션 */}
-                          <Box>
-                            {/* 회사 생성 추이 */}
-                            <Grid
-                              container
-                              spacing={3}
-                              sx={{ mt: 2 }}>
-                              <Grid
-                                item
-                                xs={12}>
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-                                    border: '1px solid #e5e7eb',
-                                    borderRadius: 2,
-                                    bgcolor: '#fff',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                                  }}>
-                                  <Typography
-                                    sx={{
-                                      fontSize: '1.25rem',
-                                      fontWeight: 600,
-                                      color: '#1a1a1a',
-                                      mb: 2
-                                    }}>
-                                    회사 등록 추이
-                                  </Typography>
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 2,
-                                      mb: 3,
-                                      flexWrap: 'wrap'
-                                    }}>
-                                    <DatePicker
-                                      label="시작일"
-                                      value={companyTrendStartDate}
-                                      onChange={v => v && setCompanyTrendStartDate(v)}
-                                      format="YYYY-MM-DD"
-                                      sx={{
-                                        minWidth: 110,
-                                        '& .MuiInputBase-root': {
-                                          fontSize: '0.95rem',
-                                          py: 0.5,
-                                          height: 36
-                                        }
-                                      }}
-                                    />
-                                    <DatePicker
-                                      label="종료일"
-                                      value={companyTrendEndDate}
-                                      onChange={v => v && setCompanyTrendEndDate(v)}
-                                      format="YYYY-MM-DD"
-                                      sx={{
-                                        minWidth: 110,
-                                        '& .MuiInputBase-root': {
-                                          fontSize: '0.95rem',
-                                          py: 0.5,
-                                          height: 36
-                                        }
-                                      }}
-                                    />
-                                    <Button
-                                      variant={
-                                        companyTrendUnit === 'DAY' ? 'contained' : 'outlined'
-                                      }
-                                      onClick={() => setCompanyTrendUnit('DAY')}
-                                      sx={{ minWidth: 80 }}>
-                                      일간
-                                    </Button>
-                                    <Button
-                                      variant={
-                                        companyTrendUnit === 'WEEK' ? 'contained' : 'outlined'
-                                      }
-                                      onClick={() => setCompanyTrendUnit('WEEK')}
-                                      sx={{ minWidth: 80 }}>
-                                      주간
-                                    </Button>
-                                    <Button
-                                      variant={
-                                        companyTrendUnit === 'MONTH' ? 'contained' : 'outlined'
-                                      }
-                                      onClick={() => setCompanyTrendUnit('MONTH')}
-                                      sx={{ minWidth: 80 }}>
-                                      월간
-                                    </Button>
-                                    <Button
-                                      variant="contained"
-                                      onClick={handleCompanyTrendSearch}
-                                      sx={{ ml: 2 }}>
-                                      조회
-                                    </Button>
-                                  </Box>
-                                  <CompanyCreationTrendChart
-                                    key={companyTrendKey}
-                                    startDate={companyTrendStartDate.format('YYYY-MM-DD')}
-                                    endDate={companyTrendEndDate.format('YYYY-MM-DD')}
-                                    unit={companyTrendUnit}
-                                  />
-        </Paper>
-                              </Grid>
-                            </Grid>
+              <CompanyCreationTrendChart
+                key={companyTrendKey}
+                startDate={companyTrendStartDate.format('YYYY-MM-DD')}
+                endDate={companyTrendEndDate.format('YYYY-MM-DD')}
+                unit={companyTrendUnit}
+              />
+            </Paper>
+          </Grid>
+        </Grid>
       </Box>
     </Box>
   )
