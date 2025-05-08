@@ -104,12 +104,18 @@ const EditArticle: React.FC = () => {
           deadLine: articleResponse.deadLine
             ? dayjs(articleResponse.deadLine)
             : null,
-          fileList: [],
-          linkList: articleResponse.linkList.map(link => ({
-            id: link.id,
-            urlAddress: link.urlAddress,
-            urlDescription: link.urlDescription
-          }))
+          fileList: articleResponse.fileList.map(file => ({
+            id: file.id,
+            name: file.name,
+            url: file.url
+          })),
+          linkList: articleResponse.linkList
+            .filter(link => !link.deleted)
+            .map(link => ({
+              id: link.id,
+              urlAddress: link.urlAddress,
+              urlDescription: link.urlDescription
+            }))
         }
 
         setFormData(initialFormData)

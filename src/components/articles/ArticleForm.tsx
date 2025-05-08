@@ -53,7 +53,7 @@ export interface ArticleFormData {
     id?: number
     name: string
     url: string
-    type: string
+    type?: string
   }>
   linkList: { id?: number; urlAddress: string; urlDescription: string }[]
   articleId?: number
@@ -123,6 +123,8 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   const navigate = useNavigate()
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
   const [linkToDelete, setLinkToDelete] = useState<number | null>(null)
+  const [openFileDeleteDialog, setOpenFileDeleteDialog] = useState(false)
+  const [fileToDelete, setFileToDelete] = useState<number | null>(null)
 
   useEffect(() => {
     setLocalFormData(prev => ({
@@ -151,7 +153,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
           id?: number
           name: string
           url: string
-          type: string
+          type?: string
         }>
       | { urlAddress: string; urlDescription: string }[]
   ) => {
@@ -244,41 +246,40 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     }
   }
 
-  const handleRemoveFile = async (fileId: number | undefined) => {
-    try {
-      console.log('파일 삭제 시작:', { fileId, files: localFormData.fileList })
-      const targetFile = localFormData.fileList?.find(
-        file => file.id === fileId
-      )
-      console.log('삭제할 파일 정보:', targetFile)
+  const handleOpenFileDeleteDialog = (fileId: number) => {
+    setFileToDelete(fileId)
+    setOpenFileDeleteDialog(true)
+  }
 
-      if (mode === 'edit' && onDeleteFile) {
-        if (targetFile?.id) {
-          console.log('수정 모드에서 파일 삭제 API 호출:', {
-            fileId: targetFile.id
-          })
-          await onDeleteFile(targetFile.id)
-          console.log('파일 삭제 API 호출 완료')
-        } else {
-          console.log('새로 추가된 파일 삭제')
-          const files = [...(localFormData.fileList || [])]
-          const fileIndex = files.findIndex(file => !file.id)
-          if (fileIndex !== -1) {
-            files.splice(fileIndex, 1)
-            handleChange('fileList', files)
-          }
-        }
-      } else {
-        console.log('생성 모드에서 로컬 파일 삭제')
-        const files = [...(localFormData.fileList || [])]
-        const fileIndex = files.findIndex(file => !file.id)
-        if (fileIndex !== -1) {
-          files.splice(fileIndex, 1)
-          handleChange('fileList', files)
-        }
+  const handleCloseFileDeleteDialog = () => {
+    setFileToDelete(null)
+    setOpenFileDeleteDialog(false)
+  }
+
+  const confirmDeleteFile = async () => {
+    if (fileToDelete !== null) {
+      try {
+        console.log('Deleting file with ID:', fileToDelete)
+        await projectService.deleteArticleFile(articleId, fileToDelete)
+        console.log('File deletion API call successful')
+
+        const updatedFiles = localFormData.fileList.filter(
+          file => file.id !== fileToDelete
+        )
+        handleChange('fileList', updatedFiles)
+      } catch (error) {
+        console.error('Error during file deletion API call:', error)
+      } finally {
+        handleCloseFileDeleteDialog()
       }
-    } catch (error) {
-      console.error('파일 삭제 중 에러 발생:', error)
+    }
+  }
+
+  const handleRemoveFile = (fileId: number | undefined) => {
+    if (fileId) {
+      handleOpenFileDeleteDialog(fileId)
+    } else {
+      console.log('No file ID provided for deletion')
     }
   }
 
@@ -795,6 +796,27 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
           </Button>
           <Button
             onClick={confirmDeleteLink}
+            color="error">
+            삭제
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openFileDeleteDialog}
+        onClose={handleCloseFileDeleteDialog}>
+        <DialogTitle>파일 삭제 확인</DialogTitle>
+        <DialogContent>
+          <Typography>정말로 이 파일을 삭제하시겠습니까?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleCloseFileDeleteDialog}
+            color="primary">
+            취소
+          </Button>
+          <Button
+            onClick={confirmDeleteFile}
             color="error">
             삭제
           </Button>

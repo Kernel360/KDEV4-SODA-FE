@@ -132,7 +132,7 @@ const CreateArticle: React.FC = () => {
             newFiles.map(async file => {
               const response = await fetch(file.url)
               const blob = await response.blob()
-              return new File([blob], file.name, { type: file.type })
+              return new File([blob], file.name, { type: file.type || '' })
             })
           )
           await projectService.uploadArticleFiles(
