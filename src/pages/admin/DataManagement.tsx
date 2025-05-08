@@ -324,9 +324,16 @@ const formatRequestData = (data: any): JSX.Element => {
       </Box>
     )
   }
+  if (data.diff == null || data.diff && Object.keys(data.diff).length === 0) {
+    return (
+      <Typography variant="body2" gutterBottom component="pre" sx={{ whiteSpace: 'pre-line' }}>
+        변경사항이 없습니다
+      </Typography>
+    )
+  }
   if (data.diff) {
     return groupData(Object.entries(data.diff))
-  }
+  } 
   return groupData(Object.entries(data))
 }
 
@@ -574,7 +581,8 @@ const DataManagement: React.FC = () => {
                   }}>
                     {log.action === 'CREATE' ? '생성' :
                      log.action === 'UPDATE' ? '수정' :
-                     log.action === 'DELETE' ? '삭제' : log.action}
+                     log.action === 'DELETE' ? '삭제' : 
+                     log.action == 'UPDATE_STATUS' ? '수정' :log.action}
                   </Box>
                 </TableCell>
                 <TableCell sx={{ whiteSpace: 'nowrap', padding: '6px 8px', width: 110, minWidth: 90 }}>{log.operator}</TableCell>
@@ -621,6 +629,11 @@ const DataManagement: React.FC = () => {
               {detailLog.action === 'DELETE' && detailLog.beforeData && (
                 <Box sx={{ border: '1px solid #e0e7ef', borderRadius: 2, bgcolor: '#f9fafb', p: 2, boxShadow: '0 1px 4px #f1f5f9' }}>
                   {formatRequestData(detailLog.beforeData)}
+                </Box>
+              )}
+              {detailLog.action === 'UPDATE_STATUS' &&  (
+                <Box sx={{ border: '1px solid #e0e7ef', borderRadius: 2, bgcolor: '#f6faff', p: 2, boxShadow: '0 1px 4px #f1f5f9' }}>
+                  {formatRequestData({ diff: detailLog.diff })}
                 </Box>
               )}
             </Box>
