@@ -35,21 +35,36 @@ class NoticeService {
     fetchEventSource('https://api.s0da.co.kr/notifications/subscribe', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'text/event-stream',
+        Authorization: `Bearer ${token}`,
+        Accept: 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive'
+        Connection: 'keep-alive'
       },
       signal: this.controller.signal,
       async onopen(response) {
-        if (response.ok && response.headers.get('content-type') === 'text/event-stream') {
+        if (
+          response.ok &&
+          response.headers.get('content-type') === 'text/event-stream'
+        ) {
           console.log('SSE connection opened successfully')
           return
-        } else if (response.status >= 400 && response.status < 500 && response.status !== 429) {
-          console.error('SSE connection failed:', response.status, response.statusText)
+        } else if (
+          response.status >= 400 &&
+          response.status < 500 &&
+          response.status !== 429
+        ) {
+          console.error(
+            'SSE connection failed:',
+            response.status,
+            response.statusText
+          )
           throw new Error('Client error')
         } else {
-          console.error('SSE connection failed:', response.status, response.statusText)
+          console.error(
+            'SSE connection failed:',
+            response.status,
+            response.statusText
+          )
           throw new Error('Server error')
         }
       },
@@ -112,4 +127,4 @@ class NoticeService {
   }
 }
 
-export const noticeService = new NoticeService() 
+export const noticeService = new NoticeService()
