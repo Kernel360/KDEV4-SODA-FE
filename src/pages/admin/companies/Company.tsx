@@ -19,7 +19,7 @@ const CompanyPage: React.FC = () => {
     const fetchCompany = async () => {
       try {
         if (!id) return
-        const data = await companyService.getCompanyDetail(Number(id))
+        const data = await companyService.getCompanyById(Number(id))
         setCompany(data)
       } catch (err) {
         setError('회사 정보를 불러오는데 실패했습니다.')
@@ -39,7 +39,8 @@ const CompanyPage: React.FC = () => {
   const handleDelete = async () => {
     if (window.confirm('정말로 이 회사를 삭제하시겠습니까?')) {
       try {
-        // TODO: API 호출로 대체
+        if (!id) return
+        await companyService.deleteCompany(Number(id))
         showToast('회사가 삭제되었습니다.', 'success')
         navigate('/admin/companies')
       } catch (err) {

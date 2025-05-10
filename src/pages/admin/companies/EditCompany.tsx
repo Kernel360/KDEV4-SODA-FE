@@ -27,7 +27,7 @@ const EditCompany: React.FC = () => {
           companyNumber: data.companyNumber || '',
           address: data.address || '',
           detailaddress: data.detailAddress || '',
-          ownerName: data.ceoName || ''
+          ownerName: data.ownerName || ''
         })
       } catch (error) {
         console.error('회사 정보 조회 중 오류:', error)
@@ -48,7 +48,8 @@ const EditCompany: React.FC = () => {
         phoneNumber: formData.phoneNumber,
         companyNumber: formData.companyNumber,
         address: formData.address,
-        detailaddress: formData.detailaddress
+        detailaddress: formData.detailaddress,
+        ownerName: formData.ownerName
       })
       showToast('회사 정보가 성공적으로 수정되었습니다.', 'success')
       navigate(`/admin/companies/${id}`)
@@ -64,10 +65,15 @@ const EditCompany: React.FC = () => {
 
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
-      <Typography variant="h4" gutterBottom>
+      <Typography
+        variant="h4"
+        gutterBottom>
         회사 정보 수정
       </Typography>
-      <CompanyForm initialData={company} onSubmit={handleSubmit} />
+      <CompanyForm
+        initialData={company}
+        onSubmit={handleSubmit}
+      />
     </Box>
   )
 }
