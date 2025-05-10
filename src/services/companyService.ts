@@ -1,55 +1,27 @@
 import { client } from '../api/client'
-import type { Company } from '../types/company'
+import type { Company, CompanyFormData } from '../types/company'
+import type { ApiResponse } from '../types/api'
 import type { CompanyMember } from '../types/api'
 
-interface CreateCompanyRequest {
-  name: string
-  phoneNumber: string
-  companyNumber: string
-  address: string
-  detailaddress: string
-  ownerName: string
-}
-
-interface ApiResponse<T> {
-  status: string
-  code: string
-  message: string
-  data: T
-}
-
 export const companyService = {
-  async getAllCompanies(): Promise<Company[]> {
-    const response = await client.get<ApiResponse<Company[]>>('/companies')
-    return response.data.data
-  },
-
-  async createCompany(data: CreateCompanyRequest): Promise<Company> {
-    const response = await client.post<ApiResponse<Company>>('/companies', data)
-    return response.data.data
-  },
-
-  async updateCompany(
-    id: number,
-    data: Partial<CreateCompanyRequest>
-  ): Promise<Company> {
-    const response = await client.put<ApiResponse<Company>>(
-      `/companies/${id}`,
-      data
-    )
+  async getAllCompanies(view: 'ACTIVE' | 'DELETED' = 'ACTIVE'): Promise<Company[]> {
+    const response = await client.get<ApiResponse<Company[]>>(`/companies?view=${view}`)
     return response.data.data
   },
 
   async getCompanyById(id: number): Promise<Company> {
-    try {
-      const response = await client.get<ApiResponse<Company>>(
-        `/companies/${id}`
-      )
-      return response.data.data
-    } catch (error) {
-      console.error('Error fetching company detail:', error)
-      throw error
-    }
+    const response = await client.get<ApiResponse<Company>>(`/companies/${id}`)
+    return response.data.data
+  },
+
+  async createCompany(data: CompanyFormData): Promise<Company> {
+    const response = await client.post<ApiResponse<Company>>('/companies', data)
+    return response.data.data
+  },
+
+  async updateCompany(id: number, data: Partial<CompanyFormData>): Promise<Company> {
+    const response = await client.put<ApiResponse<Company>>(`/companies/${id}`, data)
+    return response.data.data
   },
 
   async updateCompanyStatus(
@@ -79,11 +51,11 @@ export const companyService = {
   },
 
   async deleteCompany(companyId: number): Promise<void> {
-    try {
-      await client.delete(`/companies/${companyId}`)
-    } catch (error) {
-      console.error('Error deleting company:', error)
-      throw error
-    }
+    await client.delete(`/companies/${companyId}`)
+  },
+
+  async restoreCompany(companyId: number): Promise<Company> {
+    const response = await client.put<ApiResponse<Company>>(`/companies/${companyId}/restore`)
+    return response.data.data
   }
 }
