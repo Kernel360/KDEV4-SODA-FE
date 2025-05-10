@@ -13,6 +13,7 @@ export interface Company {
   addressDetail?: string
   companyNumber: string
   detailAddress: string | null
+  ownerName: string
 }
 
 export interface CompanyMember {
