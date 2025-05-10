@@ -899,7 +899,7 @@ export default function AdminMain() {
 
       {/* 회사 섹션 */}
       <Box>
-        {/* 회사 생성 추이 */}
+        {/* 회사 등록 추이 */}
         <Grid
           container
           spacing={3}

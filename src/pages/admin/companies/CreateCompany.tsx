@@ -24,16 +24,16 @@ const CreateCompany: React.FC = () => {
       showToast('회사가 성공적으로 생성되었습니다.', 'success')
       navigate('/admin/companies')
     } catch (err) {
-      setError('회사 생성 중 오류가 발생했습니다.')
+      setError('회사 등록 중 오류가 발생했습니다.')
       console.error('Error creating company:', err)
-      showToast('회사 생성 중 오류가 발생했습니다.', 'error')
+      showToast('회사 등록 중 오류가 발생했습니다.', 'error')
     }
   }
 
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
       <Typography variant="h4" gutterBottom>
-        회사 생성
+        회사 등록
       </Typography>
       {error && (
         <Typography color="error" sx={{ mb: 2 }}>
