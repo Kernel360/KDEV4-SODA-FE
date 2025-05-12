@@ -1,27 +1,26 @@
 export interface Company {
   id: number
   name: string
-  ceoName: string
   phoneNumber: string
-  businessNumber: string
+  companyNumber: string
   address: string
+  detailAddress: string | null
+  ownerName: string
   createdAt: string
   updatedAt: string
   isActive: boolean
-  ceoPhone?: string
-  registrationNumber?: string
-  addressDetail?: string
-  companyNumber: string
-  detailAddress: string | null
-  ownerName: string
 }
 
 export interface CompanyMember {
   id: number
   name: string
-  position?: string
-  phoneNumber?: string
-  email?: string
+  authId: string
+  email: string | null
+  position: string | null
+  phoneNumber: string | null
+  isDeleted: boolean
+  companyId: number
+  role: 'ADMIN' | 'USER'
 }
 
 export interface CompanyFormData {
@@ -29,6 +28,20 @@ export interface CompanyFormData {
   phoneNumber: string
   companyNumber: string
   address: string
-  detailaddress: string
+  detailAddress: string
   ownerName: string
+}
+
+export interface PasswordPolicy {
+  minLength: number
+  requireSpecialChar: boolean
+  requireNumber: boolean
+  requireUppercase: boolean
+}
+
+export const DEFAULT_PASSWORD_POLICY: PasswordPolicy = {
+  minLength: 8,
+  requireSpecialChar: true,
+  requireNumber: true,
+  requireUppercase: true
 }
