@@ -79,9 +79,9 @@ export default function AccountList() {
     setPage(0) // 검색어가 변경되면 첫 페이지로 이동
   }
 
-  // const handleRowClick = (row: MemberListDto) => {
-  //   navigate(`/admin/accounts/${row.id}`)
-  // }
+  const handleRowClick = (row: MemberListDto) => {
+    navigate(`/admin/accounts/${row.id}`)
+  }
 
   const columns = [
     {
@@ -150,7 +150,7 @@ export default function AccountList() {
       <Box sx={{ mb: 3 }}>
         <TextField
           fullWidth
-          placeholder="이름, 아이디, 회사로 검색"
+          placeholder="이름, 아이디로 검색"
           value={searchKeyword}
           onChange={handleSearchChange}
           InputProps={{
@@ -177,7 +177,7 @@ export default function AccountList() {
         onPageChange={handlePageChange}
         onRowsPerPageChange={handleRowsPerPageChange}
         loading={loading}
-        //onRowClick={handleRowClick}
+        onRowClick={handleRowClick}
       />
     </Box>
   )
