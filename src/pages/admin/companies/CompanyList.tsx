@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Box, Typography, Button, CircularProgress, Tabs, Tab } from '@mui/material'
+import {
+  Box,
+  Typography,
+  Button,
+  CircularProgress,
+  Tabs,
+  Tab
+} from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { PlusCircle, RotateCcw } from 'lucide-react'
 import { useToast } from '../../../contexts/ToastContext'
@@ -24,7 +31,9 @@ const CompanyList: React.FC = () => {
   const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
   const [companies, setCompanies] = useState<CompanyListItem[]>([])
-  const [deletedCompanies, setDeletedCompanies] = useState<CompanyListItem[]>([])
+  const [deletedCompanies, setDeletedCompanies] = useState<CompanyListItem[]>(
+    []
+  )
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [currentTab, setCurrentTab] = useState(0)
@@ -132,22 +141,25 @@ const CompanyList: React.FC = () => {
       render: row => (
         <Button
           startIcon={<RotateCcw size={16} />}
-          onClick={(e) => {
+          onClick={e => {
             e.stopPropagation()
             handleRestore(row.id)
           }}
           color="primary"
-          size="small"
-        >
+          size="small">
           복구
         </Button>
       )
     }
   ]
 
-  const currentPageData = currentTab === 0
-    ? companies.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-    : deletedCompanies.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  const currentPageData =
+    currentTab === 0
+      ? companies.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+      : deletedCompanies.slice(
+          page * rowsPerPage,
+          page * rowsPerPage + rowsPerPage
+        )
 
   if (loading && companies.length === 0 && deletedCompanies.length === 0) {
     return (
@@ -175,8 +187,7 @@ const CompanyList: React.FC = () => {
         <Typography
           variant="h5"
           component="h1"
-          sx={{ fontWeight: 'bold' }}
-        >
+          sx={{ fontWeight: 'bold' }}>
           회사 관리
         </Typography>
         {currentTab === 0 && (
@@ -199,8 +210,7 @@ const CompanyList: React.FC = () => {
       <Tabs
         value={currentTab}
         onChange={(_, newValue) => setCurrentTab(newValue)}
-        sx={{ mb: 3 }}
-      >
+        sx={{ mb: 3 }}>
         <Tab label="회사 목록" />
         <Tab label="삭제된 회사" />
       </Tabs>
@@ -210,10 +220,13 @@ const CompanyList: React.FC = () => {
         data={currentPageData}
         page={page}
         rowsPerPage={rowsPerPage}
-        totalCount={currentTab === 0 ? companies.length : deletedCompanies.length}
+        totalCount={
+          currentTab === 0 ? companies.length : deletedCompanies.length
+        }
         onPageChange={handlePageChange}
         onRowsPerPageChange={handleRowsPerPageChange}
         loading={loading}
+        onRowClick={handleRowClick}
       />
     </Box>
   )
