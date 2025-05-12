@@ -15,7 +15,7 @@ const CompanyForm = ({ onSubmit, initialData }: CompanyFormProps) => {
     phoneNumber: '',
     companyNumber: '',
     address: '',
-    detailaddress: '',
+    detailAddress: '',
     ownerName: ''
   })
 
@@ -215,24 +215,19 @@ const CompanyForm = ({ onSubmit, initialData }: CompanyFormProps) => {
             xs={12}>
             <Box sx={{ position: 'relative' }}>
               <TextField
-                fullWidth
-                label="상세주소"
-                name="detailaddress"
-                value={formData.detailaddress}
+                name="detailAddress"
+                value={formData.detailAddress}
                 onChange={handleChange}
-                inputProps={{
-                  maxLength: 50
-                }}
+                fullWidth
+                size="small"
+                placeholder="상세주소를 입력하세요"
+                inputProps={{ maxLength: 50 }}
               />
               <Typography
                 variant="caption"
-                sx={{
-                  position: 'absolute',
-                  right: 0,
-                  bottom: -20,
-                  color: 'text.secondary'
-                }}>
-                {`${formData.detailaddress.length}/50`}
+                color="text.secondary"
+                sx={{ mt: 0.5, display: 'block', textAlign: 'right' }}>
+                {`${formData.detailAddress.length}/50`}
               </Typography>
             </Box>
           </Grid>
