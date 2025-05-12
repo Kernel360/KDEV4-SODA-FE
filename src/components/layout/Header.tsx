@@ -128,7 +128,7 @@ const Header: React.FC<HeaderProps> = ({ onSidebarToggle, isSidebarOpen }) => {
               </Box>
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', mr: 0.5 }}>
                 <Typography variant="body1" sx={{ fontWeight: 600, lineHeight: 1 }}>{user.name}</Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1 }}>{user.company?.name || '-'} | {user.position || '-'}</Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1 }}>{user.role === 'ADMIN' ? 'SODA' : user.company?.name || '-'} | {user.role === 'ADMIN' ? '관리자' : user.position || '-'}</Typography>
               </Box>
               <ChevronDown size={16} />
             </Box>
