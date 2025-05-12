@@ -624,7 +624,7 @@ export const projectService = {
 
   async submitVote(articleId: number, voteSubmission: VoteSubmission) {
     const response = await client.post(
-      `/articles/${articleId}/vote/submit`,
+      `/articles/${articleId}/vote/submission`,
       voteSubmission
     )
     return response.data
