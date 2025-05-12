@@ -45,6 +45,7 @@ import ReapplyRequest from './pages/user/projects/ReapplyRequest'
 import UserRequests from './pages/user/UserRequests'
 import MyArticles from './pages/user/MyArticles'
 import PrivateRoute from './components/auth/PrivateRoute'
+import MyPage from './pages/user/mypage/MyPage'
 
 const App: React.FC = () => {
   return (
@@ -200,6 +201,10 @@ const App: React.FC = () => {
               <Route
                 path="accounts/:id"
                 element={<UserAccountDetail isAdmin={false} />}
+              />
+              <Route
+                path="profile"
+                element={<MyPage />}
               />
               <Route
                 path=":id"
