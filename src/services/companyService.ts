@@ -1,11 +1,21 @@
 import { client } from '../api/client'
-import type { Company, CompanyFormData } from '../types/company'
+import type { Company, CompanyFormData, CompanyMember } from '../types/company'
 import type { ApiResponse } from '../types/api'
-import type { CompanyMember } from '../types/api'
+
+interface AddMemberData {
+  name: string
+  position?: string
+  email?: string
+  phoneNumber?: string
+}
 
 export const companyService = {
-  async getAllCompanies(view: 'ACTIVE' | 'DELETED' = 'ACTIVE'): Promise<Company[]> {
-    const response = await client.get<ApiResponse<Company[]>>(`/companies?view=${view}`)
+  async getAllCompanies(
+    view: 'ACTIVE' | 'DELETED' = 'ACTIVE'
+  ): Promise<Company[]> {
+    const response = await client.get<ApiResponse<Company[]>>(
+      `/companies?view=${view}`
+    )
     return response.data.data
   },
 
@@ -19,8 +29,18 @@ export const companyService = {
     return response.data.data
   },
 
-  async updateCompany(id: number, data: Partial<CompanyFormData>): Promise<Company> {
-    const response = await client.put<ApiResponse<Company>>(`/companies/${id}`, data)
+  async updateCompany(
+    id: number,
+    data: Partial<CompanyFormData>
+  ): Promise<Company> {
+    const requestData = {
+      ...data,
+      detailAddress: data.detailAddress || null
+    }
+    const response = await client.put<ApiResponse<Company>>(
+      `/companies/${id}`,
+      requestData
+    )
     return response.data.data
   },
 
@@ -55,7 +75,38 @@ export const companyService = {
   },
 
   async restoreCompany(companyId: number): Promise<Company> {
-    const response = await client.put<ApiResponse<Company>>(`/companies/${companyId}/restore`)
+    const response = await client.put<ApiResponse<Company>>(
+      `/companies/${companyId}/restore`
+    )
     return response.data.data
+  },
+
+  async addCompanyMember(
+    companyId: number,
+    data: AddMemberData
+  ): Promise<CompanyMember> {
+    const response = await client.post<ApiResponse<CompanyMember>>(
+      `/companies/${companyId}/members`,
+      data
+    )
+    return response.data.data
+  },
+
+  async updateMemberStatus(memberId: number, isActive: boolean): Promise<void> {
+    await client.patch(`/members/${memberId}/status`, { isActive })
+  },
+
+  checkAuthIdAvailability: async (
+    authId: string
+  ): Promise<{ available: boolean }> => {
+    try {
+      const response = await client.get<ApiResponse<{ available: boolean }>>(
+        `/auth/check-id/${authId}`
+      )
+      return response.data.data
+    } catch (error) {
+      console.error('Error checking auth ID availability:', error)
+      throw error
+    }
   }
 }
