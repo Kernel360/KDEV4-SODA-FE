@@ -5,10 +5,6 @@ import { Article, PriorityType } from '../../types/article'
 import { projectService } from '../../services/projectService'
 import {
   Box,
-  Typography,
-  TextField,
-  FormControlLabel,
-  Checkbox,
   Button,
   Dialog,
   DialogActions,
@@ -51,7 +47,6 @@ const EditArticle: React.FC = () => {
   })
   const [deletedFiles, setDeletedFiles] = useState<number[]>([])
   const [deletedLinks, setDeletedLinks] = useState<number[]>([])
-  const [voteData, setVoteData] = useState<VoteForm | null>(null)
   const [openDeleteModal, setOpenDeleteModal] = useState(false)
   const [linkToDelete, setLinkToDelete] = useState<number | null>(null)
 
@@ -164,7 +159,10 @@ const EditArticle: React.FC = () => {
     }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (
+    e: React.FormEvent,
+    voteDataFromForm?: VoteForm
+  ) => {
     e.preventDefault()
     try {
       if (!articleId || !projectId) {
@@ -221,7 +219,9 @@ const EditArticle: React.FC = () => {
             newFiles.map(async file => {
               const response = await fetch(file.url)
               const blob = await response.blob()
-              return new File([blob], file.name, { type: file.type })
+              return new File([blob], file.name, {
+                type: file.type || blob.type
+              })
             })
           )
 
@@ -236,29 +236,33 @@ const EditArticle: React.FC = () => {
       }
 
       // 5. 투표 생성
-      if (voteData && voteData.title) {
+      if (voteDataFromForm && voteDataFromForm.title) {
         try {
-          const voteItems = voteData.allowTextAnswer
+          const voteItems = voteDataFromForm.allowTextAnswer
             ? []
-            : voteData.voteItems.filter(item => item.trim() !== '')
+            : voteDataFromForm.voteItems.filter(item => item.trim() !== '')
 
-          if (!voteData.title.trim()) {
+          if (!voteDataFromForm.title.trim()) {
             throw new Error('투표 제목을 입력해주세요.')
           }
-          if (!voteData.allowTextAnswer && voteItems.length === 0) {
+          if (!voteDataFromForm.allowTextAnswer && voteItems.length === 0) {
             throw new Error('투표 항목을 입력해주세요.')
           }
 
           await projectService.createVote(Number(articleId), {
-            title: voteData.title,
+            title: voteDataFromForm.title,
             voteItems: voteItems,
-            allowMultipleSelection: voteData.allowMultipleSelection,
-            allowTextAnswer: voteData.allowTextAnswer,
-            deadLine: voteData.deadLine?.toISOString()
+            allowMultipleSelection: voteDataFromForm.allowMultipleSelection,
+            allowTextAnswer: voteDataFromForm.allowTextAnswer,
+            deadLine: voteDataFromForm.deadLine?.toISOString()
           })
         } catch (error) {
           console.error('투표 생성 중 오류 발생:', error)
-          toast.error(error.message || '투표 생성에 실패했습니다.')
+          if (error instanceof Error) {
+            toast.error(error.message)
+          } else {
+            toast.error('투표 생성에 실패했습니다.')
+          }
         }
       }
 
