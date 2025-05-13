@@ -27,16 +27,16 @@ import type { ProjectMember } from '../../../types/project'
 import axios from 'axios'
 
 interface LinkData {
-  urlAddress: string;
-  urlDescription: string;
+  urlAddress: string
+  urlDescription: string
 }
 
 interface RequestFormData {
-  stageId: number;
-  title: string;
-  content: string;
-  links: LinkData[];
-  files: File[];
+  stageId: number
+  title: string
+  content: string
+  links: LinkData[]
+  files: File[]
 }
 
 const CreateRequest: React.FC = () => {
@@ -66,7 +66,10 @@ const CreateRequest: React.FC = () => {
         if (response.data.status === 'success') {
           setStages(response.data.data)
           if (response.data.data.length > 0) {
-            setFormData(prev => ({ ...prev, stageId: response.data.data[0].id }))
+            setFormData(prev => ({
+              ...prev,
+              stageId: response.data.data[0].id
+            }))
           }
         }
       } catch (error) {
@@ -77,9 +80,12 @@ const CreateRequest: React.FC = () => {
 
     const fetchApprovers = async () => {
       try {
-        const response = await projectService.getProjectMembers(Number(projectId), {
-          companyRole: 'CLIENT_COMPANY'
-        })
+        const response = await projectService.getProjectMembers(
+          Number(projectId),
+          {
+            companyRole: 'CLIENT_COMPANY'
+          }
+        )
         console.log('승인권자 목록 응답:', response)
         if (response && response.content) {
           const approvers = response.content.map((member: any) => ({
@@ -89,7 +95,7 @@ const CreateRequest: React.FC = () => {
             companyRole: member.role,
             companyName: member.companyName,
             role: member.role,
-            memberStatus: member.memberStatus || 'AVAILABLE',
+            memberStatus: member.memberStatus || 'AVAILABLE'
           }))
           setApprovers(approvers)
         } else {
@@ -125,43 +131,45 @@ const CreateRequest: React.FC = () => {
       }
 
       const response = await requestService.createRequest(requestBody)
-      
+
       // 파일이 있는 경우 S3 업로드 처리
       if (formData.files.length > 0) {
         try {
           // 1. presigned URL 요청
-          const presignedResponse = await client.post(`/requests/${response.requestId}/files/presigned-urls`, 
+          const presignedResponse = await client.post(
+            `/requests/${response.requestId}/files/presigned-urls`,
             formData.files.map(file => ({
               fileName: file.name,
               contentType: file.type
             }))
-          );
+          )
 
           if (presignedResponse.data.status === 'success') {
-            const { entries } = presignedResponse.data.data;
+            const { entries } = presignedResponse.data.data
 
             // 2. S3에 파일 업로드
             await Promise.all(
               entries.map((entry, i) =>
                 axios.put(entry.presignedUrl, formData.files[i], {
-                  headers: { 
+                  headers: {
                     'Content-Type': formData.files[i].type
-                   },
+                  }
                 })
               )
-            );
+            )
 
             // 3. 업로드 완료 확인
-            await client.post(`/requests/${response.requestId}/files/confirm-upload`,
+            await client.post(
+              `/requests/${response.requestId}/files/confirm-upload`,
               entries.map(entry => ({
                 fileName: entry.fileName,
                 url: entry.fileUrl
               }))
-            );
+            )
           }
         } catch (error) {
-          console.error('파일 업로드 중 오류 발생:', error);
-          showToast('파일 업로드 중 오류가 발생했습니다.', 'error');
+          console.error('파일 업로드 중 오류 발생:', error)
+          showToast('파일 업로드 중 오류가 발생했습니다.', 'error')
         }
       }
 
@@ -209,46 +217,58 @@ const CreateRequest: React.FC = () => {
 
   const handleApproverChange = (event: SelectChangeEvent<number[]>) => {
     const value = event.target.value
-    setSelectedApprovers(typeof value === 'string' ? value.split(',').map(Number) : value)
+    setSelectedApprovers(
+      typeof value === 'string' ? value.split(',').map(Number) : value
+    )
   }
 
   // memberStatus 한글 변환 함수
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'AVAILABLE': return '업무가능';
-      case 'BUSY': return '바쁨';
-      case 'AWAY': return '자리비움';
-      case 'ON_VACATION': return '휴가중';
-      default: return status;
+      case 'AVAILABLE':
+        return '업무가능'
+      case 'BUSY':
+        return '바쁨'
+      case 'AWAY':
+        return '자리비움'
+      case 'ON_VACATION':
+        return '휴가중'
+      default:
+        return status
     }
-  };
+  }
 
   return (
     <Box sx={{ maxWidth: '100%', p: 3 }}>
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        mb: 3,
-        pb: 2,
-        borderBottom: '1px solid',
-        borderColor: 'divider'
-      }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          mb: 3,
+          pb: 2,
+          borderBottom: '1px solid',
+          borderColor: 'divider'
+        }}>
         <Button
           onClick={() => navigate(`/user/projects/${projectId}`)}
-          sx={{ 
+          sx={{
             color: 'text.secondary',
             p: 0,
             minWidth: 'auto',
             '&:hover': { background: 'none' }
           }}>
           <ArrowLeft size={20} />
-          <Typography variant="body2" sx={{ ml: 1 }}>프로젝트 대시보드로 돌아가기</Typography>
+          <Typography
+            variant="body2"
+            sx={{ ml: 1 }}>
+            프로젝트 대시보드로 돌아가기
+          </Typography>
         </Button>
       </Box>
 
       <Box sx={{ mb: 3 }}>
-        <Tabs 
-          value={selectedTab} 
+        <Tabs
+          value={selectedTab}
           onChange={(_, newValue) => {
             setSelectedTab(newValue)
             setFormData(prev => ({ ...prev, stageId: stages[newValue].id }))
@@ -261,8 +281,8 @@ const CreateRequest: React.FC = () => {
             }
           }}>
           {stages.map((stage, index) => (
-            <Tab 
-              key={stage.id} 
+            <Tab
+              key={stage.id}
               label={stage.name}
               sx={{
                 minHeight: '48px',
@@ -279,31 +299,36 @@ const CreateRequest: React.FC = () => {
         </Tabs>
       </Box>
 
-      <Paper 
-        sx={{ 
+      <Paper
+        sx={{
           borderRadius: '4px',
           border: '1px solid #E5E7EB',
           overflow: 'hidden',
           boxShadow: 'none'
-        }} 
-        elevation={0}
-      >
-        <Box 
-          component="form" 
-          onSubmit={handleSubmit} 
+        }}
+        elevation={0}>
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
           id="request-form"
-          sx={{ p: 0 }}
-        >
+          sx={{ p: 0 }}>
           <Box sx={{ px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>
-            <Typography variant="body2" color="#6B7280" sx={{ mb: 1 }}>제목</Typography>
+            <Typography
+              variant="body2"
+              color="#6B7280"
+              sx={{ mb: 1 }}>
+              제목
+            </Typography>
             <TextField
               fullWidth
               placeholder="제목을 입력해주세요"
               value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              onChange={e =>
+                setFormData(prev => ({ ...prev, title: e.target.value }))
+              }
               variant="outlined"
               required
-              sx={{ 
+              sx={{
                 '& .MuiOutlinedInput-root': {
                   bgcolor: 'white',
                   fontSize: '0.875rem',
@@ -325,17 +350,24 @@ const CreateRequest: React.FC = () => {
           </Box>
 
           <Box sx={{ px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>
-            <Typography variant="body2" color="#6B7280" sx={{ mb: 1 }}>내용</Typography>
+            <Typography
+              variant="body2"
+              color="#6B7280"
+              sx={{ mb: 1 }}>
+              내용
+            </Typography>
             <TextField
               fullWidth
               placeholder="내용을 입력해주세요"
               multiline
               rows={6}
               value={formData.content}
-              onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+              onChange={e =>
+                setFormData(prev => ({ ...prev, content: e.target.value }))
+              }
               variant="outlined"
               required
-              sx={{ 
+              sx={{
                 '& .MuiOutlinedInput-root': {
                   bgcolor: 'white',
                   fontSize: '0.875rem',
@@ -354,15 +386,26 @@ const CreateRequest: React.FC = () => {
           </Box>
 
           <Box sx={{ display: 'flex' }}>
-            <Box sx={{ flex: 1, px: 3, py: 2, borderRight: '1px solid #E5E7EB' }}>
-              <Typography variant="body2" color="#6B7280" sx={{ mb: 1 }}>첨부 링크</Typography>
+            <Box
+              sx={{ flex: 1, px: 3, py: 2, borderRight: '1px solid #E5E7EB' }}>
+              <Typography
+                variant="body2"
+                color="#6B7280"
+                sx={{ mb: 1 }}>
+                첨부 링크
+              </Typography>
               <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
                 <TextField
                   size="small"
                   placeholder="URL"
                   value={tempLink.urlAddress}
-                  onChange={(e) => setTempLink(prev => ({ ...prev, urlAddress: e.target.value }))}
-                  sx={{ 
+                  onChange={e =>
+                    setTempLink(prev => ({
+                      ...prev,
+                      urlAddress: e.target.value
+                    }))
+                  }
+                  sx={{
                     flex: 2,
                     '& .MuiOutlinedInput-root': {
                       bgcolor: 'white',
@@ -386,8 +429,13 @@ const CreateRequest: React.FC = () => {
                   size="small"
                   placeholder="설명"
                   value={tempLink.urlDescription}
-                  onChange={(e) => setTempLink(prev => ({ ...prev, urlDescription: e.target.value }))}
-                  sx={{ 
+                  onChange={e =>
+                    setTempLink(prev => ({
+                      ...prev,
+                      urlDescription: e.target.value
+                    }))
+                  }
+                  sx={{
                     flex: 1,
                     '& .MuiOutlinedInput-root': {
                       bgcolor: 'white',
@@ -409,7 +457,7 @@ const CreateRequest: React.FC = () => {
                 />
                 <Button
                   onClick={handleAddLink}
-                  sx={{ 
+                  sx={{
                     minWidth: 'auto',
                     px: 2,
                     color: '#FFB800',
@@ -423,24 +471,28 @@ const CreateRequest: React.FC = () => {
                 </Button>
               </Box>
               {formData.links.map((link, index) => (
-                <Box 
-                  key={index} 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                <Box
+                  key={index}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
                     mb: 1,
                     bgcolor: 'white'
                   }}>
-                  <Typography variant="body2" sx={{ flex: 1 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ flex: 1 }}>
                     {link.urlDescription || '네이버'}
                   </Typography>
-                  <Typography variant="body2" color="#6B7280">
+                  <Typography
+                    variant="body2"
+                    color="#6B7280">
                     {link.urlAddress || 'naver.com'}
                   </Typography>
-                  <IconButton 
-                    onClick={() => handleRemoveLink(index)} 
+                  <IconButton
+                    onClick={() => handleRemoveLink(index)}
                     size="small"
-                    sx={{ 
+                    sx={{
                       ml: 1,
                       color: '#6B7280',
                       p: 0.5
@@ -452,10 +504,15 @@ const CreateRequest: React.FC = () => {
             </Box>
 
             <Box sx={{ flex: 1, px: 3, py: 2 }}>
-              <Typography variant="body2" color="#6B7280" sx={{ mb: 1 }}>파일 첨부</Typography>
+              <Typography
+                variant="body2"
+                color="#6B7280"
+                sx={{ mb: 1 }}>
+                파일 첨부
+              </Typography>
               <Button
                 component="label"
-                sx={{ 
+                sx={{
                   color: '#FFB800',
                   border: '1px solid #FFB800',
                   '&:hover': {
@@ -472,21 +529,23 @@ const CreateRequest: React.FC = () => {
                 />
               </Button>
               {formData.files.map((file, index) => (
-                <Box 
-                  key={index} 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                <Box
+                  key={index}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
                     mt: 2,
                     bgcolor: 'white'
                   }}>
-                  <Typography variant="body2" sx={{ flex: 1 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ flex: 1 }}>
                     {file.name}
                   </Typography>
-                  <IconButton 
-                    onClick={() => handleRemoveFile(index)} 
+                  <IconButton
+                    onClick={() => handleRemoveFile(index)}
                     size="small"
-                    sx={{ 
+                    sx={{
                       color: '#6B7280',
                       p: 0.5
                     }}>
@@ -526,13 +585,11 @@ const CreateRequest: React.FC = () => {
                       )
                     })}
                   </Box>
-                )}
-              >
+                )}>
                 {approvers.map(approver => (
                   <MenuItem
                     key={approver.id}
-                    value={approver.id}
-                  >
+                    value={approver.id}>
                     {`${approver.name} (${approver.companyName}) - ${getStatusLabel(approver.memberStatus)}`}
                   </MenuItem>
                 ))}
@@ -541,12 +598,13 @@ const CreateRequest: React.FC = () => {
           </Box>
         </Box>
       </Paper>
-      
-      <Box sx={{ display: 'flex', gap: 1.5, mt: 3, justifyContent: 'flex-end' }}>
+
+      <Box
+        sx={{ display: 'flex', gap: 1.5, mt: 3, justifyContent: 'flex-end' }}>
         <Button
           variant="outlined"
           onClick={() => navigate(`/user/projects/${projectId}`)}
-          sx={{ 
+          sx={{
             px: 3,
             py: 1,
             color: '#dc2626',
@@ -561,7 +619,7 @@ const CreateRequest: React.FC = () => {
         <Button
           type="submit"
           form="request-form"
-          sx={{ 
+          sx={{
             px: 4,
             py: 1,
             bgcolor: '#FFB800',
