@@ -558,7 +558,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({
                     </TableCell>
                     <TableCell>{group.parent.memberName}</TableCell>
                     <TableCell>
-                      {dayjs(group.parent.createdAt).format('YYYY-MM-DD HH:mm')}
+                      {dayjs(group.parent.createdAt).format('YYYY-MM-DD')}
                     </TableCell>
                   </TableRow>
                 </React.Fragment>
