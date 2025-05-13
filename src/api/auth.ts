@@ -11,7 +11,8 @@ import type {
   SignupRequest,
   SignupResponse,
   User,
-  UpdateUserInfoResponse
+  UpdateUserInfoResponse,
+  ApiResponse
 } from '../types/api'
 import { instance } from './config'
 
@@ -119,6 +120,18 @@ export const updateUserInfo = async (data: {
       message: error.message,
       stack: error.stack
     })
+    throw error
+  }
+}
+
+export const checkIdAvailability = async (authId: string) => {
+  try {
+    const response = await instance.get<ApiResponse<boolean>>('/check-id', {
+      params: { authId }
+    })
+    return response.data
+  } catch (error) {
+    console.error('아이디 중복 확인 중 오류:', error)
     throw error
   }
 }

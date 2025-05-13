@@ -1,5 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Box, Typography, Paper, Grid, Divider, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material'
+import {
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  Divider,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField
+} from '@mui/material'
 import { memberService } from '../../../services/memberService'
 import LoadingSpinner from '../../../components/common/LoadingSpinner'
 import ErrorMessage from '../../../components/common/ErrorMessage'
@@ -84,7 +96,12 @@ const MyPage = () => {
   }
 
   if (error) {
-    return <ErrorMessage message={error} onRetry={() => window.location.reload()} />
+    return (
+      <ErrorMessage
+        message={error}
+        onRetry={() => window.location.reload()}
+      />
+    )
   }
 
   if (!userInfo) {
@@ -93,102 +110,194 @@ const MyPage = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography component="h1" variant="h4" sx={{ fontWeight: 600 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 4
+        }}>
+        <Typography
+          component="h1"
+          variant="h4"
+          sx={{ fontWeight: 600 }}>
           마이페이지
         </Typography>
         <Button
           variant="contained"
           onClick={handleEditClick}
           sx={{
-            backgroundColor: 'black',
+            backgroundColor: 'primary.main',
             '&:hover': {
-              backgroundColor: 'black'
+              backgroundColor: 'primary.dark'
             }
           }}>
           정보 수정
         </Button>
       </Box>
 
-      <Paper elevation={0} sx={{ p: 3, border: '1px solid #e5e7eb' }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
+      <Paper
+        elevation={0}
+        sx={{ p: 3, border: '1px solid #e5e7eb' }}>
+        <Grid
+          container
+          spacing={3}>
+          <Grid
+            item
+            xs={12}>
+            <Typography
+              component="h2"
+              variant="h6"
+              sx={{ mb: 2 }}>
               기본 정보
             </Typography>
             <Divider sx={{ mb: 2 }} />
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography component="div" variant="subtitle2" color="text.secondary">
+            <Grid
+              container
+              spacing={2}>
+              <Grid
+                item
+                xs={12}
+                sm={6}>
+                <Typography
+                  component="div"
+                  variant="subtitle2"
+                  color="text.secondary">
                   이름
                 </Typography>
-                <Typography component="div" variant="body1">
+                <Typography
+                  component="div"
+                  variant="body1">
                   {userInfo.name}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography component="div" variant="subtitle2" color="text.secondary">
+              <Grid
+                item
+                xs={12}
+                sm={6}>
+                <Typography
+                  component="div"
+                  variant="subtitle2"
+                  color="text.secondary">
                   전화번호
                 </Typography>
-                <Typography component="div" variant="body1">
+                <Typography
+                  component="div"
+                  variant="body1">
                   {userInfo.phoneNumber}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography component="div" variant="subtitle2" color="text.secondary">
+              <Grid
+                item
+                xs={12}
+                sm={6}>
+                <Typography
+                  component="div"
+                  variant="subtitle2"
+                  color="text.secondary">
                   이메일
                 </Typography>
-                <Typography component="div" variant="body1">
+                <Typography
+                  component="div"
+                  variant="body1">
                   {userInfo.email}
                 </Typography>
               </Grid>
             </Grid>
           </Grid>
 
-          <Grid item xs={12}>
-            <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
-              회사 정보
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography component="div" variant="subtitle2" color="text.secondary">
-                  회사명
-                </Typography>
-                <Typography component="div" variant="body1">
-                  {userInfo.companyName}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography component="div" variant="subtitle2" color="text.secondary">
-                  직책
-                </Typography>
-                <Typography component="div" variant="body1">
-                  {userInfo.position}
-                </Typography>
+          {userInfo.role !== 'ADMIN' && (
+            <Grid
+              item
+              xs={12}>
+              <Typography
+                component="h2"
+                variant="h6"
+                sx={{ mb: 2 }}>
+                회사 정보
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Grid
+                container
+                spacing={2}>
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}>
+                  <Typography
+                    component="div"
+                    variant="subtitle2"
+                    color="text.secondary">
+                    회사명
+                  </Typography>
+                  <Typography
+                    component="div"
+                    variant="body1">
+                    {userInfo.companyName || '없음'}
+                  </Typography>
+                </Grid>
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}>
+                  <Typography
+                    component="div"
+                    variant="subtitle2"
+                    color="text.secondary">
+                    직책
+                  </Typography>
+                  <Typography
+                    component="div"
+                    variant="body1">
+                    {userInfo.position}
+                  </Typography>
+                </Grid>
               </Grid>
             </Grid>
-          </Grid>
+          )}
 
-          <Grid item xs={12}>
-            <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
+          <Grid
+            item
+            xs={12}>
+            <Typography
+              component="h2"
+              variant="h6"
+              sx={{ mb: 2 }}>
               계정 정보
             </Typography>
             <Divider sx={{ mb: 2 }} />
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography component="div" variant="subtitle2" color="text.secondary">
+            <Grid
+              container
+              spacing={2}>
+              <Grid
+                item
+                xs={12}
+                sm={6}>
+                <Typography
+                  component="div"
+                  variant="subtitle2"
+                  color="text.secondary">
                   아이디
                 </Typography>
-                <Typography component="div" variant="body1">
+                <Typography
+                  component="div"
+                  variant="body1">
                   {userInfo.authId}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography component="div" variant="subtitle2" color="text.secondary">
+              <Grid
+                item
+                xs={12}
+                sm={6}>
+                <Typography
+                  component="div"
+                  variant="subtitle2"
+                  color="text.secondary">
                   가입일
                 </Typography>
-                <Typography component="div" variant="body1">
+                <Typography
+                  component="div"
+                  variant="body1">
                   {new Date(userInfo.createdAt).toLocaleDateString()}
                 </Typography>
               </Grid>
@@ -197,11 +306,18 @@ const MyPage = () => {
         </Grid>
       </Paper>
 
-      <Dialog open={isEditDialogOpen} onClose={handleEditDialogClose}>
+      <Dialog
+        open={isEditDialogOpen}
+        onClose={handleEditDialogClose}>
         <DialogTitle>정보 수정</DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
+          <Grid
+            container
+            spacing={2}
+            sx={{ mt: 1 }}>
+            <Grid
+              item
+              xs={12}>
               <TextField
                 fullWidth
                 label="이름"
@@ -210,7 +326,9 @@ const MyPage = () => {
                 onChange={handleInputChange}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid
+              item
+              xs={12}>
               <TextField
                 fullWidth
                 label="전화번호"
@@ -219,7 +337,9 @@ const MyPage = () => {
                 onChange={handleInputChange}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid
+              item
+              xs={12}>
               <TextField
                 fullWidth
                 label="직책"
@@ -232,7 +352,9 @@ const MyPage = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleEditDialogClose}>취소</Button>
-          <Button onClick={handleEditSubmit} variant="contained">
+          <Button
+            onClick={handleEditSubmit}
+            variant="contained">
             저장
           </Button>
         </DialogActions>
@@ -241,4 +363,4 @@ const MyPage = () => {
   )
 }
 
-export default MyPage 
+export default MyPage

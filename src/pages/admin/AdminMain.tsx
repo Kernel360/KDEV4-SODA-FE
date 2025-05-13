@@ -98,8 +98,10 @@ export default function AdminMain() {
 
   const fetchCompanies = async () => {
     try {
-      const companies = await companyService.getAllCompanies()
-      setTotalCompanies(companies.length)
+      const response = await companyService.getAllCompanies()
+      if (response.status === 'success' && response.data) {
+        setTotalCompanies(response.data.data.page.totalElements)
+      }
     } catch (error) {
       console.error('회사 목록을 불러오는데 실패했습니다:', error)
     }
@@ -899,7 +901,7 @@ export default function AdminMain() {
 
       {/* 회사 섹션 */}
       <Box>
-        {/* 회사 생성 추이 */}
+        {/* 회사 등록 추이 */}
         <Grid
           container
           spacing={3}

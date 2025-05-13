@@ -26,7 +26,7 @@ import {
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { DatePicker } from '@mui/x-date-pickers'
 import { Search, Close } from '@mui/icons-material'
-import type { CompanyMember } from '../../types/api'
+import type { CompanyMember, CompanyListItem } from '../../types/api'
 import { getCompanyMembers } from '../../api/company'
 import { projectService } from '../../services/projectService'
 import { useNavigate } from 'react-router-dom'
@@ -72,7 +72,7 @@ export interface ProjectFormData {
 }
 
 interface CreateProjectStepsProps {
-  companies: Company[]
+  companies: CompanyListItem[]
   onSubmit: (data: ProjectFormData) => void
   onCancel: () => void
 }
@@ -119,7 +119,7 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
   const [clientMemberSearch, setClientMemberSearch] = useState('')
   const [, setIsMemberSelectionComplete] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
+  const [selectedCompany, setSelectedCompany] = useState<CompanyListItem | null>(null)
   const [modalStep, setModalStep] = useState(0)
   const [] = useState<CompanyMember[]>([])
   const [, setClientCompanyMembers] = useState<CompanyMember[]>([])
