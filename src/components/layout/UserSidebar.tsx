@@ -18,9 +18,10 @@ import {
 
 interface UserSidebarProps {
   isOpen: boolean
+  onClose?: () => void
 }
 
-const UserSidebar: React.FC<UserSidebarProps> = ({ isOpen }) => {
+const UserSidebar: React.FC<UserSidebarProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -79,7 +80,10 @@ const UserSidebar: React.FC<UserSidebarProps> = ({ isOpen }) => {
               sx={{ mb: index === 0 ? 2 : 1 }}>
               <ListItemButton
                 selected={isActive(item.path)}
-                onClick={() => navigate(item.path)}
+                onClick={() => {
+                  navigate(item.path)
+                  if (onClose) onClose()
+                }}
                 sx={{
                   borderRadius: 1,
                   mx: 1,

@@ -19,9 +19,10 @@ import {
 
 interface SidebarProps {
   isOpen: boolean
+  onClose?: () => void
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -85,7 +86,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
               sx={{ mb: index === 0 ? 2 : 1 }}>
               <ListItemButton
                 selected={isActive(item.path)}
-                onClick={() => navigate(item.path)}
+                onClick={() => {
+                  navigate(item.path)
+                  if (onClose) onClose()
+                }}
                 sx={{
                   borderRadius: 1,
                   mx: 1,
