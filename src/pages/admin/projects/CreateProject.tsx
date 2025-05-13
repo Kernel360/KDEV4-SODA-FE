@@ -17,7 +17,7 @@ const CreateProject: React.FC = () => {
     const fetchCompanies = async () => {
       try {
         const data = await companyService.getAllCompanies()
-        setCompanies(data)
+        setCompanies((data.data as any).content || [])
       } catch (error) {
         console.error('회사 목록 조회 중 오류:', error)
         showToast('회사 목록을 불러오는데 실패했습니다.', 'error')

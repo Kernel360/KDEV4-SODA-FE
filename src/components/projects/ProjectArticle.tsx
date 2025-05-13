@@ -20,7 +20,8 @@ import {
   Pagination,
   InputLabel,
   SelectChangeEvent,
-  Popover
+  Popover,
+  Tooltip
 } from '@mui/material'
 import {
   Article,
@@ -135,37 +136,21 @@ const ArticleRow: React.FC<{
           />
         </TableCell>
         <TableCell>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {isReply && (
-              <Box
-                sx={{
-                  width: 24,
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end',
-                  pr: 1
-                }}>
-                <Box
-                  sx={{
-                    width: 16,
-                    height: 16,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '1px solid #E0E0E0',
-                    borderRadius: '2px',
-                    color: '#666',
-                    fontSize: '12px'
-                  }}>
-                  └
-                </Box>
-              </Box>
-            )}
-            <Typography>
-              {isReply ? `RE: ${article.title}` : article.title}
-            </Typography>
-          </Box>
+          <Typography
+            sx={{
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: { xs: '80px', sm: '120px', md: '180px' },
+              display: 'block',
+              fontSize: '1rem'
+            }}>
+            {isReply
+              ? `RE: ${article.title.length > 10 ? article.title.slice(0, 10) + '...' : article.title}`
+              : article.title.length > 10
+                ? article.title.slice(0, 10) + '...'
+                : article.title}
+          </Typography>
         </TableCell>
         <TableCell
           align="center"
@@ -175,11 +160,7 @@ const ArticleRow: React.FC<{
         <TableCell
           align="center"
           sx={{ width: '120px' }}>
-          {new Date(article.createdAt).toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
+          {new Date(article.createdAt).toISOString().slice(0, 10)}
         </TableCell>
       </TableRow>
       {article.children?.map(child => (
@@ -393,30 +374,40 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
         !articles.some(a => a.children?.some(child => child.id === article.id))
     )
 
-    let articleNumber = mainArticles.length
+    // 각 부모글과 답글 중 가장 최신 createdAt을 구해서 내림차순 정렬
+    const sortedMainArticles = mainArticles.slice().sort((a, b) => {
+      // a의 최신 createdAt
+      const aLatest = [
+        a.createdAt,
+        ...(a.children?.map(c => c.createdAt) || [])
+      ]
+        .sort()
+        .reverse()[0]
+      // b의 최신 createdAt
+      const bLatest = [
+        b.createdAt,
+        ...(b.children?.map(c => c.createdAt) || [])
+      ]
+        .sort()
+        .reverse()[0]
+      return new Date(bLatest).getTime() - new Date(aLatest).getTime()
+    })
 
-    return mainArticles.map(article => (
+    let articleNumber = sortedMainArticles.length
+
+    return sortedMainArticles.map(article => (
       <React.Fragment key={article.id}>
         {/* 부모글 */}
         <TableRow
           sx={{
             cursor: 'pointer',
-            '&:hover': {
-              bgcolor: '#F8F9FA'
-            },
-            '& td': {
-              py: 2,
-              color: '#333'
-            }
+            '&:hover': { bgcolor: '#F8F9FA' },
+            '& td': { py: 2, color: '#333' }
           }}
           onClick={() =>
             navigate(`/user/projects/${projectId}/articles/${article.id}`)
           }>
-          <TableCell
-            align="center"
-            sx={{ width: '80px' }}>
-            {articleNumber--}
-          </TableCell>
+          {/* 우선순위 */}
           <TableCell
             align="center"
             sx={{ width: '120px' }}>
@@ -430,6 +421,7 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
               }}
             />
           </TableCell>
+          {/* 상태 */}
           <TableCell
             align="center"
             sx={{ width: '100px' }}>
@@ -443,22 +435,33 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
               }}
             />
           </TableCell>
+          {/* 제목 */}
           <TableCell>
-            <Typography>{article.title}</Typography>
+            <Typography
+              sx={{
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: { xs: '80px', sm: '120px', md: '180px' },
+                display: 'block',
+                fontSize: '1rem'
+              }}>
+              {article.title.length > 10
+                ? article.title.slice(0, 15) + '...'
+                : article.title}
+            </Typography>
           </TableCell>
+          {/* 작성자 */}
           <TableCell
             align="center"
             sx={{ width: '120px' }}>
             {article.userName}
           </TableCell>
+          {/* 작성일 */}
           <TableCell
             align="center"
             sx={{ width: '120px' }}>
-            {new Date(article.createdAt).toLocaleDateString('ko-KR', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
+            {new Date(article.createdAt).toISOString().slice(0, 10)}
           </TableCell>
         </TableRow>
 
@@ -468,21 +471,13 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
             key={reply.id}
             sx={{
               cursor: 'pointer',
-              '&:hover': {
-                bgcolor: '#F8F9FA'
-              },
-              '& td': {
-                py: 2,
-                color: '#333'
-              }
+              '&:hover': { bgcolor: '#F8F9FA' },
+              '& td': { py: 2, color: '#333' }
             }}
             onClick={() =>
               navigate(`/user/projects/${projectId}/articles/${reply.id}`)
             }>
-            <TableCell
-              align="center"
-              sx={{ width: '80px' }}
-            />
+            {/* 우선순위 */}
             <TableCell
               align="center"
               sx={{ width: '120px' }}>
@@ -496,6 +491,7 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
                 }}
               />
             </TableCell>
+            {/* 상태 */}
             <TableCell
               align="center"
               sx={{ width: '100px' }}>
@@ -509,32 +505,38 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
                 }}
               />
             </TableCell>
+            {/* 제목 */}
             <TableCell>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography
-                  sx={{
-                    color: '#666',
-                    mr: 1,
-                    fontSize: '14px'
-                  }}>
+                <Typography sx={{ color: '#666', mr: 1, fontSize: '14px' }}>
                   ㄴ
                 </Typography>
-                <Typography>{reply.title}</Typography>
+                <Typography
+                  sx={{
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: { xs: '80px', sm: '120px', md: '180px' },
+                    display: 'block',
+                    fontSize: '1rem'
+                  }}>
+                  {reply.title.length > 10
+                    ? reply.title.slice(0, 10) + '...'
+                    : reply.title}
+                </Typography>
               </Box>
             </TableCell>
+            {/* 작성자 */}
             <TableCell
               align="center"
               sx={{ width: '120px' }}>
               {reply.userName}
             </TableCell>
+            {/* 작성일 */}
             <TableCell
               align="center"
               sx={{ width: '120px' }}>
-              {new Date(reply.createdAt).toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
+              {new Date(reply.createdAt).toISOString().slice(0, 10)}
             </TableCell>
           </TableRow>
         ))}
@@ -786,11 +788,6 @@ const ProjectArticle: React.FC<ProjectArticleProps> = ({
                   py: 2
                 }
               }}>
-              <TableCell
-                align="center"
-                sx={{ width: '80px' }}>
-                번호
-              </TableCell>
               <TableCell
                 align="center"
                 sx={{ width: '120px', cursor: 'pointer' }}

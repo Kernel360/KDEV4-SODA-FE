@@ -9,7 +9,9 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Typography,
+  Grid
 } from '@mui/material'
 import { Save, X, Edit } from 'lucide-react'
 import { getCompanies } from '../../api/admin'
@@ -17,12 +19,16 @@ import { getCompanies } from '../../api/admin'
 // 계정 인터페이스 정의
 export interface Account {
   id: number
+  authId: string
   name: string
   email: string
   role: string
   companyId?: number
+  companyName?: string
   position?: string
   phoneNumber?: string
+  createdAt?: string
+  updatedAt?: string
   deleted: boolean
 }
 
@@ -91,7 +97,9 @@ export default function AccountDetailForm({
   }, [isAdmin])
 
   // 폼 데이터 변경 핸들러
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
+  ) => {
     const { name, value } = e.target
     if (!name) return
 
@@ -147,12 +155,124 @@ export default function AccountDetailForm({
     setIsEditing(true)
   }
 
+  const renderField = (label: string, value: string | number | undefined) => {
+    if (isEditing) {
+      return (
+        <TextField
+          fullWidth
+          label={label}
+          value={value || ''}
+          disabled={!isEditing}
+          sx={{
+            '& .MuiInputBase-input.Mui-disabled': {
+              WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+              backgroundColor: 'transparent'
+            },
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2
+            }
+          }}
+        />
+      )
+    }
+    return (
+      <Box>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ mb: 0.5 }}>
+          {label}
+        </Typography>
+        <Typography
+          variant="body1"
+          sx={{ fontWeight: 500 }}>
+          {value || '-'}
+        </Typography>
+      </Box>
+    )
+  }
+
+  const renderSelectField = (
+    label: string,
+    value: string | number | undefined,
+    options: { value: string | number; label: string }[],
+    name: string
+  ) => {
+    if (isEditing) {
+      return (
+        <TextField
+          fullWidth
+          select
+          label={label}
+          name={name}
+          value={value || ''}
+          onChange={handleChange}
+          disabled={!isEditing}
+          sx={{
+            '& .MuiInputBase-input.Mui-disabled': {
+              WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+              backgroundColor: 'transparent'
+            },
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2
+            }
+          }}
+          SelectProps={{
+            native: true,
+            MenuProps: {
+              PaperProps: {
+                sx: {
+                  borderRadius: 2
+                }
+              }
+            }
+          }}>
+          {options.map(option => (
+            <option
+              key={option.value}
+              value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </TextField>
+      )
+    }
+    const selectedOption = options.find(opt => opt.value === value)
+    return (
+      <Box>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ mb: 0.5 }}>
+          {label}
+        </Typography>
+        <Typography
+          variant="body1"
+          sx={{ fontWeight: 500 }}>
+          {selectedOption?.label || '-'}
+        </Typography>
+      </Box>
+    )
+  }
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '-'
+    const date = new Date(dateString)
+    return date.toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
   return (
-    <Paper sx={{ p: 3 }}>
+    <Box>
       {error && (
         <Alert
           severity="error"
-          sx={{ mb: 2 }}>
+          sx={{ mb: 3, borderRadius: 2 }}>
           {error}
         </Alert>
       )}
@@ -160,151 +280,80 @@ export default function AccountDetailForm({
       {success && (
         <Alert
           severity="success"
-          sx={{ mb: 2 }}>
+          sx={{ mb: 3, borderRadius: 2 }}>
           {success}
         </Alert>
       )}
 
-      <Stack spacing={3}>
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          spacing={2}>
-          <TextField
-            fullWidth
-            label="이름"
-            name="name"
-            value={formData.name || ''}
-            onChange={handleChange}
-            disabled={!isEditing}
-            sx={{
-              '& .MuiInputBase-input.Mui-disabled': {
-                WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
-                backgroundColor: 'transparent'
-              }
-            }}
-          />
-        </Stack>
-
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          spacing={2}>
-          <TextField
-            fullWidth
-            label="이메일"
-            name="email"
-            type="email"
-            value={formData.email || ''}
-            onChange={handleChange}
-            disabled={!isEditing}
-            sx={{
-              '& .MuiInputBase-input.Mui-disabled': {
-                WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
-                backgroundColor: 'transparent'
-              }
-            }}
-          />
-          <TextField
-            fullWidth
-            label="전화번호"
-            name="phoneNumber"
-            value={formData.phoneNumber || ''}
-            onChange={handleChange}
-            disabled={!isEditing}
-            sx={{
-              '& .MuiInputBase-input.Mui-disabled': {
-                WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
-                backgroundColor: 'transparent'
-              }
-            }}
-          />
-        </Stack>
-
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          spacing={2}>
-          <TextField
-            fullWidth
-            select
-            label="회사"
-            name="companyId"
-            value={formData.companyId || ''}
-            onChange={handleChange}
-            disabled={!isEditing || !isAdmin || loadingCompanies}
-            sx={{
-              '& .MuiInputBase-input.Mui-disabled': {
-                WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
-                backgroundColor: 'transparent'
-              }
-            }}
-            SelectProps={{
-              native: true,
-              MenuProps: {
-                PaperProps: {
-                  sx: {
-                    maxHeight: 300
-                  }
-                }
-              }
-            }}>
-            <option value="">회사를 선택하세요</option>
-            {companies.map(company => (
-              <option
-                key={company.id}
-                value={company.id}>
-                {company.name}
-              </option>
-            ))}
-          </TextField>
-          <TextField
-            fullWidth
-            label="직책"
-            name="position"
-            value={formData.position || ''}
-            onChange={handleChange}
-            disabled={!isEditing}
-            sx={{
-              '& .MuiInputBase-input.Mui-disabled': {
-                WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
-                backgroundColor: 'transparent'
-              }
-            }}
-          />
-        </Stack>
-
-        {isAdmin && (
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={2}>
-            <TextField
-              fullWidth
-              select
-              label="역할"
-              name="role"
-              value={formData.role || 'USER'}
-              onChange={handleChange}
-              disabled={!isEditing}
-              sx={{
-                '& .MuiInputBase-input.Mui-disabled': {
-                  WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
-                  backgroundColor: 'transparent'
-                },
-                maxWidth: '200px'
-              }}
-              SelectProps={{
-                native: true
-              }}>
-              <option value="USER">일반 사용자</option>
-              <option value="ADMIN">관리자</option>
-            </TextField>
-          </Stack>
-        )}
+      <Stack spacing={4}>
+        <Box>
+          <Grid
+            container
+            spacing={3}>
+            <Grid
+              item
+              xs={12}
+              md={6}>
+              {renderField('이름', formData.name)}
+            </Grid>
+            <Grid
+              item
+              xs={12}
+              md={6}>
+              {renderField('아이디', formData.authId)}
+            </Grid>
+            <Grid
+              item
+              xs={12}
+              md={6}>
+              {renderField('이메일', formData.email)}
+            </Grid>
+            <Grid
+              item
+              xs={12}
+              md={6}>
+              {renderField('전화번호', formData.phoneNumber)}
+            </Grid>
+            <Grid
+              item
+              xs={12}
+              md={6}>
+              {renderField('회사', formData.companyName)}
+            </Grid>
+            <Grid
+              item
+              xs={12}
+              md={6}>
+              {renderField('직책', formData.position)}
+            </Grid>
+            <Grid
+              item
+              xs={12}>
+              {renderSelectField(
+                '역할',
+                formData.role,
+                [
+                  { value: 'USER', label: '일반 사용자' },
+                  { value: 'ADMIN', label: '관리자' }
+                ],
+                'role'
+              )}
+            </Grid>
+          </Grid>
+        </Box>
 
         <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
           {!isEditing ? (
             <Button
               variant="contained"
               onClick={handleEdit}
-              startIcon={<Edit />}>
+              startIcon={<Edit />}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                px: 3,
+                py: 1
+              }}>
               수정
             </Button>
           ) : (
@@ -312,14 +361,26 @@ export default function AccountDetailForm({
               <Button
                 variant="outlined"
                 onClick={handleCancel}
-                startIcon={<X />}>
+                startIcon={<X />}
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  px: 3,
+                  py: 1
+                }}>
                 취소
               </Button>
               <Button
                 variant="contained"
                 onClick={handleSubmit}
                 startIcon={<Save />}
-                disabled={loading}>
+                disabled={loading}
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  px: 3,
+                  py: 1
+                }}>
                 저장
               </Button>
             </>
@@ -330,20 +391,41 @@ export default function AccountDetailForm({
       {/* 수정사항 확인 모달 */}
       <Dialog
         open={showConfirmDialog}
-        onClose={() => setShowConfirmDialog(false)}>
-        <DialogTitle>수정사항이 있습니다</DialogTitle>
+        onClose={() => setShowConfirmDialog(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            minWidth: '400px'
+          }
+        }}>
+        <DialogTitle sx={{ pb: 1 }}>수정사항이 있습니다</DialogTitle>
         <DialogContent>
-          저장하지 않은 수정사항이 있습니다. 정말로 나가시겠습니까?
+          <Typography>
+            저장하지 않은 수정사항이 있습니다. 정말로 나가시겠습니까?
+          </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowConfirmDialog(false)}>취소</Button>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button
+            onClick={() => setShowConfirmDialog(false)}
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              px: 3
+            }}>
+            취소
+          </Button>
           <Button
             onClick={handleConfirmCancel}
-            color="primary">
+            variant="contained"
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              px: 3
+            }}>
             확인
           </Button>
         </DialogActions>
       </Dialog>
-    </Paper>
+    </Box>
   )
 }

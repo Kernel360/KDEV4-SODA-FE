@@ -9,9 +9,10 @@ import {
   TextField,
   InputAdornment,
   Stack,
-  Paper
+  Paper,
+  Tooltip
 } from '@mui/material'
-import { LayoutDashboard, Search, PlusCircle } from 'lucide-react'
+import { LayoutDashboard, Search, PlusCircle, SettingsIcon } from 'lucide-react'
 import { projectService } from '../../../services/projectService'
 import { Project } from '../../../types/project'
 import dayjs from 'dayjs'
@@ -169,18 +170,27 @@ const ProjectList: React.FC = () => {
       id: 'title',
       label: '프로젝트명',
       render: (row: Project) => (
-        <Typography
-          onClick={() => navigate(`/admin/projects/${row.id}`)}
-          sx={{
-            fontSize: '0.875rem',
-            cursor: 'pointer',
-            '&:hover': {
-              color: theme.palette.primary.dark,
-              textDecoration: 'underline'
-            }
-          }}>
-          {row.title}
-        </Typography>
+        <Tooltip
+          title={row.title}
+          arrow>
+          <Typography
+            onClick={() => navigate(`/admin/projects/${row.id}`)}
+            sx={{
+              fontSize: '0.875rem',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: '120px',
+              display: 'block',
+              '&:hover': {
+                color: theme.palette.primary.dark,
+                textDecoration: 'underline'
+              }
+            }}>
+            {row.title}
+          </Typography>
+        </Tooltip>
       )
     },
     {
@@ -213,21 +223,24 @@ const ProjectList: React.FC = () => {
       render: (row: Project) => (
         <Button
           variant="outlined"
-          startIcon={<LayoutDashboard size={14} />}
           onClick={() => navigate(`/user/projects/${row.id}`)}
           sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             color: '#1E293B',
             bgcolor: 'white',
             border: '1px solid #E2E8F0',
             '&:hover': {
-              bgcolor: '#FFF8E6',
-              border: '1px solid #E2E8F0'
+              bgcolor: '#FFF8E6'
             },
-            fontSize: '0.875rem',
-            py: 0.5,
-            px: 1.5
+            width: '45px',
+            height: '45px',
+            minWidth: '45px',
+            minHeight: '45px',
+            m: 'auto'
           }}>
-          대시보드
+          <LayoutDashboard size={48} />
         </Button>
       )
     },
@@ -237,21 +250,24 @@ const ProjectList: React.FC = () => {
       render: (row: Project) => (
         <Button
           variant="outlined"
-          startIcon={<LayoutDashboard size={14} />}
           onClick={() => navigate(`/admin/projects/${row.id}`)}
           sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             color: '#1E293B',
             bgcolor: 'white',
             border: '1px solid #E2E8F0',
             '&:hover': {
-              bgcolor: '#FFF8E6',
-              border: '1px solid #E2E8F0'
+              bgcolor: '#FFF8E6'
             },
-            fontSize: '0.875rem',
-            py: 0.5,
-            px: 1.5
+            width: '45px',
+            height: '45px',
+            minWidth: '45px',
+            minHeight: '45px',
+            m: 'auto'
           }}>
-          관리
+          <SettingsIcon size={48} />
         </Button>
       )
     }

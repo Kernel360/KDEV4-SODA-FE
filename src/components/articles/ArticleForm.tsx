@@ -410,11 +410,29 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
               fullWidth
               size="small"
               value={localFormData.title}
-              onChange={e => handleChange('title', e.target.value)}
-              error={!!validationErrors.title}
-              helperText={validationErrors.title}
+              onChange={e =>
+                handleChange('title', e.target.value.slice(0, 100))
+              }
+              error={
+                !!validationErrors.title || localFormData.title.length > 100
+              }
+              helperText={
+                localFormData.title.length > 100
+                  ? '제목은 100자 이내로 작성해야 합니다'
+                  : validationErrors.title
+              }
               required
               placeholder="제목을 입력하세요"
+              InputProps={{
+                endAdornment: (
+                  <span
+                    style={{
+                      fontSize: '0.8em',
+                      color: '#888',
+                      marginLeft: 8
+                    }}>{`${localFormData.title.length}/100`}</span>
+                )
+              }}
             />
           </Box>
 
@@ -430,11 +448,36 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
               multiline
               rows={6}
               value={localFormData.content}
-              onChange={e => handleChange('content', e.target.value)}
-              error={!!validationErrors.content}
-              helperText={validationErrors.content}
+              onChange={e =>
+                handleChange('content', e.target.value.slice(0, 1000))
+              }
+              error={
+                !!validationErrors.content ||
+                localFormData.content.length > 1000
+              }
+              helperText={
+                localFormData.content.length > 1000
+                  ? '내용은 1000자 이내로 작성해야 합니다'
+                  : validationErrors.content
+              }
               required
               placeholder="내용을 입력하세요"
+              InputProps={{
+                sx: { position: 'relative', paddingBottom: '20px' },
+                endAdornment: (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      right: 12,
+                      bottom: 8,
+                      fontSize: '0.8em',
+                      color: '#888',
+                      pointerEvents: 'none'
+                    }}>
+                    {`${localFormData.content.length}/1000`}
+                  </span>
+                )
+              }}
             />
           </Box>
 
@@ -654,9 +697,28 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   label="투표 제목"
                   value={voteForm.title}
                   onChange={e =>
-                    setVoteForm(prev => ({ ...prev, title: e.target.value }))
+                    setVoteForm(prev => ({
+                      ...prev,
+                      title: e.target.value.slice(0, 100)
+                    }))
                   }
                   placeholder="투표 제목을 입력하세요"
+                  error={voteForm.title.length > 100}
+                  helperText={
+                    voteForm.title.length > 100
+                      ? '100자 이내로 작성해야 합니다'
+                      : ''
+                  }
+                  InputProps={{
+                    endAdornment: (
+                      <span
+                        style={{
+                          fontSize: '0.8em',
+                          color: '#888',
+                          marginLeft: 8
+                        }}>{`${voteForm.title.length}/100`}</span>
+                    )
+                  }}
                 />
 
                 {!voteForm.allowTextAnswer && (
@@ -672,9 +734,28 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                           fullWidth
                           value={item}
                           onChange={e =>
-                            handleVoteItemChange(index, e.target.value)
+                            handleVoteItemChange(
+                              index,
+                              e.target.value.slice(0, 100)
+                            )
                           }
                           placeholder={`항목 ${index + 1}`}
+                          error={item.length > 100}
+                          helperText={
+                            item.length > 100
+                              ? '100자 이내로 작성해야 합니다'
+                              : ''
+                          }
+                          InputProps={{
+                            endAdornment: (
+                              <span
+                                style={{
+                                  fontSize: '0.8em',
+                                  color: '#888',
+                                  marginLeft: 8
+                                }}>{`${item.length}/100`}</span>
+                            )
+                          }}
                         />
                         {voteForm.voteItems.length > 2 && (
                           <IconButton
@@ -774,8 +855,19 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
           <Button
             type="submit"
             variant="contained"
-            disabled={isLoading}
-            sx={{ minWidth: 120 }}>
+            sx={{ minWidth: 120 }}
+            disabled={
+              isLoading ||
+              !localFormData.stageId ||
+              !localFormData.title.trim() ||
+              !localFormData.content.trim() ||
+              localFormData.title.length > 100 ||
+              localFormData.content.length > 1000 ||
+              (showVoteForm &&
+                (voteForm.title.length > 100 ||
+                  (!voteForm.allowTextAnswer &&
+                    voteForm.voteItems.some(item => item.length > 100))))
+            }>
             {isLoading ? '처리 중...' : mode === 'create' ? '등록' : '수정'}
           </Button>
         </Box>

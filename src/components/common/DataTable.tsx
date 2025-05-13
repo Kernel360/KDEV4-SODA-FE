@@ -29,6 +29,7 @@ interface DataTableProps<T> {
   onPageChange: (newPage: number) => void
   onRowsPerPageChange: (newRowsPerPage: number) => void
   loading?: boolean
+  onRowClick?: (row: T) => void
 }
 
 const DataTable = <T extends Record<string, any>>({
@@ -38,7 +39,9 @@ const DataTable = <T extends Record<string, any>>({
   rowsPerPage,
   totalCount,
   onPageChange,
-  loading = false
+  onRowsPerPageChange,
+  loading = false,
+  onRowClick
 }: DataTableProps<T>) => {
   const totalPages = Math.ceil(totalCount / rowsPerPage)
 
@@ -96,13 +99,9 @@ const DataTable = <T extends Record<string, any>>({
                 <TableRow
                   key={index}
                   hover
-                  onClick={
-                    columns[0].onClick
-                      ? () => columns[0].onClick?.(row)
-                      : undefined
-                  }
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
                   sx={{
-                    cursor: columns[0].onClick ? 'pointer' : 'default',
+                    cursor: onRowClick ? 'pointer' : 'default',
                     '&:last-child td, &:last-child th': { border: 0 }
                   }}>
                   {columns.map(column => (
