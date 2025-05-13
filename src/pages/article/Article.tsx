@@ -414,8 +414,16 @@ const Article: React.FC = () => {
 
         <Typography
           variant="h5"
-          sx={{ flex: 1 }}>
+          sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
           {article.title}
+          {article.stageName && (
+            <Chip
+              label={article.stageName}
+              color="primary"
+              size="small"
+              sx={{ ml: 1 }}
+            />
+          )}
         </Typography>
 
         {isAuthor && (
