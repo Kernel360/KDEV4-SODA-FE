@@ -105,9 +105,19 @@ export interface CompanyListItem {
   companyNumber: string
   address: string
   detailAddress: string | null
+  ownerName: string
+  isDeleted: boolean
 }
 
-export interface CompanyListResponse extends ApiResponse<CompanyListItem[]> {}
+export interface CompanyListResponse {
+  content: CompanyListItem[]
+  page: {
+    size: number
+    number: number
+    totalElements: number
+    totalPages: number
+  }
+}
 
 export interface SignupRequest {
   name: string

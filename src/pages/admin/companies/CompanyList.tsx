@@ -5,10 +5,12 @@ import {
   Button,
   CircularProgress,
   Tabs,
-  Tab
+  Tab,
+  TextField,
+  InputAdornment
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import { PlusCircle, RotateCcw } from 'lucide-react'
+import { PlusCircle, RotateCcw, Search } from 'lucide-react'
 import { useToast } from '../../../contexts/ToastContext'
 import type { CompanyListItem } from '../../../types/api'
 import DataTable from '../../../components/common/DataTable'
@@ -37,20 +39,34 @@ const CompanyList: React.FC = () => {
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [currentTab, setCurrentTab] = useState(0)
+  const [searchKeyword, setSearchKeyword] = useState('')
+  const [totalElements, setTotalElements] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
 
   useEffect(() => {
     fetchCompanies()
-  }, [currentTab])
+  }, [currentTab, page, rowsPerPage, searchKeyword])
 
   const fetchCompanies = async () => {
     setLoading(true)
     try {
       const view = currentTab === 0 ? 'ACTIVE' : 'DELETED'
-      const response = await companyService.getAllCompanies(view)
-      if (currentTab === 0) {
-        setCompanies(response)
-      } else {
-        setDeletedCompanies(response)
+      const response = await companyService.getAllCompanies({
+        view,
+        searchKeyword: searchKeyword.trim() || undefined,
+        page,
+        size: rowsPerPage
+      })
+      
+      if (response.status === 'success') {
+        const { content, page: pageInfo } = response.data
+        if (currentTab === 0) {
+          setCompanies(content)
+        } else {
+          setDeletedCompanies(content)
+        }
+        setTotalElements(pageInfo.totalElements)
+        setTotalPages(pageInfo.totalPages)
       }
     } catch (err) {
       console.error('회사 목록 조회 중 오류:', err)
@@ -74,6 +90,11 @@ const CompanyList: React.FC = () => {
   const handleRowsPerPageChange = (newRowsPerPage: number) => {
     setRowsPerPage(newRowsPerPage)
     setPage(0)
+  }
+
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchKeyword(event.target.value)
+    setPage(0) // 검색어가 변경되면 첫 페이지로 이동
   }
 
   const handleRowClick = (row: CompanyListItem) => {
@@ -215,14 +236,30 @@ const CompanyList: React.FC = () => {
         <Tab label="삭제된 회사" />
       </Tabs>
 
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="회사명으로 검색"
+          value={searchKeyword}
+          onChange={handleSearch}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search size={20} />
+              </InputAdornment>
+            )
+          }}
+          sx={{ maxWidth: 400 }}
+        />
+      </Box>
+
       <DataTable<CompanyListItem>
         columns={currentTab === 0 ? columns : deletedColumns}
-        data={currentPageData}
+        data={currentTab === 0 ? companies : deletedCompanies}
         page={page}
         rowsPerPage={rowsPerPage}
-        totalCount={
-          currentTab === 0 ? companies.length : deletedCompanies.length
-        }
+        totalCount={totalElements}
         onPageChange={handlePageChange}
         onRowsPerPageChange={handleRowsPerPageChange}
         loading={loading}

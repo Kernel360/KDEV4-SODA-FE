@@ -1,6 +1,6 @@
 import { client } from '../api/client'
 import type { Company, CompanyFormData, CompanyMember } from '../types/company'
-import type { ApiResponse } from '../types/api'
+import type { ApiResponse, CompanyListResponse } from '../types/api'
 
 interface AddMemberData {
   name: string
@@ -10,13 +10,21 @@ interface AddMemberData {
 }
 
 export const companyService = {
-  async getAllCompanies(
-    view: 'ACTIVE' | 'DELETED' = 'ACTIVE'
-  ): Promise<Company[]> {
-    const response = await client.get<ApiResponse<Company[]>>(
-      `/companies?view=${view}`
-    )
-    return response.data.data
+  async getAllCompanies(params?: {
+    view?: 'ACTIVE' | 'DELETED'
+    searchKeyword?: string
+    page?: number
+    size?: number
+  }): Promise<ApiResponse<CompanyListResponse>> {
+    const response = await client.get<ApiResponse<CompanyListResponse>>('/companies', {
+      params: {
+        view: params?.view || 'ACTIVE',
+        searchKeyword: params?.searchKeyword,
+        page: params?.page,
+        size: params?.size
+      }
+    })
+    return response.data
   },
 
   async getCompanyById(id: number): Promise<Company> {

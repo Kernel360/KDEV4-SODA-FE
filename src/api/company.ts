@@ -15,8 +15,13 @@ export const createCompany = async (data: CompanyCreateRequest) => {
   )
 }
 
-export const getCompanyList = async () => {
-  return apiRequest<CompanyListResponse>('GET', API_ENDPOINTS.GET_COMPANIES)
+export const getCompanyList = async (params?: {
+  view?: 'ACTIVE' | 'DELETED'
+  searchKeyword?: string
+  page?: number
+  size?: number
+}) => {
+  return apiRequest<CompanyListResponse>('GET', API_ENDPOINTS.GET_COMPANIES, undefined, { params })
 }
 
 export const getCompanyMembers = async (companyId: number) => {

@@ -61,6 +61,7 @@ client.interceptors.request.use(
 
 interface ApiRequestOptions {
   headers?: Record<string, string>
+  params?: Record<string, any>
 }
 
 export const apiRequest = async <T>(
