@@ -19,7 +19,8 @@ import {
   TableRow,
   TableCell,
   Chip,
-  Paper
+  Paper,
+  Stack
 } from '@mui/material'
 import { ArrowForward } from '@mui/icons-material'
 import { projectService } from '../../services/projectService'
@@ -28,6 +29,8 @@ import type { Project } from '../../types/project'
 import { useUserStore } from '../../stores/userStore'
 import { client } from '../../api/client'
 import dayjs from 'dayjs'
+import { useTheme } from '@mui/material/styles'
+import { useMediaQuery } from '@mui/material'
 
 interface DashboardItem {
   id: number
@@ -73,6 +76,8 @@ const UserDashboard: React.FC = () => {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const { user } = useUserStore()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const [projects, setProjects] = useState<Project[]>([])
   const [recentRequests, setRecentRequests] = useState<Request[]>([])
   const [recentArticles, setRecentArticles] = useState<Article[]>([])
@@ -297,10 +302,13 @@ const UserDashboard: React.FC = () => {
     <Paper
       elevation={0}
       sx={{
-        p: 3,
+        p: isMobile ? 2 : 3,
         height: '100%',
         border: '1px solid',
-        borderColor: 'divider'
+        borderColor: 'divider',
+        width: isMobile ? '100%' : 'auto',
+        maxWidth: isMobile ? 420 : 'none',
+        mx: isMobile ? 'auto' : 0
       }}>
       <Box
         sx={{
@@ -309,7 +317,11 @@ const UserDashboard: React.FC = () => {
           alignItems: 'center',
           mb: 2
         }}>
-        <Typography variant="h6">{title}</Typography>
+        <Typography
+          variant={isMobile ? 'subtitle1' : 'h6'}
+          sx={{ fontWeight: 600 }}>
+          {title}
+        </Typography>
         <Button
           variant="outlined"
           onClick={() => navigate(viewAllLink)}
@@ -318,6 +330,10 @@ const UserDashboard: React.FC = () => {
             borderRadius: 2,
             borderColor: '#e5e7eb',
             color: '#666',
+            fontSize: isMobile ? '0.9rem' : undefined,
+            px: isMobile ? 1.5 : undefined,
+            py: isMobile ? 0.5 : undefined,
+            minWidth: isMobile ? 0 : undefined,
             '&:hover': {
               borderColor: '#666',
               bgcolor: 'transparent'
@@ -339,7 +355,8 @@ const UserDashboard: React.FC = () => {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  py: 2
+                  py: isMobile ? 1.2 : 2,
+                  px: isMobile ? 0.5 : 2
                 }}>
                 <Box sx={{ flex: 1 }}>
                   <Box
@@ -353,42 +370,97 @@ const UserDashboard: React.FC = () => {
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 2
+                        gap: 1.2
                       }}>
                       <Typography
-                        variant="body1"
-                        sx={{ fontWeight: 500 }}>
+                        variant={isMobile ? 'body2' : 'body1'}
+                        sx={{
+                          fontWeight: 500,
+                          ...(isMobile && {
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: 180
+                          })
+                        }}>
                         {project.title}
                       </Typography>
-                      <Chip
-                        label={getProjectStatusText(project.status)}
-                        size="small"
-                        sx={{
-                          backgroundColor: getProjectStatusColor(project.status)
-                            .bg,
-                          color: getProjectStatusColor(project.status).color,
-                          border: getProjectStatusColor(project.status).border,
-                          height: '24px'
-                        }}
-                      />
                     </Box>
-                    <Chip
-                      label={getMemberRoleText(project.memberProjectRole)}
-                      size="small"
-                      sx={{
-                        backgroundColor: getMemberRoleColor(
-                          project.memberProjectRole
-                        ).bg,
-                        color: getMemberRoleColor(project.memberProjectRole)
-                          .color,
-                        border: getMemberRoleColor(project.memberProjectRole)
-                          .border,
-                        height: '24px'
-                      }}
-                    />
+                    {isMobile ? (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 0.5,
+                          alignItems: 'flex-end',
+                          minWidth: 0
+                        }}>
+                        <Chip
+                          label={getProjectStatusText(project.status)}
+                          size="small"
+                          sx={{
+                            backgroundColor: getProjectStatusColor(
+                              project.status
+                            ).bg,
+                            color: getProjectStatusColor(project.status).color,
+                            border: getProjectStatusColor(project.status)
+                              .border,
+                            height: '20px',
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                        <Chip
+                          label={getMemberRoleText(project.memberProjectRole)}
+                          size="small"
+                          sx={{
+                            backgroundColor: getMemberRoleColor(
+                              project.memberProjectRole
+                            ).bg,
+                            color: getMemberRoleColor(project.memberProjectRole)
+                              .color,
+                            border: getMemberRoleColor(
+                              project.memberProjectRole
+                            ).border,
+                            height: '20px',
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                      </Box>
+                    ) : (
+                      <>
+                        <Chip
+                          label={getProjectStatusText(project.status)}
+                          size="small"
+                          sx={{
+                            backgroundColor: getProjectStatusColor(
+                              project.status
+                            ).bg,
+                            color: getProjectStatusColor(project.status).color,
+                            border: getProjectStatusColor(project.status)
+                              .border,
+                            height: '24px'
+                          }}
+                        />
+                        <Chip
+                          label={getMemberRoleText(project.memberProjectRole)}
+                          size="small"
+                          sx={{
+                            backgroundColor: getMemberRoleColor(
+                              project.memberProjectRole
+                            ).bg,
+                            color: getMemberRoleColor(project.memberProjectRole)
+                              .color,
+                            border: getMemberRoleColor(
+                              project.memberProjectRole
+                            ).border,
+                            height: '24px'
+                          }}
+                        />
+                      </>
+                    )}
                   </Box>
                   <Typography
-                    variant="body2"
+                    variant={isMobile ? 'caption' : 'body2'}
                     color="text.secondary">
                     {dayjs(project.startDate).format('YYYY년 M월 D일')} ~{' '}
                     {dayjs(project.endDate).format('YYYY년 M월 D일')}
@@ -425,16 +497,17 @@ const UserDashboard: React.FC = () => {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    py: 2
+                    py: isMobile ? 1.2 : 2,
+                    px: isMobile ? 0.5 : 2
                   }}>
                   <Box sx={{ flex: 1 }}>
                     <Typography
-                      variant="body1"
+                      variant={isMobile ? 'body2' : 'body1'}
                       sx={{ mb: 1 }}>
                       {request.title}
                     </Typography>
                     <Typography
-                      variant="body2"
+                      variant={isMobile ? 'caption' : 'body2'}
                       color="text.secondary">
                       {dayjs(request.createdAt).format('YYYY-MM-DD HH:mm')}
                     </Typography>
@@ -443,7 +516,9 @@ const UserDashboard: React.FC = () => {
                     label={getStatusText(request.status)}
                     sx={{
                       ...getStatusColor(request.status),
-                      ml: 2
+                      ml: 2,
+                      height: isMobile ? '20px' : '24px',
+                      fontSize: isMobile ? '0.75rem' : undefined
                     }}
                   />
                 </ListItem>
@@ -483,7 +558,8 @@ const UserDashboard: React.FC = () => {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    py: 2
+                    py: isMobile ? 1.2 : 2,
+                    px: isMobile ? 0.5 : 2
                   }}>
                   <Box
                     sx={{
@@ -500,10 +576,16 @@ const UserDashboard: React.FC = () => {
                         width: '100%'
                       }}>
                       <Typography
-                        variant="body1"
+                        variant={isMobile ? 'body2' : 'body1'}
                         sx={{
                           flex: 1,
-                          fontWeight: 500
+                          fontWeight: 500,
+                          ...(isMobile && {
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: 180
+                          })
                         }}>
                         {article.title}
                       </Typography>
@@ -513,8 +595,8 @@ const UserDashboard: React.FC = () => {
                           label={article.projectName}
                           size="small"
                           sx={{
-                            fontSize: '0.75rem',
-                            height: '24px',
+                            fontSize: isMobile ? '0.7rem' : '0.75rem',
+                            height: isMobile ? '20px' : '24px',
                             backgroundColor:
                               projectColorMap.get(article.projectId)?.bg ||
                               '#e2e8f0',
@@ -539,7 +621,7 @@ const UserDashboard: React.FC = () => {
                         alignItems: 'center'
                       }}>
                       <Typography
-                        variant="body2"
+                        variant={isMobile ? 'caption' : 'body2'}
                         color="text.secondary">
                         {dayjs(article.createdAt).format('YYYY-MM-DD HH:mm')}
                       </Typography>
@@ -553,7 +635,7 @@ const UserDashboard: React.FC = () => {
                               borderRadius: 1,
                               backgroundColor: '#f3f4f6',
                               color: '#4b5563',
-                              fontSize: '0.75rem'
+                              fontSize: isMobile ? '0.7rem' : '0.75rem'
                             }}>
                             마감: {dayjs(article.endDate).format('YYYY-MM-DD')}
                           </Typography>
@@ -584,16 +666,17 @@ const UserDashboard: React.FC = () => {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  py: 2
+                  py: isMobile ? 1.2 : 2,
+                  px: isMobile ? 0.5 : 2
                 }}>
                 <Box sx={{ flex: 1 }}>
                   <Typography
-                    variant="body1"
+                    variant={isMobile ? 'body2' : 'body1'}
                     sx={{ mb: 1 }}>
                     {item.title}
                   </Typography>
                   <Typography
-                    variant="body2"
+                    variant={isMobile ? 'caption' : 'body2'}
                     color="text.secondary">
                     {dayjs(item.date).format('YYYY-MM-DD HH:mm')}
                   </Typography>
@@ -604,7 +687,9 @@ const UserDashboard: React.FC = () => {
                     sx={{
                       ml: 2,
                       backgroundColor: '#f3f4f6',
-                      color: '#4b5563'
+                      color: '#4b5563',
+                      height: isMobile ? '20px' : '24px',
+                      fontSize: isMobile ? '0.75rem' : undefined
                     }}
                   />
                 )}
@@ -645,30 +730,16 @@ const UserDashboard: React.FC = () => {
   }
 
   return (
-    <Box p={3}>
-      <Grid
-        container
-        spacing={3}>
-        <Grid
-          item
-          xs={12}
-          md={6}>
+    <Box p={isMobile ? 1 : 3}>
+      {isMobile ? (
+        <Stack spacing={2}>
           {renderDashboardSection(
             '최근 요청사항',
             [],
             'request',
             '/user/requests'
           )}
-        </Grid>
-        <Grid
-          item
-          xs={12}
-          md={6}>
           {renderDashboardSection('최근 질문', [], 'article', '/user/articles')}
-        </Grid>
-        <Grid
-          item
-          xs={12}>
           {renderDashboardSection(
             '참여 중인 프로젝트',
             projects.map(project => ({
@@ -680,8 +751,50 @@ const UserDashboard: React.FC = () => {
             'project',
             '/user/projects'
           )}
+        </Stack>
+      ) : (
+        <Grid
+          container
+          spacing={3}>
+          <Grid
+            item
+            xs={12}
+            md={6}>
+            {renderDashboardSection(
+              '최근 요청사항',
+              [],
+              'request',
+              '/user/requests'
+            )}
+          </Grid>
+          <Grid
+            item
+            xs={12}
+            md={6}>
+            {renderDashboardSection(
+              '최근 질문',
+              [],
+              'article',
+              '/user/articles'
+            )}
+          </Grid>
+          <Grid
+            item
+            xs={12}>
+            {renderDashboardSection(
+              '참여 중인 프로젝트',
+              projects.map(project => ({
+                id: project.projectId,
+                title: project.title,
+                date: project.startDate,
+                status: project.status
+              })),
+              'project',
+              '/user/projects'
+            )}
+          </Grid>
         </Grid>
-      </Grid>
+      )}
     </Box>
   )
 }
