@@ -146,7 +146,6 @@ const CreateRequest: React.FC = () => {
                 axios.put(entry.presignedUrl, formData.files[i], {
                   headers: { 
                     'Content-Type': formData.files[i].type
-                    // 'x-amz-acl': 'public-read'
                    },
                 })
               )
