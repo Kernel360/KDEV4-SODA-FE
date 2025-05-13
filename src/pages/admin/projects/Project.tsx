@@ -328,7 +328,7 @@ const ProjectDetail = () => {
       console.log('회사 목록 API 응답:', response)
 
       // 모든 회사 정보 저장
-      const allCompanies = response.map(company => ({
+      const allCompanies = (response.data as any).content.map(company => ({
         id: company.id,
         name: company.name,
         address: company.address,
@@ -337,29 +337,31 @@ const ProjectDetail = () => {
       setCompanies(allCompanies)
 
       // 추가 가능한 회사만 필터링
-      const filteredCompanies = response.filter(company => {
-        // 이미 프로젝트에 할당된 회사인지 확인
-        const isAssigned =
-          project.clientCompanyNames.some(name => {
-            const existingCompany = allCompanies.find(c => c.name === name)
-            return existingCompany?.id === company.id
-          }) ||
-          project.devCompanyNames.some(name => {
-            const existingCompany = allCompanies.find(c => c.name === name)
-            return existingCompany?.id === company.id
-          })
+      const filteredCompanies = (response.data as any).content.filter(
+        company => {
+          // 이미 프로젝트에 할당된 회사인지 확인
+          const isAssigned =
+            project.clientCompanyNames.some(name => {
+              const existingCompany = allCompanies.find(c => c.name === name)
+              return existingCompany?.id === company.id
+            }) ||
+            project.devCompanyNames.some(name => {
+              const existingCompany = allCompanies.find(c => c.name === name)
+              return existingCompany?.id === company.id
+            })
 
-        // 개발사 추가 시 이미 고객사로 등록된 회사는 제외
-        if (companyType === 'dev') {
-          const isClientCompany = project.clientCompanyNames.some(name => {
-            const existingCompany = allCompanies.find(c => c.name === name)
-            return existingCompany?.id === company.id
-          })
-          if (isClientCompany) return false
+          // 개발사 추가 시 이미 고객사로 등록된 회사는 제외
+          if (companyType === 'dev') {
+            const isClientCompany = project.clientCompanyNames.some(name => {
+              const existingCompany = allCompanies.find(c => c.name === name)
+              return existingCompany?.id === company.id
+            })
+            if (isClientCompany) return false
+          }
+
+          return !isAssigned
         }
-
-        return !isAssigned
-      })
+      )
 
       const formattedCompanies = filteredCompanies.map(company => ({
         id: company.id,

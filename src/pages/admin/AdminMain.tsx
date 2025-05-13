@@ -99,7 +99,7 @@ export default function AdminMain() {
   const fetchCompanies = async () => {
     try {
       const companies = await companyService.getAllCompanies()
-      setTotalCompanies(companies.length)
+      setTotalCompanies((companies.data as any).content.length)
     } catch (error) {
       console.error('회사 목록을 불러오는데 실패했습니다:', error)
     }
