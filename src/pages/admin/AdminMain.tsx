@@ -886,67 +886,130 @@ export default function AdminMain() {
               }}>
               프로젝트 생성 추이
             </Typography>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-                mb: 3,
-                flexWrap: 'wrap'
-              }}>
-              <DatePicker
-                label="시작일"
-                value={trendStartDate}
-                onChange={v => v && setTrendStartDate(v)}
-                format="YYYY-MM-DD"
+            {isMobile ? (
+              <Stack
+                spacing={1}
+                sx={{ mb: 2 }}>
+                <DatePicker
+                  label="시작일"
+                  value={trendStartDate}
+                  onChange={v => v && setTrendStartDate(v)}
+                  format="YYYY-MM-DD"
+                  sx={{
+                    width: '100%',
+                    '& .MuiInputBase-root': {
+                      fontSize: '0.95rem',
+                      py: 0.5,
+                      height: 36
+                    }
+                  }}
+                />
+                <DatePicker
+                  label="종료일"
+                  value={trendEndDate}
+                  onChange={v => v && setTrendEndDate(v)}
+                  format="YYYY-MM-DD"
+                  sx={{
+                    width: '100%',
+                    '& .MuiInputBase-root': {
+                      fontSize: '0.95rem',
+                      py: 0.5,
+                      height: 36
+                    }
+                  }}
+                />
+                <Stack
+                  direction="row"
+                  spacing={1}>
+                  <Button
+                    variant={trendTimeUnit === 'DAY' ? 'contained' : 'outlined'}
+                    onClick={() => setTrendTimeUnit('DAY')}
+                    sx={{ minWidth: 0, flex: 1 }}>
+                    일간
+                  </Button>
+                  <Button
+                    variant={
+                      trendTimeUnit === 'WEEK' ? 'contained' : 'outlined'
+                    }
+                    onClick={() => setTrendTimeUnit('WEEK')}
+                    sx={{ minWidth: 0, flex: 1 }}>
+                    주간
+                  </Button>
+                  <Button
+                    variant={
+                      trendTimeUnit === 'MONTH' ? 'contained' : 'outlined'
+                    }
+                    onClick={() => setTrendTimeUnit('MONTH')}
+                    sx={{ minWidth: 0, flex: 1 }}>
+                    월간
+                  </Button>
+                </Stack>
+              </Stack>
+            ) : (
+              <Box
                 sx={{
-                  minWidth: 110,
-                  '& .MuiInputBase-root': {
-                    fontSize: '0.95rem',
-                    py: 0.5,
-                    height: 36
-                  }
-                }}
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  mb: 3,
+                  flexWrap: 'wrap'
+                }}>
+                <DatePicker
+                  label="시작일"
+                  value={trendStartDate}
+                  onChange={v => v && setTrendStartDate(v)}
+                  format="YYYY-MM-DD"
+                  sx={{
+                    minWidth: 110,
+                    '& .MuiInputBase-root': {
+                      fontSize: '0.95rem',
+                      py: 0.5,
+                      height: 36
+                    }
+                  }}
+                />
+                <DatePicker
+                  label="종료일"
+                  value={trendEndDate}
+                  onChange={v => v && setTrendEndDate(v)}
+                  format="YYYY-MM-DD"
+                  sx={{
+                    minWidth: 110,
+                    '& .MuiInputBase-root': {
+                      fontSize: '0.95rem',
+                      py: 0.5,
+                      height: 36
+                    }
+                  }}
+                />
+                <Button
+                  variant={trendTimeUnit === 'DAY' ? 'contained' : 'outlined'}
+                  onClick={() => setTrendTimeUnit('DAY')}
+                  sx={{ minWidth: 80 }}>
+                  일간
+                </Button>
+                <Button
+                  variant={trendTimeUnit === 'WEEK' ? 'contained' : 'outlined'}
+                  onClick={() => setTrendTimeUnit('WEEK')}
+                  sx={{ minWidth: 80 }}>
+                  주간
+                </Button>
+                <Button
+                  variant={trendTimeUnit === 'MONTH' ? 'contained' : 'outlined'}
+                  onClick={() => setTrendTimeUnit('MONTH')}
+                  sx={{ minWidth: 80 }}>
+                  월간
+                </Button>
+              </Box>
+            )}
+            <Box sx={{ width: '100%', minHeight: 220 }}>
+              <ProjectCreationTrendChart
+                key={trendKey}
+                startDate={trendStartDate.format('YYYY-MM-DD')}
+                endDate={trendEndDate.format('YYYY-MM-DD')}
+                timeUnit={trendTimeUnit}
               />
-              <DatePicker
-                label="종료일"
-                value={trendEndDate}
-                onChange={v => v && setTrendEndDate(v)}
-                format="YYYY-MM-DD"
-                sx={{
-                  minWidth: 110,
-                  '& .MuiInputBase-root': {
-                    fontSize: '0.95rem',
-                    py: 0.5,
-                    height: 36
-                  }
-                }}
-              />
-              <Button
-                variant={trendTimeUnit === 'DAY' ? 'contained' : 'outlined'}
-                onClick={() => setTrendTimeUnit('DAY')}
-                sx={{ minWidth: 80 }}>
-                일간
-              </Button>
-              <Button
-                variant={trendTimeUnit === 'WEEK' ? 'contained' : 'outlined'}
-                onClick={() => setTrendTimeUnit('WEEK')}
-                sx={{ minWidth: 80 }}>
-                주간
-              </Button>
-              <Button
-                variant={trendTimeUnit === 'MONTH' ? 'contained' : 'outlined'}
-                onClick={() => setTrendTimeUnit('MONTH')}
-                sx={{ minWidth: 80 }}>
-                월간
-              </Button>
             </Box>
-            <ProjectCreationTrendChart
-              key={trendKey}
-              startDate={trendStartDate.format('YYYY-MM-DD')}
-              endDate={trendEndDate.format('YYYY-MM-DD')}
-              timeUnit={trendTimeUnit}
-            />
           </Paper>
         </Grid>
       </Grid>
@@ -981,73 +1044,138 @@ export default function AdminMain() {
                 }}>
                 회사 등록 추이
               </Typography>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
-                  mb: 3,
-                  flexWrap: 'wrap'
-                }}>
-                <DatePicker
-                  label="시작일"
-                  value={companyTrendStartDate}
-                  onChange={v => v && setCompanyTrendStartDate(v)}
-                  format="YYYY-MM-DD"
+              {isMobile ? (
+                <Stack
+                  spacing={1}
+                  sx={{ mb: 2 }}>
+                  <DatePicker
+                    label="시작일"
+                    value={companyTrendStartDate}
+                    onChange={v => v && setCompanyTrendStartDate(v)}
+                    format="YYYY-MM-DD"
+                    sx={{
+                      width: '100%',
+                      '& .MuiInputBase-root': {
+                        fontSize: '0.95rem',
+                        py: 0.5,
+                        height: 36
+                      }
+                    }}
+                  />
+                  <DatePicker
+                    label="종료일"
+                    value={companyTrendEndDate}
+                    onChange={v => v && setCompanyTrendEndDate(v)}
+                    format="YYYY-MM-DD"
+                    sx={{
+                      width: '100%',
+                      '& .MuiInputBase-root': {
+                        fontSize: '0.95rem',
+                        py: 0.5,
+                        height: 36
+                      }
+                    }}
+                  />
+                  <Stack
+                    direction="row"
+                    spacing={1}>
+                    <Button
+                      variant={
+                        companyTrendUnit === 'DAY' ? 'contained' : 'outlined'
+                      }
+                      onClick={() => setCompanyTrendUnit('DAY')}
+                      sx={{ minWidth: 0, flex: 1 }}>
+                      일간
+                    </Button>
+                    <Button
+                      variant={
+                        companyTrendUnit === 'WEEK' ? 'contained' : 'outlined'
+                      }
+                      onClick={() => setCompanyTrendUnit('WEEK')}
+                      sx={{ minWidth: 0, flex: 1 }}>
+                      주간
+                    </Button>
+                    <Button
+                      variant={
+                        companyTrendUnit === 'MONTH' ? 'contained' : 'outlined'
+                      }
+                      onClick={() => setCompanyTrendUnit('MONTH')}
+                      sx={{ minWidth: 0, flex: 1 }}>
+                      월간
+                    </Button>
+                  </Stack>
+                </Stack>
+              ) : (
+                <Box
                   sx={{
-                    minWidth: 110,
-                    '& .MuiInputBase-root': {
-                      fontSize: '0.95rem',
-                      py: 0.5,
-                      height: 36
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    mb: 3,
+                    flexWrap: 'wrap'
+                  }}>
+                  <DatePicker
+                    label="시작일"
+                    value={companyTrendStartDate}
+                    onChange={v => v && setCompanyTrendStartDate(v)}
+                    format="YYYY-MM-DD"
+                    sx={{
+                      minWidth: 110,
+                      '& .MuiInputBase-root': {
+                        fontSize: '0.95rem',
+                        py: 0.5,
+                        height: 36
+                      }
+                    }}
+                  />
+                  <DatePicker
+                    label="종료일"
+                    value={companyTrendEndDate}
+                    onChange={v => v && setCompanyTrendEndDate(v)}
+                    format="YYYY-MM-DD"
+                    sx={{
+                      minWidth: 110,
+                      '& .MuiInputBase-root': {
+                        fontSize: '0.95rem',
+                        py: 0.5,
+                        height: 36
+                      }
+                    }}
+                  />
+                  <Button
+                    variant={
+                      companyTrendUnit === 'DAY' ? 'contained' : 'outlined'
                     }
-                  }}
-                />
-                <DatePicker
-                  label="종료일"
-                  value={companyTrendEndDate}
-                  onChange={v => v && setCompanyTrendEndDate(v)}
-                  format="YYYY-MM-DD"
-                  sx={{
-                    minWidth: 110,
-                    '& .MuiInputBase-root': {
-                      fontSize: '0.95rem',
-                      py: 0.5,
-                      height: 36
+                    onClick={() => setCompanyTrendUnit('DAY')}
+                    sx={{ minWidth: 80 }}>
+                    일간
+                  </Button>
+                  <Button
+                    variant={
+                      companyTrendUnit === 'WEEK' ? 'contained' : 'outlined'
                     }
-                  }}
+                    onClick={() => setCompanyTrendUnit('WEEK')}
+                    sx={{ minWidth: 80 }}>
+                    주간
+                  </Button>
+                  <Button
+                    variant={
+                      companyTrendUnit === 'MONTH' ? 'contained' : 'outlined'
+                    }
+                    onClick={() => setCompanyTrendUnit('MONTH')}
+                    sx={{ minWidth: 80 }}>
+                    월간
+                  </Button>
+                </Box>
+              )}
+              <Box sx={{ width: '100%', minHeight: 220 }}>
+                <CompanyCreationTrendChart
+                  key={companyTrendKey}
+                  startDate={companyTrendStartDate.format('YYYY-MM-DD')}
+                  endDate={companyTrendEndDate.format('YYYY-MM-DD')}
+                  unit={companyTrendUnit}
                 />
-                <Button
-                  variant={
-                    companyTrendUnit === 'DAY' ? 'contained' : 'outlined'
-                  }
-                  onClick={() => setCompanyTrendUnit('DAY')}
-                  sx={{ minWidth: 80 }}>
-                  일간
-                </Button>
-                <Button
-                  variant={
-                    companyTrendUnit === 'WEEK' ? 'contained' : 'outlined'
-                  }
-                  onClick={() => setCompanyTrendUnit('WEEK')}
-                  sx={{ minWidth: 80 }}>
-                  주간
-                </Button>
-                <Button
-                  variant={
-                    companyTrendUnit === 'MONTH' ? 'contained' : 'outlined'
-                  }
-                  onClick={() => setCompanyTrendUnit('MONTH')}
-                  sx={{ minWidth: 80 }}>
-                  월간
-                </Button>
               </Box>
-              <CompanyCreationTrendChart
-                key={companyTrendKey}
-                startDate={companyTrendStartDate.format('YYYY-MM-DD')}
-                endDate={companyTrendEndDate.format('YYYY-MM-DD')}
-                unit={companyTrendUnit}
-              />
             </Paper>
           </Grid>
         </Grid>
