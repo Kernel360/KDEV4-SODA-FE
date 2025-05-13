@@ -262,7 +262,7 @@ const ProjectCreate = () => {
                   }}>
                   <ListItemText
                     primary={company.name}
-                    secondary={company.ceoName}
+                    secondary={company.ownerName}
                   />
                 </ListItem>
               ))}
