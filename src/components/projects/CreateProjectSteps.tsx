@@ -26,7 +26,8 @@ import {
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { DatePicker } from '@mui/x-date-pickers'
 import { Search, Close } from '@mui/icons-material'
-import type { CompanyMember, CompanyListItem } from '../../types/api'
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
+import type { CompanyMember } from '../../types/api'
 import { getCompanyMembers } from '../../api/company'
 import { projectService } from '../../services/projectService'
 import { useNavigate } from 'react-router-dom'
@@ -119,7 +120,8 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
   const [clientMemberSearch, setClientMemberSearch] = useState('')
   const [, setIsMemberSelectionComplete] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedCompany, setSelectedCompany] = useState<CompanyListItem | null>(null)
+  const [selectedCompany, setSelectedCompany] =
+    useState<CompanyListItem | null>(null)
   const [modalStep, setModalStep] = useState(0)
   const [] = useState<CompanyMember[]>([])
   const [, setClientCompanyMembers] = useState<CompanyMember[]>([])
@@ -472,11 +474,14 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
               </Typography>
             )}
             <Divider sx={{ my: 2 }} />
-            <Typography
-              variant="subtitle1"
-              gutterBottom>
-              프로젝트 단계 설정
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Typography variant="subtitle1">프로젝트 단계 설정</Typography>
+              <Typography
+                variant="body2"
+                sx={{ color: '#888', fontSize: '0.85em', ml: 1 }}>
+                (드래그앤드롭으로 기존 단계 순서를 수정할 수 있습니다)
+              </Typography>
+            </Box>
             <Paper sx={{ p: 2 }}>
               <DragDropContext onDragEnd={onDragEnd}>
                 <Droppable droppableId="stages">
@@ -507,7 +512,20 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                                   bgcolor: 'action.hover'
                                 }
                               }}>
-                              <Typography sx={{ minWidth: 40 }}>
+                              <Typography
+                                sx={{
+                                  minWidth: 40,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1
+                                }}>
+                                <DragIndicatorIcon
+                                  sx={{
+                                    fontSize: 20,
+                                    color: '#bbb',
+                                    cursor: 'grab'
+                                  }}
+                                />
                                 {stage.order}.
                               </Typography>
                               <TextField
