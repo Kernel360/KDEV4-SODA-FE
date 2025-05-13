@@ -4,8 +4,10 @@ import type {
   CompanyCreateRequest,
   CompanyCreateResponse,
   CompanyListResponse,
-  CompanyMemberListResponse
+  CompanyMemberListResponse,
+  CompanyListItem
 } from '../types/api'
+import { api } from './api'
 
 export const createCompany = async (data: CompanyCreateRequest) => {
   return apiRequest<CompanyCreateResponse>(
@@ -15,13 +17,33 @@ export const createCompany = async (data: CompanyCreateRequest) => {
   )
 }
 
-export const getCompanyList = async (params?: {
-  view?: 'ACTIVE' | 'DELETED'
-  searchKeyword?: string
+interface CompanyListParams {
+  view?: 'ACTIVE' | 'INACTIVE' | 'ALL'
   page?: number
   size?: number
-}) => {
-  return apiRequest<CompanyListResponse>('GET', API_ENDPOINTS.GET_COMPANIES, undefined, { params })
+  search?: string
+}
+
+export const getCompanyList = async (params: CompanyListParams = {}) => {
+  try {
+    const response = await api.get<CompanyListResponse>('/companies', {
+      params
+    })
+    if (!response.data) {
+      throw new Error('회사 목록을 가져오는데 실패했습니다.')
+    }
+    return response.data
+  } catch (error) {
+    console.error('회사 목록 조회 중 오류:', error)
+    throw error
+  }
+}
+
+export const searchCompanies = async (query: string) => {
+  const response = await api.get<CompanyListResponse>('/companies/search', {
+    params: { q: query }
+  })
+  return response.data
 }
 
 export const getCompanyMembers = async (companyId: number) => {

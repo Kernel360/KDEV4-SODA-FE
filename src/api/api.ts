@@ -6,19 +6,47 @@ import axios from 'axios'
 //   data?: any
 // }
 
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://api.s0da.co.kr/',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
+
+api.interceptors.request.use(
+  config => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  error => {
+    return Promise.reject(error)
+  }
+)
+
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
+
 export const apiRequest = async <T>(
   method: 'GET' | 'POST' | 'PUT' | 'DELETE',
   url: string,
   data?: any
 ): Promise<T> => {
   try {
-    const response = await axios({
+    const response = await api({
       method,
       url,
-      data,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      data
     })
     return response.data
   } catch (error) {
@@ -33,6 +61,6 @@ export const apiRequest = async <T>(
 
 export const API_ENDPOINTS = {
   // ... existing endpoints ...
-  UPDATE_INFO: '/api/v1/auth/update-info',
+  UPDATE_INFO: '/api/v1/auth/update-info'
   // ... existing endpoints ...
 } as const

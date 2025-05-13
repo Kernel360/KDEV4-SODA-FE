@@ -22,8 +22,22 @@ client.interceptors.response.use(
     return response
   },
   error => {
-    console.error('API Response Error:', error.response?.data || error.message)
+    console.error('API Response Error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      headers: error.response?.headers,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        headers: error.config?.headers,
+        params: error.config?.params
+      },
+      message: error.message
+    })
+
     if (error.response?.status === 401) {
+      console.log('토큰 만료 또는 인증 실패. 로그인 페이지로 이동합니다.')
       // 토큰 만료 시 로그인 페이지로 리다이렉트
       localStorage.removeItem('token')
       window.location.href = '/login'

@@ -1,21 +1,24 @@
 import { instance } from './config'
-import type { ApiResponse, MemberListDto, PagedData } from '../types/api'
+import type {
+  ApiResponse,
+  MemberListDto,
+  PaginatedResponse
+} from '../types/api'
 
 export const getUsers = async (
   page: number,
   size: number,
   searchKeyword?: string
 ) => {
-  const response = await instance.get<ApiResponse<PagedData<MemberListDto>>>(
-    '/admin/members',
-    {
-      params: {
-        page,
-        size,
-        searchKeyword
-      }
+  const response = await instance.get<
+    ApiResponse<PaginatedResponse<MemberListDto>>
+  >('/admin/members', {
+    params: {
+      page,
+      size,
+      searchKeyword
     }
-  )
+  })
   return response.data
 }
 

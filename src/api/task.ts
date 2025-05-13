@@ -26,12 +26,13 @@ export interface CreateRequestResponse {
   createdAt: string
 }
 
-export const getTaskRequests = async (taskId: number): Promise<ApiResponse<TaskRequest[]>> => {
+export const getTaskRequests = async (
+  taskId: number
+): Promise<ApiResponse<TaskRequest[]>> => {
   try {
     const response = await client.get(`/tasks/${taskId}/requests`)
     return {
       status: 'success',
-      code: '200',
       message: 'OK',
       data: response.data
     }
