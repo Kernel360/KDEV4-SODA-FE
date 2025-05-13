@@ -5,24 +5,19 @@ import CreateProjectSteps from '../../../components/projects/CreateProjectSteps'
 import { useToast } from '../../../contexts/ToastContext'
 import { companyService } from '../../../services/companyService'
 import { projectService } from '../../../services/projectService'
-import type { CompanyListItem } from '../../../types/api'
+import type { Company } from '../../../types'
 import type { ProjectFormData } from '../../../components/projects/CreateProjectSteps'
 
 const CreateProject: React.FC = () => {
   const navigate = useNavigate()
   const { showToast } = useToast()
-  const [companies, setCompanies] = useState<CompanyListItem[]>([])
+  const [companies, setCompanies] = useState<Company[]>([])
 
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const response = await companyService.getAllCompanies({
-          size: 1000,
-          page: 0
-        })
-        if (response.status === 'success' && response.data) {
-          setCompanies(response.data.data.content)
-        }
+        const data = await companyService.getAllCompanies()
+        setCompanies((data.data as any).content || [])
       } catch (error) {
         console.error('회사 목록 조회 중 오류:', error)
         showToast('회사 목록을 불러오는데 실패했습니다.', 'error')

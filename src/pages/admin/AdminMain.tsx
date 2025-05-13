@@ -98,10 +98,8 @@ export default function AdminMain() {
 
   const fetchCompanies = async () => {
     try {
-      const response = await companyService.getAllCompanies()
-      if (response.status === 'success' && response.data) {
-        setTotalCompanies(response.data.data.page.totalElements)
-      }
+      const companies = await companyService.getAllCompanies()
+      setTotalCompanies((companies.data as any).content.length)
     } catch (error) {
       console.error('회사 목록을 불러오는데 실패했습니다:', error)
     }
@@ -356,8 +354,8 @@ export default function AdminMain() {
             display: 'flex',
             flexDirection: 'row',
             gap: 3,
+            maxWidth: 1200,
             mx: 'auto',
-            maxWidth: '100%',
             px: 0,
             ml: 0
           }}>
@@ -371,7 +369,8 @@ export default function AdminMain() {
               display: 'flex',
               flexDirection: 'column',
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-              width: '60%',
+              flex: 0.9,
+              minWidth: 0,
               mx: 'auto'
             }}>
             <Box
@@ -405,49 +404,16 @@ export default function AdminMain() {
                 더보기
               </Button>
             </Box>
-            <TableContainer>
+            <TableContainer sx={{ width: '100%' }}>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell
-                      sx={{
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: '#1a1a1a',
-                        borderBottom: '2px solid #e5e7eb',
-                        whiteSpace: 'nowrap'
-                      }}>
-                      프로젝트
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: '#1a1a1a',
-                        borderBottom: '2px solid #e5e7eb',
-                        whiteSpace: 'nowrap'
-                      }}>
-                      마감일
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: '#1a1a1a',
-                        borderBottom: '2px solid #e5e7eb',
-                        minWidth: '90px',
-                        textAlign: 'center'
-                      }}>
+                    <TableCell sx={{ p: '8px 12px' }}>프로젝트</TableCell>
+                    <TableCell sx={{ p: '8px 12px' }}>마감일</TableCell>
+                    <TableCell sx={{ p: '8px 12px', textAlign: 'center' }}>
                       대시보드
                     </TableCell>
-                    <TableCell
-                      sx={{
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: '#1a1a1a',
-                        borderBottom: '2px solid #e5e7eb',
-                        textAlign: 'center'
-                      }}>
+                    <TableCell sx={{ p: '8px 12px', textAlign: 'center' }}>
                       관리
                     </TableCell>
                   </TableRow>
@@ -470,7 +436,7 @@ export default function AdminMain() {
 
                       return (
                         <TableRow key={project.id}>
-                          <TableCell sx={{ maxWidth: '200px' }}>
+                          <TableCell sx={{ p: '8px 12px' }}>
                             <Typography
                               sx={{
                                 fontSize: '0.875rem',
@@ -484,7 +450,7 @@ export default function AdminMain() {
                               {project.title}
                             </Typography>
                           </TableCell>
-                          <TableCell>
+                          <TableCell sx={{ p: '8px 12px' }}>
                             <Typography
                               sx={{
                                 fontSize: '0.875rem',
@@ -517,7 +483,8 @@ export default function AdminMain() {
                               </Typography>
                             </Typography>
                           </TableCell>
-                          <TableCell>
+                          <TableCell
+                            sx={{ p: '8px 12px', textAlign: 'center' }}>
                             <Button
                               variant="outlined"
                               size="small"
@@ -542,7 +509,8 @@ export default function AdminMain() {
                               <LayoutDashboard size={18} />
                             </Button>
                           </TableCell>
-                          <TableCell>
+                          <TableCell
+                            sx={{ p: '8px 12px', textAlign: 'center' }}>
                             <Button
                               variant="outlined"
                               size="small"
@@ -586,7 +554,8 @@ export default function AdminMain() {
               display: 'flex',
               flexDirection: 'column',
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-              width: '100%',
+              flex: 1.1,
+              minWidth: 0,
               mx: 'auto'
             }}>
             <Box
@@ -620,69 +589,18 @@ export default function AdminMain() {
                 더보기
               </Button>
             </Box>
-            <TableContainer>
+            <TableContainer sx={{ width: '100%' }}>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell
-                      sx={{
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: '#1a1a1a',
-                        borderBottom: '2px solid #e5e7eb',
-                        whiteSpace: 'nowrap'
-                      }}>
-                      프로젝트
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: '#1a1a1a',
-                        borderBottom: '2px solid #e5e7eb',
-                        whiteSpace: 'nowrap'
-                      }}>
-                      승인요청
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: '#1a1a1a',
-                        borderBottom: '2px solid #e5e7eb',
-                        whiteSpace: 'nowrap'
-                      }}>
-                      질문
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: '#1a1a1a',
-                        borderBottom: '2px solid #e5e7eb',
-                        whiteSpace: 'nowrap'
-                      }}>
-                      마지막 활동
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: '#1a1a1a',
-                        borderBottom: '2px solid #e5e7eb',
-                        whiteSpace: 'nowrap',
-                        textAlign: 'center'
-                      }}>
+                    <TableCell sx={{ p: '8px 12px' }}>프로젝트</TableCell>
+                    <TableCell sx={{ p: '8px 12px' }}>승인요청</TableCell>
+                    <TableCell sx={{ p: '8px 12px' }}>질문</TableCell>
+                    <TableCell sx={{ p: '8px 12px' }}>마지막 활동</TableCell>
+                    <TableCell sx={{ p: '8px 12px', textAlign: 'center' }}>
                       대시보드
                     </TableCell>
-                    <TableCell
-                      sx={{
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: '#1a1a1a',
-                        borderBottom: '2px solid #e5e7eb',
-                        textAlign: 'center'
-                      }}>
+                    <TableCell sx={{ p: '8px 12px', textAlign: 'center' }}>
                       관리
                     </TableCell>
                   </TableRow>
@@ -699,7 +617,7 @@ export default function AdminMain() {
                   ) : (
                     activeProjects.slice(0, 3).map(project => (
                       <TableRow key={project.id}>
-                        <TableCell sx={{ maxWidth: '250px' }}>
+                        <TableCell sx={{ p: '8px 12px' }}>
                           <Typography
                             sx={{
                               fontSize: '0.875rem',
@@ -713,7 +631,7 @@ export default function AdminMain() {
                             {project.title}
                           </Typography>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ p: '8px 12px' }}>
                           <Box
                             sx={{
                               fontSize: '0.813rem',
@@ -723,7 +641,7 @@ export default function AdminMain() {
                             {project.weeklyRequestCount}건
                           </Box>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ p: '8px 12px' }}>
                           <Box
                             sx={{
                               fontSize: '0.813rem',
@@ -733,7 +651,7 @@ export default function AdminMain() {
                             {project.weeklyArticleCount}건
                           </Box>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ p: '8px 12px' }}>
                           <Typography
                             sx={{
                               fontSize: '0.875rem',
@@ -746,7 +664,7 @@ export default function AdminMain() {
                               : '-'}
                           </Typography>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ p: '8px 12px', textAlign: 'center' }}>
                           <Button
                             variant="outlined"
                             size="small"
@@ -771,7 +689,7 @@ export default function AdminMain() {
                             <LayoutDashboard size={18} />
                           </Button>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ p: '8px 12px', textAlign: 'center' }}>
                           <Button
                             variant="outlined"
                             size="small"
@@ -901,7 +819,7 @@ export default function AdminMain() {
 
       {/* 회사 섹션 */}
       <Box>
-        {/* 회사 등록 추이 */}
+        {/* 회사 생성 추이 */}
         <Grid
           container
           spacing={3}

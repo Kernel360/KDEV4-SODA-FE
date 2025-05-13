@@ -71,6 +71,8 @@ const Article: React.FC = () => {
   const [articleStatus, setArticleStatus] = useState<'PENDING' | 'COMMENTED'>(
     'PENDING'
   )
+  const [noPrevDialogOpen, setNoPrevDialogOpen] = useState(false)
+  const [noNextDialogOpen, setNoNextDialogOpen] = useState(false)
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -236,6 +238,34 @@ const Article: React.FC = () => {
     }
   }
 
+  const handlePrev = async () => {
+    if (!projectId || !articleId) return
+    const prevId = Number(articleId) - 1
+    try {
+      setLoading(true)
+      await projectService.getArticleDetail(Number(projectId), prevId)
+      navigate(`/user/projects/${projectId}/articles/${prevId}`)
+    } catch {
+      setNoNextDialogOpen(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleNext = async () => {
+    if (!projectId || !articleId) return
+    const nextId = Number(articleId) + 1
+    try {
+      setLoading(true)
+      await projectService.getArticleDetail(Number(projectId), nextId)
+      navigate(`/user/projects/${projectId}/articles/${nextId}`)
+    } catch {
+      setNoPrevDialogOpen(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const renderFileList = () => {
     if (!article?.fileList || article.fileList.length === 0) return null
 
@@ -384,8 +414,16 @@ const Article: React.FC = () => {
 
         <Typography
           variant="h5"
-          sx={{ flex: 1 }}>
+          sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
           {article.title}
+          {article.stageName && (
+            <Chip
+              label={article.stageName}
+              color="primary"
+              size="small"
+              sx={{ ml: 1 }}
+            />
+          )}
         </Typography>
 
         {isAuthor && (
@@ -801,21 +839,13 @@ const Article: React.FC = () => {
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
             variant="outlined"
-            onClick={() =>
-              navigate(
-                `/user/projects/${projectId}/articles/${Number(articleId) - 1}`
-              )
-            }
+            onClick={handlePrev}
             startIcon={<ChevronLeft size={16} />}>
             이전
           </Button>
           <Button
             variant="outlined"
-            onClick={() =>
-              navigate(
-                `/user/projects/${projectId}/articles/${Number(articleId) + 1}`
-              )
-            }
+            onClick={handleNext}
             endIcon={<ChevronRight size={16} />}>
             다음
           </Button>
@@ -857,6 +887,37 @@ const Article: React.FC = () => {
             variant="contained"
             disabled={loading}>
             삭제
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={noPrevDialogOpen}
+        onClose={() => setNoPrevDialogOpen(false)}>
+        <DialogTitle>알림</DialogTitle>
+        <DialogContent>가장 최근 질문입니다</DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setNoPrevDialogOpen(false)
+              navigate(`/user/projects/${projectId}?tab=articles`)
+            }}>
+            확인
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={noNextDialogOpen}
+        onClose={() => setNoNextDialogOpen(false)}>
+        <DialogTitle>알림</DialogTitle>
+        <DialogContent>마지막 질문입니다</DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setNoNextDialogOpen(false)
+              navigate(`/user/projects/${projectId}?tab=articles`)
+            }}>
+            확인
           </Button>
         </DialogActions>
       </Dialog>

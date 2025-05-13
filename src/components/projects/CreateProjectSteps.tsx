@@ -26,7 +26,8 @@ import {
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { DatePicker } from '@mui/x-date-pickers'
 import { Search, Close } from '@mui/icons-material'
-import type { CompanyMember, CompanyListItem } from '../../types/api'
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
+import type { CompanyMember } from '../../types/api'
 import { getCompanyMembers } from '../../api/company'
 import { projectService } from '../../services/projectService'
 import { useNavigate } from 'react-router-dom'
@@ -72,7 +73,7 @@ export interface ProjectFormData {
 }
 
 interface CreateProjectStepsProps {
-  companies: CompanyListItem[]
+  companies: Company[]
   onSubmit: (data: ProjectFormData) => void
   onCancel: () => void
 }
@@ -119,7 +120,7 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
   const [clientMemberSearch, setClientMemberSearch] = useState('')
   const [, setIsMemberSelectionComplete] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedCompany, setSelectedCompany] = useState<CompanyListItem | null>(null)
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [modalStep, setModalStep] = useState(0)
   const [] = useState<CompanyMember[]>([])
   const [, setClientCompanyMembers] = useState<CompanyMember[]>([])
@@ -312,6 +313,8 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
     formData.endDate &&
     new Date(formData.startDate) > new Date(formData.endDate)
 
+  const stageNameError = formData.stages.some(stage => stage.name.length > 30)
+
   const isStepValid = () => {
     switch (activeStep) {
       case 0:
@@ -321,7 +324,9 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
           formData.startDate !== '' &&
           formData.endDate !== '' &&
           formData.stages.length > 0 &&
-          formData.stages.every(stage => stage.name.trim() !== '') &&
+          formData.stages.every(
+            stage => stage.name.trim() !== '' && stage.name.length <= 30
+          ) &&
           !projectNameError &&
           !descriptionError &&
           !dateError
@@ -355,7 +360,7 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
   const handleAddStage = () => {
     const newStage: Stage = {
       id: formData.stages.length, // Temporary ID until saved
-      name: '새 스테이지',
+      name: '새 단계',
       order: formData.stages.length + 1,
       status: '대기'
     }
@@ -381,8 +386,19 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
               helperText={
                 projectNameError
                   ? '프로젝트명은 100자 이내로 작성할 수 있습니다'
-                  : `${formData.title.length}/100`
+                  : ''
               }
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <span
+                      style={{
+                        fontSize: '0.8em',
+                        color: '#888'
+                      }}>{`${formData.title.length}/100`}</span>
+                  </InputAdornment>
+                )
+              }}
             />
             <TextField
               fullWidth
@@ -397,8 +413,24 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
               helperText={
                 descriptionError
                   ? '설명은 1000자 이내로 작성할 수 있습니다'
-                  : `${formData.description.length}/1000`
+                  : ''
               }
+              InputProps={{
+                sx: { position: 'relative', paddingBottom: '20px' },
+                endAdornment: (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      right: 12,
+                      bottom: 8,
+                      fontSize: '0.8em',
+                      color: '#888',
+                      pointerEvents: 'none'
+                    }}>
+                    {`${formData.description.length}/1000`}
+                  </span>
+                )
+              }}
             />
             <Box sx={{ display: 'flex', gap: 2 }}>
               <DatePicker
@@ -441,11 +473,14 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
               </Typography>
             )}
             <Divider sx={{ my: 2 }} />
-            <Typography
-              variant="subtitle1"
-              gutterBottom>
-              프로젝트 스테이지 설정
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Typography variant="subtitle1">프로젝트 단계 설정</Typography>
+              <Typography
+                variant="body2"
+                sx={{ color: '#888', fontSize: '0.85em', ml: 1 }}>
+                (드래그앤드롭으로 기존 단계 순서를 수정할 수 있습니다)
+              </Typography>
+            </Box>
             <Paper sx={{ p: 2 }}>
               <DragDropContext onDragEnd={onDragEnd}>
                 <Droppable droppableId="stages">
@@ -476,7 +511,20 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                                   bgcolor: 'action.hover'
                                 }
                               }}>
-                              <Typography sx={{ minWidth: 40 }}>
+                              <Typography
+                                sx={{
+                                  minWidth: 40,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1
+                                }}>
+                                <DragIndicatorIcon
+                                  sx={{
+                                    fontSize: 20,
+                                    color: '#bbb',
+                                    cursor: 'grab'
+                                  }}
+                                />
                                 {stage.order}.
                               </Typography>
                               <TextField
@@ -486,7 +534,7 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                                   const newStages = [...formData.stages]
                                   newStages[index] = {
                                     ...stage,
-                                    name: e.target.value
+                                    name: e.target.value.slice(0, 30)
                                   }
                                   setFormData(prev => ({
                                     ...prev,
@@ -494,6 +542,23 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                                   }))
                                 }}
                                 size="small"
+                                error={stage.name.length > 30}
+                                helperText={
+                                  stage.name.length > 30
+                                    ? '단계는 30글자를 초과할 수 없습니다'
+                                    : ''
+                                }
+                                InputProps={{
+                                  endAdornment: (
+                                    <InputAdornment position="end">
+                                      <span
+                                        style={{
+                                          fontSize: '0.8em',
+                                          color: '#888'
+                                        }}>{`${stage.name.length}/30`}</span>
+                                    </InputAdornment>
+                                  )
+                                }}
                               />
                               <Button
                                 size="small"
@@ -524,24 +589,43 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
                 variant="outlined"
                 onClick={handleAddStage}
                 sx={{ mt: 2 }}>
-                스테이지 추가
+                단계 추가
               </Button>
             </Paper>
+            {stageNameError && (
+              <Typography
+                color="error"
+                sx={{ mt: 1 }}>
+                단계는 30글자를 초과할 수 없습니다
+              </Typography>
+            )}
           </Box>
         )
       case 1:
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {formData.clientCompanies.length === 0 ? (
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => {
-                  setIsModalOpen(true)
-                  setModalStep(0)
-                }}>
-                고객사 선택
-              </Button>
+              <>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => {
+                    setIsModalOpen(true)
+                    setModalStep(0)
+                  }}>
+                  고객사 선택
+                </Button>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#888',
+                    fontSize: '0.85em',
+                    ml: 0.5,
+                    textAlign: 'center'
+                  }}>
+                  고객사는 다중 선택 가능합니다
+                </Typography>
+              </>
             ) : (
               <>
                 {formData.clientCompanies.map((company, index) => (
@@ -878,14 +962,7 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
           </Stepper>
         </Box>
 
-        <Box sx={{ mb: 4 }}>
-          <Typography
-            variant="h6"
-            gutterBottom>
-            {steps[activeStep]}
-          </Typography>
-          {renderStepContent(activeStep)}
-        </Box>
+        <Box sx={{ mb: 4 }}>{renderStepContent(activeStep)}</Box>
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button
