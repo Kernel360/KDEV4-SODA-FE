@@ -174,6 +174,7 @@ const ProjectList: React.FC = () => {
           title={row.title}
           arrow>
           <Typography
+            onClick={() => navigate(`/admin/projects/${row.id}`)}
             sx={{
               fontSize: '0.875rem',
               cursor: 'pointer',
@@ -183,7 +184,8 @@ const ProjectList: React.FC = () => {
               maxWidth: '120px',
               display: 'block',
               '&:hover': {
-                color: theme.palette.primary.dark
+                color: theme.palette.primary.dark,
+                textDecoration: 'underline'
               }
             }}>
             {row.title}
