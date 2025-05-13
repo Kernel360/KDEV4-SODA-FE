@@ -144,10 +144,7 @@ const CreateRequest: React.FC = () => {
             await Promise.all(
               entries.map((entry, i) =>
                 axios.put(entry.presignedUrl, formData.files[i], {
-                  headers: { 
-                    'Content-Type': formData.files[i].type,
-                    'x-amz-acl': 'public-read'
-                   },
+                  headers: { 'Content-Type': formData.files[i].type },
                 })
               )
             );

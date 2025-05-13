@@ -180,12 +180,16 @@ const Login: React.FC = () => {
                 <div className="font-medium text-lg mb-3">✴️ 테스트 계정 안내 (ID / PW)</div>
                 <div className="text-sm text-gray-700 space-y-2">
                   <div className="mb-2">
-                    <span className="font-bold">관리자: </span>
+                    <span className="font-medium">관리자: </span>
                     admin01 / admin01!
                   </div>
                   <div className="mb-2">
-                    <span className="font-bold">일반유저: </span>
-                    user01 / user01! <p className="text-xs">(ABC소프트웨어임직원1)</p>
+                    <span className="font-medium">개발사: </span>
+                    user01 / user01!
+                  </div>
+                  <div>
+                    <span className="font-medium">고객사: </span>
+                    user03 / user03!
                   </div>
                 </div>
               </div>
