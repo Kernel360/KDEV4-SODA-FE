@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Box, useTheme } from '@mui/material'
+import { Box, useTheme, useMediaQuery, Drawer } from '@mui/material'
 import { useUserStore } from '../../stores/userStore'
 import SideBar from './Sidebar'
 import UserSidebar from './UserSidebar'
@@ -7,8 +7,10 @@ import Header from './Header'
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const { user, setUser } = useUserStore()
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user')
@@ -23,9 +25,30 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }
   }, [setUser])
 
+  useEffect(() => {
+    setIsSidebarOpen(!isMobile)
+  }, [isMobile])
+
   const handleSidebarToggle = () => {
-    setIsSidebarOpen(!isSidebarOpen)
+    if (isMobile) {
+      setDrawerOpen(!drawerOpen)
+    } else {
+      setIsSidebarOpen(!isSidebarOpen)
+    }
   }
+
+  const sidebarContent =
+    user?.role === 'ADMIN' ? (
+      <SideBar
+        isOpen={isMobile ? true : isSidebarOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
+    ) : (
+      <UserSidebar
+        isOpen={isMobile ? true : isSidebarOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
+    )
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -33,18 +56,27 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         onSidebarToggle={handleSidebarToggle}
         isSidebarOpen={isSidebarOpen}
       />
-      {user?.role === 'ADMIN' ? (
-        <SideBar isOpen={isSidebarOpen} />
+      {isMobile ? (
+        <Drawer
+          anchor="left"
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            '& .MuiDrawer-paper': { width: 280 }
+          }}>
+          {sidebarContent}
+        </Drawer>
       ) : (
-        <UserSidebar isOpen={isSidebarOpen} />
+        sidebarContent
       )}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: isMobile ? 1 : 3,
           width: '100%',
-          marginLeft: isSidebarOpen ? '280px' : 0,
+          marginLeft: !isMobile && isSidebarOpen ? '280px' : 0,
           transition: theme.transitions.create('margin', {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen
