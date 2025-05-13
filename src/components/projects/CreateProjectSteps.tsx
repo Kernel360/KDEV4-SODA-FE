@@ -606,15 +606,27 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {formData.clientCompanies.length === 0 ? (
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => {
-                  setIsModalOpen(true)
-                  setModalStep(0)
-                }}>
-                고객사 선택
-              </Button>
+              <>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => {
+                    setIsModalOpen(true)
+                    setModalStep(0)
+                  }}>
+                  고객사 선택
+                </Button>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#888',
+                    fontSize: '0.85em',
+                    ml: 0.5,
+                    textAlign: 'center'
+                  }}>
+                  고객사는 다중 선택 가능합니다
+                </Typography>
+              </>
             ) : (
               <>
                 {formData.clientCompanies.map((company, index) => (
@@ -951,14 +963,7 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
           </Stepper>
         </Box>
 
-        <Box sx={{ mb: 4 }}>
-          <Typography
-            variant="h6"
-            gutterBottom>
-            {steps[activeStep]}
-          </Typography>
-          {renderStepContent(activeStep)}
-        </Box>
+        <Box sx={{ mb: 4 }}>{renderStepContent(activeStep)}</Box>
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button
