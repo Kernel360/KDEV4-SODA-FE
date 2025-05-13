@@ -188,7 +188,8 @@
 
 ## ⚙️ 시스템 아키텍처
 
-첨부 예정
+![image](https://github.com/user-attachments/assets/ebe627aa-55de-4e3d-8cad-469a0c8f3d5b)
+
 
 <br/>
 <br/>
