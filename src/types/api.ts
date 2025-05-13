@@ -27,9 +27,9 @@ export interface User {
 
 export interface ApiResponse<T> {
   status: 'success' | 'error'
-  code: string
-  message: string
-  data: T | null
+  message?: string
+  code?: string
+  data: T
 }
 
 export interface LoginResponse {
@@ -101,23 +101,39 @@ export interface CompanyCreateResponse {
 export interface CompanyListItem {
   id: number
   name: string
+  businessNumber: string
   phoneNumber: string
   companyNumber: string
   address: string
-  detailAddress: string | null
-  ownerName: string
-  isDeleted: boolean
+  detailAddress: string
+  status: 'ACTIVE' | 'INACTIVE'
+  createdAt: string
+  updatedAt: string
 }
 
-export interface CompanyListResponse {
-  content: CompanyListItem[]
+export interface PaginatedResponse<T> {
+  content: T[]
   page: {
-    size: number
-    number: number
     totalElements: number
     totalPages: number
+    size: number
+    number: number
+    first: boolean
+    last: boolean
+    empty: boolean
   }
+  totalElements: number
+  totalPages: number
+  size: number
+  number: number
+  first: boolean
+  last: boolean
+  empty: boolean
 }
+
+export type CompanyListResponse = ApiResponse<
+  PaginatedResponse<CompanyListItem>
+>
 
 export interface SignupRequest {
   name: string

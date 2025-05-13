@@ -16,19 +16,46 @@ export const companyService = {
     page?: number
     size?: number
   }): Promise<ApiResponse<CompanyListResponse>> {
-    const response = await client.get<ApiResponse<CompanyListResponse>>(
-      '/companies',
-      {
+    try {
+      console.log('회사 목록 API 요청 시작:', {
+        url: '/companies',
         params: {
           view: params?.view || 'ACTIVE',
           searchKeyword: params?.searchKeyword,
           page: params?.page,
           size: params?.size
         }
-      }
-    )
-    console.log('회사 목록 API 응답:', response.data)
-    return response.data
+      })
+
+      const response = await client.get<ApiResponse<CompanyListResponse>>(
+        '/companies',
+        {
+          params: {
+            view: params?.view || 'ACTIVE',
+            searchKeyword: params?.searchKeyword,
+            page: params?.page,
+            size: params?.size
+          }
+        }
+      )
+      console.log('회사 목록 API 응답 성공:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('회사 목록 API 요청 실패:', {
+        error,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          headers: error.config?.headers,
+          params: error.config?.params
+        }
+      })
+      throw error
+    }
   },
 
   async getCompanyById(id: number): Promise<Company> {
@@ -113,7 +140,8 @@ export const companyService = {
   ): Promise<{ available: boolean }> => {
     try {
       const response = await client.get<ApiResponse<{ available: boolean }>>(
-        `/auth/check-id/${authId}`
+        `/check-id`,
+        { params: { authId } }
       )
       return response.data.data
     } catch (error) {
