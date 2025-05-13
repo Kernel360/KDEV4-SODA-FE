@@ -152,7 +152,8 @@ const CreateRequest: React.FC = () => {
               entries.map((entry, i) =>
                 axios.put(entry.presignedUrl, formData.files[i], {
                   headers: {
-                    'Content-Type': formData.files[i].type
+                    'Content-Type': formData.files[i].type,
+                    'x-amz-acl': 'public-read'
                   }
                 })
               )
@@ -324,10 +325,35 @@ const CreateRequest: React.FC = () => {
               placeholder="제목을 입력해주세요"
               value={formData.title}
               onChange={e =>
-                setFormData(prev => ({ ...prev, title: e.target.value }))
+                setFormData(prev => ({
+                  ...prev,
+                  title: e.target.value.slice(0, 100)
+                }))
               }
               variant="outlined"
               required
+              error={formData.title.length > 100}
+              helperText={
+                formData.title.length > 100
+                  ? '제목은 100자 이내로 작성해야 합니다'
+                  : ''
+              }
+              InputProps={{
+                sx: { position: 'relative', paddingBottom: '20px' },
+                endAdornment: (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      right: 12,
+                      bottom: 8,
+                      fontSize: '0.8em',
+                      color: '#888',
+                      pointerEvents: 'none'
+                    }}>
+                    {`${formData.title.length}/100`}
+                  </span>
+                )
+              }}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   bgcolor: 'white',
@@ -363,10 +389,35 @@ const CreateRequest: React.FC = () => {
               rows={6}
               value={formData.content}
               onChange={e =>
-                setFormData(prev => ({ ...prev, content: e.target.value }))
+                setFormData(prev => ({
+                  ...prev,
+                  content: e.target.value.slice(0, 1000)
+                }))
               }
               variant="outlined"
               required
+              error={formData.content.length > 1000}
+              helperText={
+                formData.content.length > 1000
+                  ? '내용은 1000자 이내로 작성해야 합니다'
+                  : ''
+              }
+              InputProps={{
+                sx: { position: 'relative', paddingBottom: '20px' },
+                endAdornment: (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      right: 12,
+                      bottom: 8,
+                      fontSize: '0.8em',
+                      color: '#888',
+                      pointerEvents: 'none'
+                    }}>
+                    {`${formData.content.length}/1000`}
+                  </span>
+                )
+              }}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   bgcolor: 'white',

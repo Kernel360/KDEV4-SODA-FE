@@ -73,7 +73,7 @@ export interface ProjectFormData {
 }
 
 interface CreateProjectStepsProps {
-  companies: CompanyListItem[]
+  companies: Company[]
   onSubmit: (data: ProjectFormData) => void
   onCancel: () => void
 }
@@ -120,8 +120,7 @@ const CreateProjectSteps: React.FC<CreateProjectStepsProps> = ({
   const [clientMemberSearch, setClientMemberSearch] = useState('')
   const [, setIsMemberSelectionComplete] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedCompany, setSelectedCompany] =
-    useState<CompanyListItem | null>(null)
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [modalStep, setModalStep] = useState(0)
   const [] = useState<CompanyMember[]>([])
   const [, setClientCompanyMembers] = useState<CompanyMember[]>([])

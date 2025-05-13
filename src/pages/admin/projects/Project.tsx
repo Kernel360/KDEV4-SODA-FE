@@ -324,60 +324,56 @@ const ProjectDetail = () => {
   const fetchCompanies = async () => {
     try {
       setLoadingCompanies(true)
-      const response = await companyService.getAllCompanies({
-        size: 1000,
-        page: 0
-      })
+      const response = await companyService.getAllCompanies()
       console.log('회사 목록 API 응답:', response)
 
-      if (response.status === 'success' && response.data) {
-        // 모든 회사 정보 저장
-        const allCompanies = response.data.data.content.map(company => ({
-          id: company.id,
-          name: company.name,
-          address: company.address,
-          type: companyType
-        }))
-        setCompanies(allCompanies)
+      // 모든 회사 정보 저장
+      const allCompanies = response.map(company => ({
+        id: company.id,
+        name: company.name,
+        address: company.address,
+        type: companyType
+      }))
+      setCompanies(allCompanies)
 
-        // 추가 가능한 회사만 필터링
-        const filteredCompanies = response.data.data.content.filter(company => {
-          // 이미 프로젝트에 할당된 회사인지 확인
-          const isAssigned =
-            project.clientCompanyNames.some(name => {
-              const existingCompany = allCompanies.find(c => c.name === name)
-              return existingCompany?.id === company.id
-            }) ||
-            project.devCompanyNames.some(name => {
-              const existingCompany = allCompanies.find(c => c.name === name)
-              return existingCompany?.id === company.id
-            })
+      // 추가 가능한 회사만 필터링
+      const filteredCompanies = response.filter(company => {
+        // 이미 프로젝트에 할당된 회사인지 확인
+        const isAssigned =
+          project.clientCompanyNames.some(name => {
+            const existingCompany = allCompanies.find(c => c.name === name)
+            return existingCompany?.id === company.id
+          }) ||
+          project.devCompanyNames.some(name => {
+            const existingCompany = allCompanies.find(c => c.name === name)
+            return existingCompany?.id === company.id
+          })
 
-          // 개발사 추가 시 이미 고객사로 등록된 회사는 제외
-          if (companyType === 'dev') {
-            const isClientCompany = project.clientCompanyNames.some(name => {
-              const existingCompany = allCompanies.find(c => c.name === name)
-              return existingCompany?.id === company.id
-            })
-            if (isClientCompany) return false
-          }
+        // 개발사 추가 시 이미 고객사로 등록된 회사는 제외
+        if (companyType === 'dev') {
+          const isClientCompany = project.clientCompanyNames.some(name => {
+            const existingCompany = allCompanies.find(c => c.name === name)
+            return existingCompany?.id === company.id
+          })
+          if (isClientCompany) return false
+        }
 
-          return !isAssigned
-        })
+        return !isAssigned
+      })
 
-        const formattedCompanies = filteredCompanies.map(company => ({
-          id: company.id,
-          name: company.name,
-          address: company.address,
-          type: companyType
-        }))
+      const formattedCompanies = filteredCompanies.map(company => ({
+        id: company.id,
+        name: company.name,
+        address: company.address,
+        type: companyType // companyType 유지
+      }))
 
-        setAvailableCompanies(formattedCompanies)
-      }
-      setLoadingCompanies(false)
+      setAvailableCompanies(formattedCompanies)
     } catch (error) {
-      console.error('회사 목록 조회 실패:', error)
+      console.error('Failed to fetch companies:', error)
       showToast('회사 목록을 불러오는데 실패했습니다.', 'error')
+      setAvailableCompanies([])
+    } finally {
       setLoadingCompanies(false)
     }
   }
