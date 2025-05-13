@@ -16,14 +16,18 @@ export const companyService = {
     page?: number
     size?: number
   }): Promise<ApiResponse<CompanyListResponse>> {
-    const response = await client.get<ApiResponse<CompanyListResponse>>('/companies', {
-      params: {
-        view: params?.view || 'ACTIVE',
-        searchKeyword: params?.searchKeyword,
-        page: params?.page,
-        size: params?.size
+    const response = await client.get<ApiResponse<CompanyListResponse>>(
+      '/companies',
+      {
+        params: {
+          view: params?.view || 'ACTIVE',
+          searchKeyword: params?.searchKeyword,
+          page: params?.page,
+          size: params?.size
+        }
       }
-    })
+    )
+    console.log('회사 목록 API 응답:', response.data)
     return response.data
   },
 

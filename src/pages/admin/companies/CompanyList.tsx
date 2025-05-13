@@ -57,16 +57,27 @@ const CompanyList: React.FC = () => {
         page,
         size: rowsPerPage
       })
-      
-      if (response.status === 'success') {
-        const { content, page: pageInfo } = response.data
+
+      if (response?.status === 'success' && Array.isArray(response?.data)) {
+        const companiesList = response.data
         if (currentTab === 0) {
-          setCompanies(content)
+          setCompanies(companiesList)
         } else {
-          setDeletedCompanies(content)
+          setDeletedCompanies(companiesList)
         }
-        setTotalElements(pageInfo.totalElements)
-        setTotalPages(pageInfo.totalPages)
+        // 페이지네이션 정보가 없으므로 전체 데이터 길이를 사용
+        setTotalElements(companiesList.length)
+        setTotalPages(Math.ceil(companiesList.length / rowsPerPage))
+      } else {
+        console.error('회사 목록 API 응답 형식이 올바르지 않습니다:', response)
+        showToast('회사 목록 데이터 형식이 올바르지 않습니다.', 'error')
+        if (currentTab === 0) {
+          setCompanies([])
+        } else {
+          setDeletedCompanies([])
+        }
+        setTotalElements(0)
+        setTotalPages(0)
       }
     } catch (err) {
       console.error('회사 목록 조회 중 오류:', err)
@@ -78,6 +89,8 @@ const CompanyList: React.FC = () => {
       } else {
         setDeletedCompanies([])
       }
+      setTotalElements(0)
+      setTotalPages(0)
     } finally {
       setLoading(false)
     }
