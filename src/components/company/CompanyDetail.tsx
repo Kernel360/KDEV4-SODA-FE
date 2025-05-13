@@ -22,7 +22,8 @@ import {
   IconButton,
   CircularProgress,
   Switch,
-  Tooltip
+  Tooltip,
+  InputAdornment
 } from '@mui/material'
 import {
   Company,
@@ -41,14 +42,16 @@ import {
   Users,
   Plus,
   X,
-  Save
+  Save,
+  Check
 } from 'lucide-react'
 import { companyService } from '../../services/companyService'
-import { signup } from '../../api/auth'
+import { signup, checkIdAvailability } from '../../api/auth'
 import LoadingSpinner from '../common/LoadingSpinner'
 import { useToast } from '../../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
 import { validatePassword } from '../../utils/validation'
+import CloseIcon from '@mui/icons-material/Close'
 
 interface CompanyDetailProps {
   company: Company
@@ -94,6 +97,8 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({
   const [authIdError, setAuthIdError] = useState<string | null>(null)
   const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false)
   const [memberToDelete, setMemberToDelete] = useState<number | null>(null)
+  const [isIdChecked, setIsIdChecked] = useState(false)
+  const [isIdAvailable, setIsIdAvailable] = useState<boolean | null>(null)
 
   // 멤버 목록 조회 함수 분리
   const fetchMembers = async () => {
@@ -150,15 +155,6 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({
       return false
     }
 
-    const passwordValidation = validatePassword(
-      formData.password,
-      DEFAULT_PASSWORD_POLICY
-    )
-    if (!passwordValidation.isValid) {
-      setPasswordError(passwordValidation.message)
-      return false
-    }
-
     if (formData.password !== formData.confirmPassword) {
       setPasswordError('비밀번호가 일치하지 않습니다.')
       return false
@@ -168,16 +164,41 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({
   }
 
   const checkAuthIdAvailability = async (authId: string) => {
-    if (!authId) return
+    if (!authId) {
+      showToast('아이디를 입력해주세요.', 'error')
+      return
+    }
+
     setIsCheckingAuthId(true)
     setAuthIdError(null)
+    setIsIdChecked(false)
+    setIsIdAvailable(null)
+
     try {
-      const response = await companyService.checkAuthIdAvailability(authId)
-      if (!response.available) {
-        setAuthIdError('이미 사용 중인 아이디입니다.')
+      const response = await checkIdAvailability(authId)
+      if (response.status === 'success') {
+        setIsIdChecked(true)
+        setIsIdAvailable(response.data)
+        if (response.data) {
+          setAuthIdError('')
+          showToast('사용 가능한 아이디입니다.', 'success')
+        } else {
+          setAuthIdError('이미 사용 중인 아이디입니다.')
+          showToast('이미 사용 중인 아이디입니다.', 'error')
+        }
+      } else {
+        throw new Error(response.message || '아이디 중복 확인에 실패했습니다.')
       }
-    } catch (err) {
-      setAuthIdError('아이디 중복 확인 중 오류가 발생했습니다.')
+    } catch (err: any) {
+      console.error('아이디 중복 확인 중 오류:', err)
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        '아이디 중복 확인 중 오류가 발생했습니다.'
+      setAuthIdError(errorMessage)
+      showToast(errorMessage, 'error')
+      setIsIdChecked(false)
+      setIsIdAvailable(null)
     } finally {
       setIsCheckingAuthId(false)
     }
@@ -191,12 +212,13 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({
     }))
 
     if (name === 'authId') {
-      const debouncedCheck = setTimeout(() => {
-        checkAuthIdAvailability(value)
-      }, 500)
-      return () => clearTimeout(debouncedCheck)
+      // 아이디가 변경되면 중복확인 상태 초기화
+      if (value !== formData.authId) {
+        setIsIdChecked(false)
+        setIsIdAvailable(null)
+        setAuthIdError(null)
+      }
     }
-
     if (name === 'password' || name === 'confirmPassword') {
       setPasswordError(null)
     }
@@ -204,48 +226,65 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({
 
   const handleSubmitMember = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!company) return
+    console.log('폼 제출 시작:', formData)
 
-    const isValid = validateFormData()
-    if (!isValid) {
-      setPasswordError('비밀번호 정책을 확인하세요.')
+    if (!company) {
+      console.error('회사 정보가 없습니다.')
+      showToast('회사 정보를 찾을 수 없습니다.', 'error')
+      return
+    }
+
+    // 필수 입력값 검증
+    if (!formData.authId || !formData.password || !formData.name) {
+      console.error('필수 입력값 누락:', formData)
+      showToast('이름, 아이디, 비밀번호를 모두 입력해주세요.', 'error')
+      return
+    }
+
+    // ID 중복 체크 검증
+    if (!isIdAvailable) {
+      console.error('ID 중복 체크가 필요합니다.')
+      showToast('아이디 중복 체크를 진행해주세요.', 'error')
       return
     }
 
     setIsSubmitting(true)
+    console.log('회원 추가 프로세스 시작')
+
     try {
+      // 회원가입 API 호출
+      console.log('회원가입 API 호출 시작')
       const signupData = {
+        name: formData.name,
         authId: formData.authId,
         password: formData.password,
-        name: formData.name,
-        role: 'USER' as 'USER'
+        companyId: company.id,
+        role: 'USER' as const
+      }
+      console.log('회원가입 요청 데이터:', signupData)
+
+      const signupResponse = await signup(signupData)
+
+      if (signupResponse.status !== 'success') {
+        console.error('회원가입 API 실패:', signupResponse)
+        throw new Error(signupResponse.message || '회원가입에 실패했습니다.')
       }
 
-      await signup(signupData)
-      await companyService.addCompanyMember(company.id, {
-        name: formData.name,
-        position: formData.position || undefined,
-        phoneNumber: formData.phoneNumber || undefined
-      })
-
-      showToast('회원이 성공적으로 추가되었습니다.', 'success')
-      setAddMemberDialogOpen(false)
-      setFormData({
-        authId: '',
-        password: '',
-        confirmPassword: '',
-        name: '',
-        email: '',
-        position: '',
-        phoneNumber: ''
-      })
-      setPasswordError(null)
-      fetchMembers()
+      console.log('회원가입 성공:', signupResponse)
+      showToast('회사 멤버가 추가되었습니다.', 'success')
+      handleCloseDialog()
+      fetchMembers() // 멤버 목록 새로고침
     } catch (error) {
-      console.error('회원 추가 중 오류:', error)
-      showToast('회원 추가 중 오류가 발생했습니다.', 'error')
+      console.error('회원 추가 프로세스 실패:', error)
+      showToast(
+        error instanceof Error
+          ? error.message
+          : '회원 추가에 실패했습니다. 다시 시도해주세요.',
+        'error'
+      )
     } finally {
       setIsSubmitting(false)
+      console.log('회원 추가 프로세스 종료')
     }
   }
 
@@ -525,7 +564,7 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({
                 textTransform: 'none',
                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}>
-              멤버 추가
+              계정 생성
             </Button>
           )}
         </Box>
@@ -646,135 +685,330 @@ const CompanyDetail: React.FC<CompanyDetailProps> = ({
       <Dialog
         open={addMemberDialogOpen}
         onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth>
-        <DialogTitle>
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            width: '760px',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            height: 'auto',
+            borderRadius: 3
+          }
+        }}>
+        <DialogTitle
+          sx={{
+            pb: 2,
+            pt: 3,
+            px: 4,
+            bgcolor: 'grey.50',
+            borderTopLeftRadius: 12,
+            borderTopRightRadius: 12
+          }}>
           <Box
             sx={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-            회사 멤버 추가
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 800,
+                color: 'primary.main',
+                letterSpacing: '-1px'
+              }}>
+              회사 멤버 추가
+            </Typography>
             <IconButton
               onClick={handleCloseDialog}
               size="small">
-              <X size={20} />
+              <CloseIcon />
             </IconButton>
           </Box>
         </DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              name="name"
-              label="이름"
-              value={formData.name}
-              onChange={handleInputChange}
-              fullWidth
-              required
-              size="small"
-            />
-            <TextField
-              name="authId"
-              label="아이디"
-              value={formData.authId}
-              onChange={handleInputChange}
-              error={!!authIdError}
-              helperText={authIdError || (isCheckingAuthId ? '확인 중...' : '')}
-              fullWidth
-              required
-              size="small"
-            />
-            <TextField
-              name="email"
-              label="이메일"
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              fullWidth
-              size="small"
-            />
-            <TextField
-              name="position"
-              label="직책"
-              value={formData.position}
-              onChange={handleInputChange}
-              fullWidth
-              size="small"
-            />
-            <TextField
-              name="phoneNumber"
-              label="전화번호"
-              value={formData.phoneNumber}
-              onChange={handleInputChange}
-              fullWidth
-              size="small"
-              placeholder="010-0000-0000"
-            />
-            <TextField
-              name="password"
-              label="비밀번호"
-              type="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              error={!!passwordError}
-              helperText={
-                passwordError || '8자 이상, 특수문자, 숫자, 대문자 포함'
-              }
-              fullWidth
-              required
-              size="small"
-            />
-            <TextField
-              name="confirmPassword"
-              label="비밀번호 확인"
-              type="password"
-              value={formData.confirmPassword}
-              onChange={handleInputChange}
-              error={!!passwordError}
-              helperText={passwordError}
-              fullWidth
-              required
-              size="small"
-            />
-            <TextField
-              label="회사"
-              value={company.name}
-              fullWidth
-              disabled
-              size="small"
-            />
-            <TextField
-              label="계정 유형"
-              value="일반 사용자"
-              fullWidth
-              disabled
-              size="small"
-            />
+        <DialogContent
+          sx={{
+            p: 0,
+            pt: 0,
+            pb: 0,
+            height: 'auto',
+            maxHeight: 'calc(90vh - 120px)',
+            overflowY: 'auto',
+            background: 'transparent'
+          }}>
+          <Box
+            component="form"
+            id="add-member-form"
+            onSubmit={handleSubmitMember}
+            sx={{
+              minHeight: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              p: 0
+            }}>
+            <Stack
+              spacing={2}
+              sx={{ p: 2 }}>
+              <Paper
+                elevation={1}
+                sx={{
+                  p: 2,
+                  borderRadius: 4,
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                  mt: 0
+                }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    mb: 1.5,
+                    fontWeight: 700,
+                    color: 'primary.main',
+                    letterSpacing: '-0.5px',
+                    fontSize: 20
+                  }}>
+                  기본 정보
+                </Typography>
+                <Stack spacing={2}>
+                  <TextField
+                    name="name"
+                    label="이름"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    fullWidth
+                    required
+                    size="medium"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        bgcolor: 'background.paper',
+                        fontSize: 18
+                      },
+                      '& .MuiInputLabel-root': {
+                        fontWeight: 600,
+                        color: 'grey.700',
+                        fontSize: 16
+                      }
+                    }}
+                  />
+                  <TextField
+                    name="authId"
+                    label="아이디"
+                    value={formData.authId}
+                    onChange={handleInputChange}
+                    error={!!authIdError}
+                    helperText={
+                      <Box
+                        sx={{
+                          minHeight: '20px',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
+                        {authIdError ||
+                          (isIdChecked && isIdAvailable
+                            ? '사용 가능한 아이디입니다.'
+                            : ' ')}
+                      </Box>
+                    }
+                    fullWidth
+                    required
+                    size="medium"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        bgcolor: 'background.paper',
+                        fontSize: 18
+                      },
+                      '& .MuiInputBase-input': {
+                        height: '48px',
+                        boxSizing: 'border-box',
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: 18
+                      },
+                      '& .MuiInputLabel-root': {
+                        fontWeight: 600,
+                        color: 'grey.700',
+                        fontSize: 16
+                      },
+                      '& .MuiFormHelperText-root': {
+                        margin: '4px 0 0 0',
+                        fontSize: '14px'
+                      },
+                      '& .MuiInputAdornment-root': {
+                        marginRight: 0
+                      }
+                    }}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Button
+                            onClick={() =>
+                              checkAuthIdAvailability(formData.authId)
+                            }
+                            disabled={
+                              isCheckingAuthId || !formData.authId.trim()
+                            }
+                            variant="outlined"
+                            color="primary"
+                            sx={{
+                              minWidth: '90px',
+                              height: '32px',
+                              mr: -1,
+                              borderRadius: 1,
+                              borderColor: 'divider',
+                              '&:hover': {
+                                borderColor: 'primary.main'
+                              }
+                            }}>
+                            {isCheckingAuthId ? (
+                              <CircularProgress size={20} />
+                            ) : isIdAvailable === true ? (
+                              <Check
+                                size={20}
+                                color="#4CAF50"
+                              />
+                            ) : isIdAvailable === false ? (
+                              <X size={20} />
+                            ) : (
+                              '중복확인'
+                            )}
+                          </Button>
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                </Stack>
+              </Paper>
+              <Paper
+                elevation={1}
+                sx={{
+                  p: 2,
+                  borderRadius: 4,
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                  mt: 1
+                }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    mb: 1.5,
+                    fontWeight: 700,
+                    color: 'primary.main',
+                    letterSpacing: '-0.5px',
+                    fontSize: 20
+                  }}>
+                  비밀번호
+                </Typography>
+                <Stack spacing={2}>
+                  <TextField
+                    name="password"
+                    label="비밀번호"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    error={!!passwordError}
+                    fullWidth
+                    required
+                    size="medium"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        bgcolor: 'background.paper',
+                        fontSize: 18
+                      },
+                      '& .MuiInputLabel-root': {
+                        fontWeight: 600,
+                        color: 'grey.700',
+                        fontSize: 16
+                      }
+                    }}
+                  />
+                  <TextField
+                    name="confirmPassword"
+                    label="비밀번호 확인"
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    error={!!passwordError}
+                    helperText={passwordError}
+                    fullWidth
+                    required
+                    size="medium"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        bgcolor: 'background.paper',
+                        fontSize: 18
+                      },
+                      '& .MuiInputLabel-root': {
+                        fontWeight: 600,
+                        color: 'grey.700',
+                        fontSize: 16
+                      }
+                    }}
+                  />
+                </Stack>
+              </Paper>
+            </Stack>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 2, pt: 0 }}>
-          <Button
-            onClick={handleCloseDialog}
+        <DialogActions
+          sx={{
+            px: 4,
+            pb: 3,
+            pt: 2,
+            background: 'grey.50',
+            borderBottomLeftRadius: 12,
+            borderBottomRightRadius: 12,
+            boxShadow: '0 -2px 8px rgba(0,0,0,0.03)'
+          }}>
+          <Box
             sx={{
-              borderRadius: 2,
-              textTransform: 'none',
-              px: 3
+              width: '100%',
+              display: 'flex',
+              gap: 2,
+              justifyContent: 'flex-end'
             }}>
-            취소
-          </Button>
-          <Button
-            onClick={handleSubmitMember}
-            variant="contained"
-            disabled={isSubmitting}
-            startIcon={isSubmitting ? <CircularProgress size={20} /> : <Save />}
-            sx={{
-              borderRadius: 2,
-              textTransform: 'none',
-              px: 3
-            }}>
-            추가
-          </Button>
+            <Button
+              onClick={handleCloseDialog}
+              sx={{
+                minWidth: 140,
+                height: 48,
+                borderRadius: 2,
+                borderColor: 'divider',
+                fontWeight: 700,
+                fontSize: 16,
+                bgcolor: 'grey.100',
+                color: 'grey.700',
+                '&:hover': {
+                  borderColor: 'primary.main',
+                  bgcolor: 'grey.200'
+                }
+              }}>
+              취소
+            </Button>
+            <Button
+              type="submit"
+              form="add-member-form"
+              variant="contained"
+              disabled={isSubmitting}
+              startIcon={
+                isSubmitting ? <CircularProgress size={22} /> : <Save />
+              }
+              sx={{
+                minWidth: 140,
+                height: 48,
+                borderRadius: 2,
+                fontWeight: 800,
+                fontSize: 16,
+                bgcolor: 'primary.main',
+                '&:hover': {
+                  bgcolor: 'primary.dark'
+                }
+              }}>
+              {isSubmitting ? '추가 중...' : '추가'}
+            </Button>
+          </Box>
         </DialogActions>
       </Dialog>
 

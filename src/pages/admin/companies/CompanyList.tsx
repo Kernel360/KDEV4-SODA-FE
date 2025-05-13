@@ -58,16 +58,16 @@ const CompanyList: React.FC = () => {
         size: rowsPerPage
       })
 
-      if (response?.status === 'success' && Array.isArray(response?.data)) {
-        const companiesList = response.data
+      if (response?.status === 'success' && response?.data?.data?.content) {
+        const companiesList = response.data.data.content
         if (currentTab === 0) {
           setCompanies(companiesList)
         } else {
           setDeletedCompanies(companiesList)
         }
-        // 페이지네이션 정보가 없으므로 전체 데이터 길이를 사용
-        setTotalElements(companiesList.length)
-        setTotalPages(Math.ceil(companiesList.length / rowsPerPage))
+        // 페이지네이션 정보 설정
+        setTotalElements(response.data.data.page.totalElements)
+        setTotalPages(response.data.data.page.totalPages)
       } else {
         console.error('회사 목록 API 응답 형식이 올바르지 않습니다:', response)
         showToast('회사 목록 데이터 형식이 올바르지 않습니다.', 'error')

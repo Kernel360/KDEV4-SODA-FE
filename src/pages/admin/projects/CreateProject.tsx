@@ -16,9 +16,12 @@ const CreateProject: React.FC = () => {
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const response = await companyService.getAllCompanies()
-        if (response.status === 'success') {
-          setCompanies(response.data.content)
+        const response = await companyService.getAllCompanies({
+          size: 1000,
+          page: 0
+        })
+        if (response.status === 'success' && response.data) {
+          setCompanies(response.data.data.content)
         }
       } catch (error) {
         console.error('회사 목록 조회 중 오류:', error)

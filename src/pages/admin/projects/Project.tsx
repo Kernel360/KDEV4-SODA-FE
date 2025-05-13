@@ -324,12 +324,15 @@ const ProjectDetail = () => {
   const fetchCompanies = async () => {
     try {
       setLoadingCompanies(true)
-      const response = await companyService.getAllCompanies()
-      if (response.status === 'success') {
-        console.log('회사 목록 API 응답:', response)
+      const response = await companyService.getAllCompanies({
+        size: 1000,
+        page: 0
+      })
+      console.log('회사 목록 API 응답:', response)
 
+      if (response.status === 'success' && response.data) {
         // 모든 회사 정보 저장
-        const allCompanies = response.data.content.map(company => ({
+        const allCompanies = response.data.data.content.map(company => ({
           id: company.id,
           name: company.name,
           address: company.address,
@@ -338,7 +341,7 @@ const ProjectDetail = () => {
         setCompanies(allCompanies)
 
         // 추가 가능한 회사만 필터링
-        const filteredCompanies = response.data.content.filter(company => {
+        const filteredCompanies = response.data.data.content.filter(company => {
           // 이미 프로젝트에 할당된 회사인지 확인
           const isAssigned =
             project.clientCompanyNames.some(name => {
@@ -366,16 +369,15 @@ const ProjectDetail = () => {
           id: company.id,
           name: company.name,
           address: company.address,
-          type: companyType // companyType 유지
+          type: companyType
         }))
 
         setAvailableCompanies(formattedCompanies)
       }
+      setLoadingCompanies(false)
     } catch (error) {
-      console.error('Failed to fetch companies:', error)
+      console.error('회사 목록 조회 실패:', error)
       showToast('회사 목록을 불러오는데 실패했습니다.', 'error')
-      setAvailableCompanies([])
-    } finally {
       setLoadingCompanies(false)
     }
   }

@@ -35,7 +35,7 @@ export default function AccountList() {
       const response = await getUsers(page, rowsPerPage, searchKeyword)
       if (response.status === 'success' && response.data) {
         setAccounts(response.data.content)
-        setTotalCount(response.data.totalElements)
+        setTotalCount(response.data.page.totalElements)
       } else {
         showToast('사용자 목록을 불러오는데 실패했습니다.', 'error')
       }
