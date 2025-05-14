@@ -46,15 +46,21 @@ const UserRequests: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeSearchTerm, setActiveSearchTerm] = useState('')
-  const [projectNames, setProjectNames] = useState<{ [projectId: number]: string }>({})
-  const [myProjects, setMyProjects] = useState<{ id: number; title: string }[]>([])
-  const [selectedProjectId, setSelectedProjectId] = useState<string | number>('')
+  const [projectNames, setProjectNames] = useState<{
+    [projectId: number]: string
+  }>({})
+  const [myProjects, setMyProjects] = useState<{ id: number; title: string }[]>(
+    []
+  )
+  const [selectedProjectId, setSelectedProjectId] = useState<string | number>(
+    ''
+  )
 
   useEffect(() => {
     if (user?.memberId) {
       fetchRequests()
     }
-  // eslint-disable-next-line
+    // eslint-disable-next-line
   }, [user?.memberId, page, activeSearchTerm, selectedProjectId])
 
   useEffect(() => {
@@ -62,7 +68,12 @@ const UserRequests: React.FC = () => {
     const fetchMyProjects = async () => {
       try {
         const projects = await projectService.getUserProjects()
-        setMyProjects(projects.map((p: any) => ({ id: p.id || p.projectId, title: p.title || p.projectName || p.name })))
+        setMyProjects(
+          projects.map((p: any) => ({
+            id: p.id || p.projectId,
+            title: p.title || p.projectName || p.name
+          }))
+        )
       } catch (e) {
         setMyProjects([])
       }
@@ -88,18 +99,28 @@ const UserRequests: React.FC = () => {
         setRequests(response.data.data.content)
         setTotalPages(response.data.data.page.totalPages)
         // 프로젝트명 가져오기
-        const uniqueProjectIds = Array.from(new Set(response.data.data.content.map((r: Request) => r.projectId)))
-        const newProjectNames: { [projectId: number]: string } = { ...projectNames }
-        await Promise.all(uniqueProjectIds.map(async (projectId: number) => {
-          if (!newProjectNames[projectId]) {
-            try {
-              const project = await projectService.getProjectById(projectId)
-              newProjectNames[projectId] = project.title || project.projectName || project.name || `프로젝트 ${projectId}`
-            } catch {
-              newProjectNames[projectId] = `프로젝트 ${projectId}`
+        const uniqueProjectIds = Array.from(
+          new Set(response.data.data.content.map((r: Request) => r.projectId))
+        )
+        const newProjectNames: { [projectId: number]: string } = {
+          ...projectNames
+        }
+        await Promise.all(
+          uniqueProjectIds.map(async (projectId: number) => {
+            if (!newProjectNames[projectId]) {
+              try {
+                const project = await projectService.getProjectById(projectId)
+                newProjectNames[projectId] =
+                  project.title ||
+                  project.projectName ||
+                  project.name ||
+                  `프로젝트 ${projectId}`
+              } catch {
+                newProjectNames[projectId] = `프로젝트 ${projectId}`
+              }
             }
-          }
-        }))
+          })
+        )
         setProjectNames(newProjectNames)
       }
     } catch (error) {
@@ -155,13 +176,20 @@ const UserRequests: React.FC = () => {
     }
   }
 
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+  const handlePageChange = (
+    event: React.ChangeEvent<unknown>,
+    value: number
+  ) => {
     setPage(value)
   }
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="200px">
         <CircularProgress />
       </Box>
     )
@@ -169,7 +197,9 @@ const UserRequests: React.FC = () => {
 
   return (
     <Box p={3}>
-      <Typography variant="h5" gutterBottom>
+      <Typography
+        variant="h5"
+        gutterBottom>
         요청사항 목록
       </Typography>
 
@@ -187,13 +217,14 @@ const UserRequests: React.FC = () => {
               color: '#888',
               zIndex: 2,
               transition: 'color 0.2s',
-              pointerEvents: 'none',
+              pointerEvents: 'none'
             }}
-            className={selectedProjectId !== '' ? 'project-label-active' : ''}
-          >
+            className={selectedProjectId !== '' ? 'project-label-active' : ''}>
             프로젝트
           </span>
-          <FormControl size="small" sx={{ minWidth: 180, width: '100%' }}>
+          <FormControl
+            size="small"
+            sx={{ minWidth: 180, width: '100%' }}>
             <Select
               value={selectedProjectId}
               onFocus={e => {
@@ -205,19 +236,26 @@ const UserRequests: React.FC = () => {
                 if (label) label.style.color = '#888'
               }}
               onChange={e => {
-                setSelectedProjectId(e.target.value === '' ? '' : Number(e.target.value))
+                setSelectedProjectId(
+                  e.target.value === '' ? '' : Number(e.target.value)
+                )
                 setPage(1)
               }}
               displayEmpty
               renderValue={selected =>
-                selected == '' || selected === undefined
-                  ? <span>전체</span>
-                  : myProjects.find(p => p.id === Number(selected))?.title
-              }
-            >
+                selected == '' || selected === undefined ? (
+                  <span>전체</span>
+                ) : (
+                  myProjects.find(p => p.id === Number(selected))?.title
+                )
+              }>
               <MenuItem value="">전체</MenuItem>
               {myProjects.map(project => (
-                <MenuItem key={project.id} value={project.id}>{project.title}</MenuItem>
+                <MenuItem
+                  key={project.id}
+                  value={project.id}>
+                  {project.title}
+                </MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -226,8 +264,8 @@ const UserRequests: React.FC = () => {
           size="small"
           placeholder="검색어를 입력하세요"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyPress={(e) => {
+          onChange={e => setSearchTerm(e.target.value)}
+          onKeyPress={e => {
             if (e.key === 'Enter') {
               handleSearch()
             }
@@ -244,8 +282,7 @@ const UserRequests: React.FC = () => {
         <Button
           variant="contained"
           onClick={handleSearch}
-          sx={{ minWidth: 80 }}
-        >
+          sx={{ minWidth: 80 }}>
           검색
         </Button>
       </Box>
@@ -261,13 +298,16 @@ const UserRequests: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {requests.map((request) => (
+            {requests.map(request => (
               <TableRow
                 key={request.requestId}
                 hover
-                onClick={() => navigate(`/user/projects/${request.projectId}/requests/${request.requestId}`)}
-                style={{ cursor: 'pointer' }}
-              >
+                onClick={() =>
+                  navigate(
+                    `/user/projects/${request.projectId}/requests/${request.requestId}`
+                  )
+                }
+                style={{ cursor: 'pointer' }}>
                 <TableCell>{projectNames[request.projectId] || '-'}</TableCell>
                 <TableCell>{request.title}</TableCell>
                 <TableCell>
@@ -277,14 +317,19 @@ const UserRequests: React.FC = () => {
                   />
                 </TableCell>
                 <TableCell>
-                  {dayjs(request.createdAt).format('YYYY-MM-DD HH:mm')}
+                  {dayjs(request.createdAt)
+                    .add(9, 'hour')
+                    .format('YYYY-MM-DD HH:mm')}
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
-      <Box display="flex" justifyContent="center" mt={3}>
+      <Box
+        display="flex"
+        justifyContent="center"
+        mt={3}>
         {totalPages > 1 && (
           <Pagination
             count={totalPages}
@@ -298,4 +343,4 @@ const UserRequests: React.FC = () => {
   )
 }
 
-export default UserRequests 
+export default UserRequests

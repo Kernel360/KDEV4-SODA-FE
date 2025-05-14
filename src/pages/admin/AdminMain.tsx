@@ -566,7 +566,7 @@ export default function AdminMain() {
                                   minHeight: '40px',
                                   m: 'auto'
                                 }}>
-                                대시보드
+                                <LayoutDashboard size={20} />
                               </Button>
                             </TableCell>
                             <TableCell
@@ -594,7 +594,7 @@ export default function AdminMain() {
                                   minHeight: '40px',
                                   m: 'auto'
                                 }}>
-                                관리
+                                <SettingsIcon fontSize="small" />
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -816,7 +816,7 @@ export default function AdminMain() {
                                 minHeight: '40px',
                                 m: 'auto'
                               }}>
-                              대시보드
+                              <LayoutDashboard size={20} />
                             </Button>
                           </TableCell>
                           <TableCell
@@ -844,7 +844,7 @@ export default function AdminMain() {
                                 minHeight: '40px',
                                 m: 'auto'
                               }}>
-                              관리
+                              <SettingsIcon fontSize="small" />
                             </Button>
                           </TableCell>
                         </TableRow>
