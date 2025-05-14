@@ -211,7 +211,7 @@ const CommentItem: React.FC<CommentItemProps> = memo(
 
     const formatDate = (date: string) => {
       if (!date) return ''
-      return dayjs(date).format('YYYY.MM.DD HH:mm')
+      return dayjs(date).add(9, 'hour').format('YYYY.MM.DD HH:mm')
     }
 
     // 삭제된 댓글 표시

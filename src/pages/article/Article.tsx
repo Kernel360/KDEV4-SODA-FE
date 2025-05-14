@@ -496,7 +496,9 @@ const Article: React.FC = () => {
             <Typography
               variant="body2"
               color="text.secondary">
-              {dayjs(article.createdAt).format('YYYY.MM.DD HH:mm')}
+              {dayjs(article.createdAt)
+                .add(9, 'hour')
+                .format('YYYY.MM.DD HH:mm')}
             </Typography>
           </Stack>
 
