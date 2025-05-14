@@ -358,113 +358,68 @@ const UserDashboard: React.FC = () => {
                   py: isMobile ? 1.2 : 2,
                   px: isMobile ? 0.5 : 2
                 }}>
-                <Box sx={{ flex: 1 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flex: 1,
+                    minWidth: 0,
+                    flexDirection: 'column',
+                    alignItems: 'flex-start'
+                  }}>
                   <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      mb: 1
-                    }}>
-                    <Box
+                    sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                    <Typography
+                      variant={isMobile ? 'body2' : 'body1'}
                       sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.2
+                        fontWeight: 500,
+                        ...(isMobile && {
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: 120
+                        })
                       }}>
-                      <Typography
-                        variant={isMobile ? 'body2' : 'body1'}
-                        sx={{
-                          fontWeight: 500,
-                          ...(isMobile && {
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            maxWidth: 180
-                          })
-                        }}>
-                        {project.title}
-                      </Typography>
-                    </Box>
-                    {isMobile ? (
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 0.5,
-                          alignItems: 'flex-end',
-                          minWidth: 0
-                        }}>
-                        <Chip
-                          label={getProjectStatusText(project.status)}
-                          size="small"
-                          sx={{
-                            backgroundColor: getProjectStatusColor(
-                              project.status
-                            ).bg,
-                            color: getProjectStatusColor(project.status).color,
-                            border: getProjectStatusColor(project.status)
-                              .border,
-                            height: '20px',
-                            fontSize: '0.75rem'
-                          }}
-                        />
-                        <Chip
-                          label={getMemberRoleText(project.memberProjectRole)}
-                          size="small"
-                          sx={{
-                            backgroundColor: getMemberRoleColor(
-                              project.memberProjectRole
-                            ).bg,
-                            color: getMemberRoleColor(project.memberProjectRole)
-                              .color,
-                            border: getMemberRoleColor(
-                              project.memberProjectRole
-                            ).border,
-                            height: '20px',
-                            fontSize: '0.75rem'
-                          }}
-                        />
-                      </Box>
-                    ) : (
-                      <>
-                        <Chip
-                          label={getProjectStatusText(project.status)}
-                          size="small"
-                          sx={{
-                            backgroundColor: getProjectStatusColor(
-                              project.status
-                            ).bg,
-                            color: getProjectStatusColor(project.status).color,
-                            border: getProjectStatusColor(project.status)
-                              .border,
-                            height: '24px'
-                          }}
-                        />
-                        <Chip
-                          label={getMemberRoleText(project.memberProjectRole)}
-                          size="small"
-                          sx={{
-                            backgroundColor: getMemberRoleColor(
-                              project.memberProjectRole
-                            ).bg,
-                            color: getMemberRoleColor(project.memberProjectRole)
-                              .color,
-                            border: getMemberRoleColor(
-                              project.memberProjectRole
-                            ).border,
-                            height: '24px'
-                          }}
-                        />
-                      </>
-                    )}
+                      {project.title}
+                    </Typography>
+                    <Chip
+                      label={getProjectStatusText(project.status)}
+                      size="small"
+                      sx={{
+                        backgroundColor: getProjectStatusColor(project.status)
+                          .bg,
+                        color: getProjectStatusColor(project.status).color,
+                        border: getProjectStatusColor(project.status).border,
+                        height: isMobile ? '20px' : '24px',
+                        fontSize: isMobile ? '0.75rem' : undefined,
+                        ml: 0.5
+                      }}
+                    />
                   </Box>
                   <Typography
-                    variant={isMobile ? 'caption' : 'body2'}
-                    color="text.secondary">
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 0.5 }}>
                     {dayjs(project.startDate).format('YYYY년 M월 D일')} ~{' '}
                     {dayjs(project.endDate).format('YYYY년 M월 D일')}
                   </Typography>
+                </Box>
+                <Box
+                  sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  <Chip
+                    label={getMemberRoleText(project.memberProjectRole)}
+                    size="small"
+                    sx={{
+                      backgroundColor: getMemberRoleColor(
+                        project.memberProjectRole
+                      ).bg,
+                      color: getMemberRoleColor(project.memberProjectRole)
+                        .color,
+                      border: getMemberRoleColor(project.memberProjectRole)
+                        .border,
+                      height: isMobile ? '20px' : '24px',
+                      fontSize: isMobile ? '0.75rem' : undefined
+                    }}
+                  />
                 </Box>
               </ListItem>
               {index < projects.length - 1 && (
@@ -504,7 +459,9 @@ const UserDashboard: React.FC = () => {
                     <Typography
                       variant={isMobile ? 'body2' : 'body1'}
                       sx={{ mb: 1 }}>
-                      {request.title}
+                      {request.title.length > 15
+                        ? request.title.slice(0, 15) + '...'
+                        : request.title}
                     </Typography>
                     <Typography
                       variant={isMobile ? 'caption' : 'body2'}
@@ -587,7 +544,9 @@ const UserDashboard: React.FC = () => {
                             maxWidth: 180
                           })
                         }}>
-                        {article.title}
+                        {article.title.length > 15
+                          ? article.title.slice(0, 15) + '...'
+                          : article.title}
                       </Typography>
                       <Box
                         sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
