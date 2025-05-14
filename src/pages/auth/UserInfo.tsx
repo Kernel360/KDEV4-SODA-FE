@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { updateUserInfo } from '../../api/auth'
+import { updateUserInfo, login } from '../../api/auth'
 import { useUserStore } from '../../stores/userStore'
 import type { User } from '../../types/api'
 import {
@@ -12,10 +12,17 @@ import {
   TextField,
   Typography,
   Paper,
-  Alert
+  Alert,
+  CircularProgress,
+  InputAdornment,
+  IconButton
 } from '@mui/material'
+import { Check, Refresh } from '@mui/icons-material'
+import { client } from '../../api/client'
 
 const steps = ['회사 정보', '개인 정보', '계정 정보']
+
+const PHONE_NUMBER_REGEX = /^01(?:0|1|[6-9])-(?:\d{3}|\d{4})-\d{4}$/
 
 const UserInfo: React.FC = () => {
   const navigate = useNavigate()
@@ -23,6 +30,18 @@ const UserInfo: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isCheckingId, setIsCheckingId] = useState(false)
+  const [idError, setIdError] = useState('')
+  const [idVerified, setIdVerified] = useState(false)
+  const [touched, setTouched] = useState<Record<string, boolean>>({
+    name: false,
+    email: false,
+    phoneNumber: false,
+    authId: false,
+    password: false,
+    confirmPassword: false,
+    position: false
+  })
 
   const [formData, setFormData] = useState({
     position: '',
@@ -34,22 +53,144 @@ const UserInfo: React.FC = () => {
     confirmPassword: ''
   })
 
+  const validateName = (name: string): string => {
+    if (!name) return '이름은 필수입니다.'
+    if (name.length < 2 || name.length > 20) return '이름은 2자 이상 20자 이하여야 합니다.'
+    return ''
+  }
+
+  const validateEmail = (email: string): string => {
+    if (!email) return '이메일은 필수입니다.'
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) return '유효한 이메일 형식이 아닙니다.'
+    return ''
+  }
+
+  const validatePhoneNumber = (phoneNumber: string): string => {
+    if (!phoneNumber) return '전화번호는 필수입니다.'
+    if (!PHONE_NUMBER_REGEX.test(phoneNumber)) return '올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)'
+    return ''
+  }
+
+  const validateAuthId = (authId: string): string => {
+    if (!authId) return '아이디는 필수입니다.'
+    if (authId.length < 4 || authId.length > 20) return '아이디는 4자 이상 20자 이하여야 합니다.'
+    return ''
+  }
+
+  const validatePassword = (password: string): string => {
+    if (!password) return '비밀번호는 필수입니다.'
+    if (password.length < 8 || password.length > 20) return '비밀번호는 8자 이상 20자 이하여야 합니다.'
+    return ''
+  }
+
+  const validatePosition = (position: string): string => {
+    if (position && position.length > 50) return '직책은 50자를 초과할 수 없습니다.'
+    return ''
+  }
+
+  const checkId = async () => {
+    const id = formData.authId
+    const idError = validateAuthId(id)
+    if (idError) {
+      setIdError(idError)
+      return
+    }
+
+    setIsCheckingId(true)
+    setIdError('')
+    setIdVerified(false)
+    
+    try {
+      const response = await client.get(`/check-id?authId=${id}`)
+      if (response.data.data === false) {
+        setIdError('이미 사용 중인 아이디입니다.')
+      } else {
+        setIdVerified(true)
+        setIdError('')
+      }
+    } catch (error) {
+      setIdError('아이디 확인 중 오류가 발생했습니다.')
+    } finally {
+      setIsCheckingId(false)
+    }
+  }
+
+  const formatPhoneNumber = (value: string): string => {
+    const numbers = value.replace(/[^\d]/g, '')
+    if (numbers.length <= 3) return numbers
+    if (numbers.length <= 7) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
+    let processedValue = value
+
+    if (name === 'phoneNumber') {
+      processedValue = formatPhoneNumber(value)
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: processedValue
     }))
+
+    // 입력값이 변경되면 검증 상태 초기화
+    if (name === 'authId') {
+      setIdVerified(false)
+      if (touched.authId) {
+        setIdError(validateAuthId(processedValue))
+      }
+    }
+  }
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name } = e.target
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }))
+  }
+
+  const shouldShowError = (fieldName: string, value: string): boolean => {
+    return touched[fieldName] && !!validateField(fieldName, value)
+  }
+
+  const validateField = (fieldName: string, value: string): string => {
+    switch (fieldName) {
+      case 'name':
+        return validateName(value)
+      case 'email':
+        return validateEmail(value)
+      case 'phoneNumber':
+        return validatePhoneNumber(value)
+      case 'authId':
+        return validateAuthId(value)
+      case 'password':
+        return validatePassword(value)
+      case 'confirmPassword':
+        return formData.password !== value ? '비밀번호가 일치하지 않습니다.' : ''
+      case 'position':
+        return validatePosition(value)
+      default:
+        return ''
+    }
   }
 
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 0:
-        return !!formData.position
+        return !validatePosition(formData.position)
       case 1:
-        return !!formData.name && !!formData.email && !!formData.phoneNumber
+        return !validateName(formData.name) && 
+               !validateEmail(formData.email) && 
+               !validatePhoneNumber(formData.phoneNumber)
       case 2:
-        return !!formData.authId && !!formData.password && !!formData.confirmPassword
+        return !validateAuthId(formData.authId) && 
+               !validatePassword(formData.password) && 
+               formData.password === formData.confirmPassword &&
+               idVerified
       default:
         return false
     }
@@ -84,6 +225,7 @@ const UserInfo: React.FC = () => {
     setError('')
 
     try {
+      // 1. 사용자 정보 업데이트
       const response = await updateUserInfo({
         memberId: (user as User)?.memberId || 0,
         name: formData.name,
@@ -95,26 +237,34 @@ const UserInfo: React.FC = () => {
       })
 
       if (response?.status === 'success') {
-        const updatedUser: User = {
-          ...(user as User),
-          id: (user as User)?.id || 0,
-          memberId: (user as User)?.memberId || 0,
-          name: formData.name,
-          email: formData.email,
-          phoneNumber: formData.phoneNumber,
-          position: formData.position,
-          role: (user as User)?.role || 'USER',
-          firstLogin: false,
-          company: user?.company
-        }
-        setUser(updatedUser)
-        localStorage.setItem('user', JSON.stringify(updatedUser))
+        // 2. 새로운 authId로 로그인하여 토큰 재발급
+        const loginResponse = await login({
+          authId: formData.authId,
+          password: formData.password
+        })
 
-        // 로컬 스토리지에서 role 값을 가져와서 리다이렉션
-        const storedUser = localStorage.getItem('user')
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser)
-          const userRole = parsedUser.role?.toUpperCase()
+        if (loginResponse.status === 'success' && loginResponse.data) {
+          // 3. 새로운 토큰과 사용자 정보 저장
+          localStorage.setItem('token', loginResponse.data.token)
+          
+          const updatedUser: User = {
+            ...(user as User),
+            id: (user as User)?.id || 0,
+            memberId: (user as User)?.memberId || 0,
+            name: formData.name,
+            email: formData.email,
+            phoneNumber: formData.phoneNumber,
+            position: formData.position,
+            role: (user as User)?.role || 'USER',
+            firstLogin: false,
+            company: user?.company
+          }
+          
+          localStorage.setItem('user', JSON.stringify(updatedUser))
+          setUser(updatedUser)
+
+          // 4. role에 따른 리다이렉션
+          const userRole = updatedUser.role?.toUpperCase()
           if (userRole === 'ADMIN') {
             navigate('/admin')
           } else if (userRole === 'USER') {
@@ -123,7 +273,7 @@ const UserInfo: React.FC = () => {
             setError('유효하지 않은 사용자 역할입니다.')
           }
         } else {
-          setError('사용자 정보를 찾을 수 없습니다.')
+          setError('로그인 재시도 중 오류가 발생했습니다.')
         }
       } else {
         setError(response?.message || '정보 저장에 실패했습니다.')
@@ -154,9 +304,11 @@ const UserInfo: React.FC = () => {
               name="position"
               value={formData.position}
               onChange={handleChange}
+              onBlur={handleBlur}
               required
-              error={!formData.position && error !== ''}
-              helperText={!formData.position && error !== '' ? '직책을 입력해주세요.' : ''}
+              error={shouldShowError('position', formData.position)}
+              helperText={shouldShowError('position', formData.position) ? validatePosition(formData.position) : ''}
+              inputProps={{ maxLength: 50 }}
             />
           </Box>
         )
@@ -169,9 +321,11 @@ const UserInfo: React.FC = () => {
               name="name"
               value={formData.name}
               onChange={handleChange}
+              onBlur={handleBlur}
               required
-              error={!formData.name && error !== ''}
-              helperText={!formData.name && error !== '' ? '이름을 입력해주세요.' : ''}
+              error={shouldShowError('name', formData.name)}
+              helperText={shouldShowError('name', formData.name) ? validateName(formData.name) : ''}
+              inputProps={{ minLength: 2, maxLength: 20 }}
               sx={{ mb: 2 }}
             />
             <TextField
@@ -181,9 +335,10 @@ const UserInfo: React.FC = () => {
               type="email"
               value={formData.email}
               onChange={handleChange}
+              onBlur={handleBlur}
               required
-              error={!formData.email && error !== ''}
-              helperText={!formData.email && error !== '' ? '이메일을 입력해주세요.' : ''}
+              error={shouldShowError('email', formData.email)}
+              helperText={shouldShowError('email', formData.email) ? validateEmail(formData.email) : ''}
               sx={{ mb: 2 }}
             />
             <TextField
@@ -192,9 +347,13 @@ const UserInfo: React.FC = () => {
               name="phoneNumber"
               value={formData.phoneNumber}
               onChange={handleChange}
+              onBlur={handleBlur}
               required
-              error={!formData.phoneNumber && error !== ''}
-              helperText={!formData.phoneNumber && error !== '' ? '전화번호를 입력해주세요.' : ''}
+              error={shouldShowError('phoneNumber', formData.phoneNumber)}
+              helperText={shouldShowError('phoneNumber', formData.phoneNumber) 
+                ? validatePhoneNumber(formData.phoneNumber) 
+                : '예: 010-1234-5678'}
+              placeholder="010-1234-5678"
             />
           </Box>
         )
@@ -207,10 +366,30 @@ const UserInfo: React.FC = () => {
               name="authId"
               value={formData.authId}
               onChange={handleChange}
+              onBlur={handleBlur}
               required
-              error={!formData.authId && error !== ''}
-              helperText={!formData.authId && error !== '' ? '아이디를 입력해주세요.' : ''}
+              error={shouldShowError('authId', formData.authId) || !!idError}
+              helperText={idError || (shouldShowError('authId', formData.authId) ? validateAuthId(formData.authId) : '')}
+              inputProps={{ minLength: 4, maxLength: 20 }}
               sx={{ mb: 2 }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    {isCheckingId ? (
+                      <CircularProgress size={20} />
+                    ) : idVerified ? (
+                      <Check color="success" />
+                    ) : (
+                      <IconButton
+                        onClick={checkId}
+                        edge="end"
+                        disabled={!!validateAuthId(formData.authId)}>
+                        <Refresh />
+                      </IconButton>
+                    )}
+                  </InputAdornment>
+                )
+              }}
             />
             <TextField
               fullWidth
@@ -219,9 +398,11 @@ const UserInfo: React.FC = () => {
               type="password"
               value={formData.password}
               onChange={handleChange}
+              onBlur={handleBlur}
               required
-              error={!formData.password && error !== ''}
-              helperText={!formData.password && error !== '' ? '비밀번호를 입력해주세요.' : ''}
+              error={shouldShowError('password', formData.password)}
+              helperText={shouldShowError('password', formData.password) ? validatePassword(formData.password) : ''}
+              inputProps={{ minLength: 8, maxLength: 20 }}
               sx={{ mb: 2 }}
             />
             <TextField
@@ -231,9 +412,12 @@ const UserInfo: React.FC = () => {
               type="password"
               value={formData.confirmPassword}
               onChange={handleChange}
+              onBlur={handleBlur}
               required
-              error={!formData.confirmPassword && error !== ''}
-              helperText={!formData.confirmPassword && error !== '' ? '비밀번호 확인을 입력해주세요.' : ''}
+              error={shouldShowError('confirmPassword', formData.confirmPassword)}
+              helperText={shouldShowError('confirmPassword', formData.confirmPassword) 
+                ? (formData.password !== formData.confirmPassword ? '비밀번호가 일치하지 않습니다.' : '') 
+                : ''}
             />
           </Box>
         )
@@ -243,8 +427,16 @@ const UserInfo: React.FC = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 600, mx: 'auto', p: 3 }}>
-      <Paper sx={{ p: 3 }}>
+    <Box sx={{ 
+      maxWidth: 600, 
+      mx: 'auto', 
+      p: 3,
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+      <Paper sx={{ p: 3, width: '100%' }}>
         <Typography
           variant="h5"
           sx={{ mb: 3, textAlign: 'center' }}>
