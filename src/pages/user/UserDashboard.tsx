@@ -504,7 +504,9 @@ const UserDashboard: React.FC = () => {
                     <Typography
                       variant={isMobile ? 'body2' : 'body1'}
                       sx={{ mb: 1 }}>
-                      {request.title}
+                      {request.title.length > 15
+                        ? request.title.slice(0, 15) + '...'
+                        : request.title}
                     </Typography>
                     <Typography
                       variant={isMobile ? 'caption' : 'body2'}
@@ -587,7 +589,9 @@ const UserDashboard: React.FC = () => {
                             maxWidth: 180
                           })
                         }}>
-                        {article.title}
+                        {article.title.length > 15
+                          ? article.title.slice(0, 15) + '...'
+                          : article.title}
                       </Typography>
                       <Box
                         sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
