@@ -113,6 +113,7 @@ const formatFieldName = (name: string): string => {
 const formatStatus = (status: string): string => {
   const statusMap: { [key: string]: string } = {
     'PENDING': '대기중',
+    'APPROVING': '승인중',
     'APPROVED': '승인됨',
     'REJECTED': '거절됨'
   }
@@ -324,13 +325,13 @@ const formatRequestData = (data: any): JSX.Element => {
       </Box>
     )
   }
-  if (data.diff == null || data.diff && Object.keys(data.diff).length === 0) {
-    return (
-      <Typography variant="body2" gutterBottom component="pre" sx={{ whiteSpace: 'pre-line' }}>
-        변경사항이 없습니다
-      </Typography>
-    )
-  }
+  // if (data.diff == null || data.diff && Object.keys(data.diff).length === 0) {
+  //   return (
+  //     <Typography variant="body2" gutterBottom component="pre" sx={{ whiteSpace: 'pre-line' }}>
+  //       변경사항이 없습니다
+  //     </Typography>
+  //   )
+  // }
   if (data.diff) {
     return groupData(Object.entries(data.diff))
   } 
