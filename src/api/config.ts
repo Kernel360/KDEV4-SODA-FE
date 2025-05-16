@@ -38,9 +38,9 @@ instance.interceptors.response.use(
 export const API_ENDPOINTS = {
   LOGIN: '/login',
   FIND_ID: '/members/find-id',
-  FIND_PASSWORD: '/find-password',
-  VERIFY_CODE: '/verify-code',
-  RESET_PASSWORD: '/reset-password',
+  VERIFICATION: '/verification',
+  VERIFY_CODE: '/verification/confirm',
+  RESET_PASSWORD: '/password/reset',
   CREATE_COMPANY: '/companies',
   GET_COMPANIES: '/companies',
   GET_COMPANY_MEMBERS: (companyId: number) => `/companies/${companyId}/members`,

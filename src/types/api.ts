@@ -1,3 +1,5 @@
+import type { MemberStatus } from './member'
+
 export interface Company {
   id: number
   name: string
@@ -17,6 +19,7 @@ export interface User {
   position: string
   role: string
   firstLogin: boolean
+  status: MemberStatus
   company?: {
     id: number
     name: string

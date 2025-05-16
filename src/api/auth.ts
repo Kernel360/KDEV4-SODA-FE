@@ -38,7 +38,7 @@ export const requestPasswordReset = async (
   data: RequestPasswordResetRequest
 ) => {
   try {
-    const response = await apiRequest('POST', API_ENDPOINTS.FIND_PASSWORD, data)
+    const response = await apiRequest('POST', API_ENDPOINTS.VERIFICATION, data)
     return response
   } catch (error) {
     throw error
@@ -61,7 +61,7 @@ export const resetPassword = async (data: ResetPasswordRequest) => {
       API_ENDPOINTS.RESET_PASSWORD,
       data
     )
-    return response.data
+    return response
   } catch (error) {
     throw error
   }
