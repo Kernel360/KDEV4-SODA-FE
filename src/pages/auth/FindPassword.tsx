@@ -51,14 +51,48 @@ const FindPassword: React.FC = () => {
       const response = (await requestPasswordReset({
         email
       })) as ApiResponse<null>
+      
+      // API 응답 로깅 추가
+      console.log('비밀번호 찾기 API 응답:', response)
+
+      // 성공 응답 처리
       if (response.status === 'success') {
         setStep(2)
         setTimer(180)
-      } else {
-        setError(response.message || '인증번호 발송 중 오류가 발생했습니다.')
+        return
       }
-    } catch (error) {
-      setError('인증번호 발송 중 오류가 발생했습니다.')
+
+      // 실패 응답 처리
+      const errorMessage = response.message || '인증번호 발송 중 오류가 발생했습니다.'
+      
+      // 가입되지 않은 이메일인 경우
+      if (response.code === '404' || 
+          errorMessage.includes('가입되지 않은 이메일') ||
+          errorMessage.includes('존재하지 않는 사용자')) {
+        setError('가입되지 않은 이메일입니다. 회원가입을 먼저 진행해주세요.')
+        return
+      }
+
+      // 기타 에러 처리
+      setError(errorMessage)
+
+    } catch (error: any) {
+      console.error('비밀번호 찾기 API 에러:', error)
+      
+      // API 에러 응답 처리
+      const errorData = error.response?.data
+      const errorMessage = errorData?.message || '인증번호 발송 중 오류가 발생했습니다.'
+      
+      // 가입되지 않은 이메일인 경우
+      if (errorData?.code === '404' || 
+          errorMessage.includes('가입되지 않은 이메일') ||
+          errorMessage.includes('존재하지 않는 사용자')) {
+        setError('가입되지 않은 이메일입니다. 회원가입을 먼저 진행해주세요.')
+        return
+      }
+
+      // 기타 에러 처리
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }

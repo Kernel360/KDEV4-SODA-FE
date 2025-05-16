@@ -23,22 +23,22 @@ client.interceptors.response.use(
   },
   error => {
     console.error('API Response Error:', {
+      url: error.config?.url,
       status: error.response?.status,
-      statusText: error.response?.statusText,
       data: error.response?.data,
-      headers: error.response?.headers,
-      config: {
-        url: error.config?.url,
-        method: error.config?.method,
-        headers: error.config?.headers,
-        params: error.config?.params
-      },
       message: error.message
     })
 
+    // 비밀번호 찾기 API 요청인 경우 401 에러를 그대로 전달
+    const isPasswordResetRequest = error.config?.url?.includes('/verification')
+    if (isPasswordResetRequest && error.response?.status === 401) {
+      console.log('비밀번호 찾기 API 401 에러 - 리다이렉션하지 않음')
+      return Promise.reject(error)
+    }
+
+    // 그 외의 경우 401 에러는 로그인 페이지로 리다이렉션
     if (error.response?.status === 401) {
-      console.log('토큰 만료 또는 인증 실패. 로그인 페이지로 이동합니다.')
-      // 토큰 만료 시 로그인 페이지로 리다이렉트
+      console.log('일반 API 401 에러 - 로그인 페이지로 리다이렉션')
       localStorage.removeItem('token')
       window.location.href = '/login'
     }
@@ -91,6 +91,14 @@ export const apiRequest = async <T>(
       data,
       headers: {
         ...options?.headers
+      },
+      // 401 에러를 reject하지 않고 응답으로 처리
+      validateStatus: (status) => {
+        // 비밀번호 찾기 API의 경우 401도 정상 응답으로 처리
+        if (url.includes('/verification')) {
+          return status >= 200 && status < 500
+        }
+        return status >= 200 && status < 300
       }
     })
     console.log('API Response:', response.data)
@@ -98,6 +106,21 @@ export const apiRequest = async <T>(
   } catch (error) {
     console.error('API Request Error:', error)
     if (axios.isAxiosError(error) && error.response) {
+      // 비밀번호 찾기 API의 401 에러는 정상적인 비즈니스 로직의 일부
+      if (url.includes('/verification') && error.response.status === 401) {
+        return error.response.data as ApiResponse<T>
+      }
+      // 그 외의 401 에러는 로그인 페이지로 리다이렉션
+      if (error.response.status === 401) {
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+        return {
+          status: 'error',
+          code: '401',
+          message: '인증이 필요합니다.',
+          data: null as T
+        }
+      }
       return error.response.data as ApiResponse<T>
     }
     return {
