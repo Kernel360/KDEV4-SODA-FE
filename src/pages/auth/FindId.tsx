@@ -111,37 +111,47 @@ const FindId: React.FC = () => {
                     />
                   </div>
 
-                  <button
-                    type="submit"
-                    className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-[#FFB800] px-6 font-medium text-white transition-colors hover:bg-[#FFA000] focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 disabled:opacity-50 sm:h-12 sm:text-base"
-                    disabled={loading}>
-                    {loading ? (
-                      <>
-                        <svg
-                          className="mr-2 h-4 w-4 animate-spin"
-                          fill="none"
-                          viewBox="0 0 24 24">
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          />
-                        </svg>
-                        처리중...
-                      </>
-                    ) : (
-                      '아이디 찾기'
-                    )}
-                  </button>
+                  <div className="space-y-3">
+                    <button
+                      type="submit"
+                      className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-[#FFB800] px-6 font-medium text-white transition-colors hover:bg-[#FFA000] focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 disabled:opacity-50 sm:h-12 sm:text-base"
+                      disabled={loading}>
+                      {loading ? (
+                        <>
+                          <svg
+                            className="mr-2 h-4 w-4 animate-spin"
+                            fill="none"
+                            viewBox="0 0 24 24">
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                          처리중...
+                        </>
+                      ) : (
+                        '아이디 찾기'
+                      )}
+                    </button>
+                  </div>
                 </form>
+
+                <div className="mt-6 text-center">
+                  <Link
+                    to="/login"
+                    className="text-sm text-gray-500 transition-colors hover:text-gray-900">
+                    로그인으로 돌아가기
+                  </Link>
+                </div>
               </>
             ) : (
               <div className="space-y-6 text-center">

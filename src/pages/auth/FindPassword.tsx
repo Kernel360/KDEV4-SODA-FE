@@ -115,27 +115,30 @@ const FindPassword: React.FC = () => {
         code: verificationCode
       })) as ApiResponse<VerifyCodeResponse>
 
-      console.log('인증번호 확인 응답:', response)
-
+      // API 응답 상세 로깅
+      console.log('인증번호 확인 API 응답:', response)
+      console.log(response.data.verified)
+      // status가 success인 경우에만 성공으로 처리
       if (response.status === 'success') {
-        if (response.data?.verified) {
-          console.log('인증 성공, 다음 단계로 이동')
-          setStep(3)
-        } else {
-          console.log('인증 실패: verified가 false')
-          setError('인증번호가 일치하지 않습니다.')
-        }
-      } else {
-        console.log('인증 실패: 서버 에러', response.message)
-        setError(response.message || '인증번호 확인 중 오류가 발생했습니다.')
+        console.log('인증 성공')
+        setStep(3)
+        return
       }
-    } catch (error) {
-      console.error('인증번호 확인 중 에러:', error)
-      if (error.response?.data?.message) {
-        setError(error.response.data.message)
-      } else {
-        setError('인증번호 확인 중 오류가 발생했습니다.')
-      }
+
+      // status가 error인 경우
+      console.log('인증 실패:', response)
+      setError(response.message || '인증번호가 일치하지 않습니다.')
+
+    } catch (error: any) {
+      console.error('인증번호 확인 중 에러:', {
+        error,
+        response: error.response?.data,
+        status: error.response?.status
+      })
+
+      // API 에러 응답 처리
+      const errorMessage = error.response?.data?.message || '인증번호 확인 중 오류가 발생했습니다.'
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
