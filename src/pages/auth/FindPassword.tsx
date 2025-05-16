@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { requestPasswordReset, verifyCode, resetPassword } from '../../api/auth'
-import { ApiResponse } from '../../types/api'
+import type { ApiResponse } from '../../types/api'
+
+interface VerifyCodeResponse {
+  email: string
+  verified: boolean
+}
 
 const FindPassword: React.FC = () => {
+  const navigate = useNavigate()
   // 단계 관리
   const [step, setStep] = useState(1)
 
@@ -42,10 +48,9 @@ const FindPassword: React.FC = () => {
     setError('')
 
     try {
-      const response = (await requestPasswordReset({ email })) as ApiResponse<{
-        email: string
-        verified: boolean
-      }>
+      const response = (await requestPasswordReset({
+        email
+      })) as ApiResponse<null>
       if (response.status === 'success') {
         setStep(2)
         setTimer(180)
@@ -74,19 +79,29 @@ const FindPassword: React.FC = () => {
       const response = (await verifyCode({
         email,
         code: verificationCode
-      })) as { email: string; verified: boolean }
-      console.log('API Response:', JSON.stringify(response, null, 2))
+      })) as ApiResponse<VerifyCodeResponse>
 
-      if (response.verified) {
-        console.log('Verification successful, moving to step 3')
-        setStep(3)
+      console.log('인증번호 확인 응답:', response)
+
+      if (response.status === 'success') {
+        if (response.data?.verified) {
+          console.log('인증 성공, 다음 단계로 이동')
+          setStep(3)
+        } else {
+          console.log('인증 실패: verified가 false')
+          setError('인증번호가 일치하지 않습니다.')
+        }
       } else {
-        console.log('Verification failed:', response)
-        setError('인증번호가 일치하지 않습니다.')
+        console.log('인증 실패: 서버 에러', response.message)
+        setError(response.message || '인증번호 확인 중 오류가 발생했습니다.')
       }
     } catch (error) {
-      console.error('Verification error:', error)
-      setError('인증번호 확인 중 오류가 발생했습니다.')
+      console.error('인증번호 확인 중 에러:', error)
+      if (error.response?.data?.message) {
+        setError(error.response.data.message)
+      } else {
+        setError('인증번호 확인 중 오류가 발생했습니다.')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -105,21 +120,17 @@ const FindPassword: React.FC = () => {
     setError('')
 
     try {
-      const response = await resetPassword({
+      const response = (await resetPassword({
         email,
         newPassword
-      })
-      console.log('API Response:', response)
+      })) as ApiResponse<null>
 
-      if (response === null) {
-        console.log('Password reset successful, redirecting to login')
-        window.location.href = '/login'
+      if (response.status === 'success') {
+        navigate('/login', { replace: true })
       } else {
-        console.log('Password reset failed:', response)
-        setError('비밀번호 변경 중 오류가 발생했습니다.')
+        setError(response.message || '비밀번호 변경 중 오류가 발생했습니다.')
       }
     } catch (error) {
-      console.error('Password reset error:', error)
       setError('비밀번호 변경 중 오류가 발생했습니다.')
     } finally {
       setIsLoading(false)
@@ -130,13 +141,15 @@ const FindPassword: React.FC = () => {
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-white">
       <header className="fixed left-0 right-0 top-0 z-10 bg-white shadow-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
-          <div className="text-2xl font-bold tracking-tight">SODA</div>
+          <div className="flex items-center">
+            <span className="text-2xl font-extrabold text-[#FFB800]">SODA</span>
+          </div>
         </div>
       </header>
 
       <main className="flex-1 pt-16">
         <div className="mx-auto max-w-lg px-4 py-16">
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md transition-shadow duration-300 hover:shadow-lg sm:p-8">
+          <div className="rounded-xl bg-white p-6 shadow-sm sm:p-8">
             <div className="mb-8 space-y-2">
               <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
                 비밀번호 찾기
@@ -166,7 +179,7 @@ const FindPassword: React.FC = () => {
                   </label>
                   <input
                     type="email"
-                    className="flex h-11 w-full rounded-lg border border-gray-100 bg-white px-4 py-2 text-sm transition-colors placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 sm:h-12 sm:text-base"
+                    className="flex h-11 w-full rounded-lg border border-orange-100 bg-white px-4 py-2 text-sm transition-colors placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400 sm:h-12 sm:text-base"
                     id="email"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
@@ -177,7 +190,7 @@ const FindPassword: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-gray-900 px-6 font-medium text-white transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 disabled:opacity-50 sm:h-12 sm:text-base"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-[#FFB800] px-6 font-medium text-white transition-colors hover:bg-[#FFA000] focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 disabled:opacity-50 sm:h-12 sm:text-base"
                   disabled={isLoading}>
                   {isLoading ? (
                     <>
@@ -225,7 +238,7 @@ const FindPassword: React.FC = () => {
                   </div>
                   <input
                     type="text"
-                    className="flex h-11 w-full rounded-lg border border-gray-100 bg-white px-4 py-2 text-sm transition-colors placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 sm:h-12 sm:text-base"
+                    className="flex h-11 w-full rounded-lg border border-orange-100 bg-white px-4 py-2 text-sm transition-colors placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400 sm:h-12 sm:text-base"
                     id="verificationCode"
                     value={verificationCode}
                     onChange={e => setVerificationCode(e.target.value)}
@@ -237,7 +250,7 @@ const FindPassword: React.FC = () => {
                 <div className="space-y-3">
                   <button
                     type="submit"
-                    className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-gray-900 px-6 font-medium text-white transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 disabled:opacity-50 sm:h-12 sm:text-base"
+                    className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-[#FFB800] px-6 font-medium text-white transition-colors hover:bg-[#FFA000] focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 disabled:opacity-50 sm:h-12 sm:text-base"
                     disabled={isLoading || timer === 0}>
                     {isLoading ? (
                       <>
@@ -268,7 +281,7 @@ const FindPassword: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleSendVerification}
-                    className="inline-flex h-11 w-full items-center justify-center rounded-lg border border-gray-200 bg-white px-6 font-medium text-gray-900 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 sm:h-12 sm:text-base">
+                    className="inline-flex h-11 w-full items-center justify-center rounded-lg border border-orange-200 bg-white px-6 font-medium text-gray-900 transition-colors hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 sm:h-12 sm:text-base">
                     인증번호 다시 받기
                   </button>
                 </div>
@@ -287,7 +300,7 @@ const FindPassword: React.FC = () => {
                   </label>
                   <input
                     type="password"
-                    className="flex h-11 w-full rounded-lg border border-gray-100 bg-white px-4 py-2 text-sm transition-colors placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 sm:h-12 sm:text-base"
+                    className="flex h-11 w-full rounded-lg border border-orange-100 bg-white px-4 py-2 text-sm transition-colors placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400 sm:h-12 sm:text-base"
                     id="newPassword"
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
@@ -304,7 +317,7 @@ const FindPassword: React.FC = () => {
                   </label>
                   <input
                     type="password"
-                    className="flex h-11 w-full rounded-lg border border-gray-100 bg-white px-4 py-2 text-sm transition-colors placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 sm:h-12 sm:text-base"
+                    className="flex h-11 w-full rounded-lg border border-orange-100 bg-white px-4 py-2 text-sm transition-colors placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400 sm:h-12 sm:text-base"
                     id="confirmPassword"
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
@@ -315,7 +328,7 @@ const FindPassword: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-gray-900 px-6 font-medium text-white transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 disabled:opacity-50 sm:h-12 sm:text-base"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-[#FFB800] px-6 font-medium text-white transition-colors hover:bg-[#FFA000] focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 disabled:opacity-50 sm:h-12 sm:text-base"
                   disabled={isLoading}>
                   {isLoading ? (
                     <>
