@@ -34,6 +34,12 @@ import { SelectChangeEvent } from '@mui/material/Select'
 interface Company {
   id: number
   name: string
+  phoneNumber: string
+  companyNumber: string
+  address: string
+  detailAddress: string | null
+  ownerName: string
+  isDeleted: boolean
 }
 
 interface AccountDetailProps {
@@ -76,18 +82,23 @@ export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const [userResponse, companiesResponse] = await Promise.all([
-          getUserDetail(Number(id)),
-          getCompanies()
-        ])
+        const companiesResponse = await getCompanies()
+        if (companiesResponse.status === 'success' && companiesResponse.data?.content) {
+          setCompanies(companiesResponse.data.content);
+        } else {
+          console.error('회사 목록 데이터 형식이 올바르지 않습니다:', companiesResponse);
+          setCompanies([]);
+        }
 
+        const userResponse = await getUserDetail(Number(id))
         if (userResponse.status === 'success' && userResponse.data) {
           setAccount(userResponse.data)
+          const companyId = userResponse.data.companyId || userResponse.data.company?.id || 0;
           setFormData({
             name: userResponse.data.name || '',
             email: userResponse.data.email || '',
             role: userResponse.data.role || '',
-            companyId: userResponse.data.companyId || 0,
+            companyId: companyId,
             position: userResponse.data.position || '',
             phoneNumber: userResponse.data.phoneNumber || ''
           })
@@ -96,10 +107,6 @@ export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
             userResponse.message || '사용자 정보를 불러오는데 실패했습니다.'
           )
           showToast('사용자 정보를 불러오는데 실패했습니다.', 'error')
-        }
-
-        if (companiesResponse.status === 'success' && companiesResponse.data) {
-          setCompanies(companiesResponse.data)
         }
       } catch (err) {
         console.error('데이터 조회 중 오류:', err)
@@ -127,7 +134,7 @@ export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
   const handleInputChange = (
     e:
       | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-      | SelectChangeEvent<string | number>
+      | SelectChangeEvent<number | string>
   ) => {
     const { name, value } = e.target
     let formattedValue = value
@@ -141,11 +148,22 @@ export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
       } else {
         setEmailError(null)
       }
+    } else if (name === 'companyId') {
+      formattedValue = Number(value)
     }
 
     setFormData(prev => ({
       ...prev,
       [name]: formattedValue
+    }))
+    setHasChanges(true)
+  }
+
+  const handleRoleChange = (e: SelectChangeEvent<string>) => {
+    const { value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      role: value
     }))
     setHasChanges(true)
   }
@@ -521,19 +539,22 @@ export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
                     size="small"
                     sx={{ mt: 1 }}>
                     <InputLabel>회사 선택</InputLabel>
-                    <Select
+                    <Select<number>
                       name="companyId"
                       value={formData.companyId}
                       onChange={handleInputChange}
-                      label="회사 선택">
+                      label="회사 선택"
+                      disabled={loading || companies.length === 0}>
                       <MenuItem value={0}>없음</MenuItem>
-                      {companies.map(company => (
-                        <MenuItem
-                          key={company.id}
-                          value={company.id}>
-                          {company.name}
-                        </MenuItem>
-                      ))}
+                      {companies
+                        .filter(company => !company.isDeleted)
+                        .map(company => (
+                          <MenuItem
+                            key={company.id}
+                            value={company.id}>
+                            {company.name}
+                          </MenuItem>
+                        ))}
                     </Select>
                   </FormControl>
                 ) : (
@@ -648,10 +669,10 @@ export default function AccountDetail({ isAdmin = true }: AccountDetailProps) {
                     size="small"
                     sx={{ mt: 1 }}>
                     <InputLabel>권한 선택</InputLabel>
-                    <Select
+                    <Select<string>
                       name="role"
                       value={formData.role}
-                      onChange={handleInputChange}
+                      onChange={handleRoleChange}
                       label="권한 선택">
                       <MenuItem value="ADMIN">관리자</MenuItem>
                       <MenuItem value="USER">일반 사용자</MenuItem>
