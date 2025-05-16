@@ -61,7 +61,7 @@ export const resetPassword = async (data: ResetPasswordRequest) => {
       API_ENDPOINTS.RESET_PASSWORD,
       data
     )
-    return response.data
+    return response
   } catch (error) {
     throw error
   }

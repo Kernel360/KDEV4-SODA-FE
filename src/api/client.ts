@@ -92,10 +92,8 @@ export const apiRequest = async <T>(
       headers: {
         ...options?.headers
       },
-      // 401 에러를 reject하지 않고 응답으로 처리
-      validateStatus: (status) => {
-        // 비밀번호 찾기 API의 경우 401도 정상 응답으로 처리
-        if (url.includes('/verification')) {
+      validateStatus: status => {
+        if (url.includes('/verification') || url.includes('/password/reset')) {
           return status >= 200 && status < 500
         }
         return status >= 200 && status < 300
@@ -106,11 +104,12 @@ export const apiRequest = async <T>(
   } catch (error) {
     console.error('API Request Error:', error)
     if (axios.isAxiosError(error) && error.response) {
-      // 비밀번호 찾기 API의 401 에러는 정상적인 비즈니스 로직의 일부
-      if (url.includes('/verification') && error.response.status === 401) {
-        return error.response.data as ApiResponse<T>
+      if (
+        (url.includes('/verification') || url.includes('/password/reset')) &&
+        error.response.status === 401
+      ) {
+        return error.response.data
       }
-      // 그 외의 401 에러는 로그인 페이지로 리다이렉션
       if (error.response.status === 401) {
         localStorage.removeItem('token')
         window.location.href = '/login'
@@ -121,7 +120,7 @@ export const apiRequest = async <T>(
           data: null as T
         }
       }
-      return error.response.data as ApiResponse<T>
+      return error.response.data
     }
     return {
       status: 'error',

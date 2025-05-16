@@ -3,9 +3,15 @@ import { Link, useNavigate } from 'react-router-dom'
 import { requestPasswordReset, verifyCode, resetPassword } from '../../api/auth'
 import type { ApiResponse } from '../../types/api'
 
-interface VerifyCodeResponse {
-  email: string
-  verified: boolean
+interface VerifyCodeResponse extends ApiResponse<{ verified: boolean }> {
+  data: {
+    verified: boolean
+  }
+}
+
+interface ResetPasswordResponse extends ApiResponse<null> {
+  status: 'success' | 'error'
+  message?: string
 }
 
 const FindPassword: React.FC = () => {
@@ -51,7 +57,7 @@ const FindPassword: React.FC = () => {
       const response = (await requestPasswordReset({
         email
       })) as ApiResponse<null>
-      
+
       // API 응답 로깅 추가
       console.log('비밀번호 찾기 API 응답:', response)
 
@@ -63,30 +69,35 @@ const FindPassword: React.FC = () => {
       }
 
       // 실패 응답 처리
-      const errorMessage = response.message || '인증번호 발송 중 오류가 발생했습니다.'
-      
+      const errorMessage =
+        response.message || '인증번호 발송 중 오류가 발생했습니다.'
+
       // 가입되지 않은 이메일인 경우
-      if (response.code === '404' || 
-          errorMessage.includes('가입되지 않은 이메일') ||
-          errorMessage.includes('존재하지 않는 사용자')) {
+      if (
+        response.code === '404' ||
+        errorMessage.includes('가입되지 않은 이메일') ||
+        errorMessage.includes('존재하지 않는 사용자')
+      ) {
         setError('가입되지 않은 이메일입니다. 회원가입을 먼저 진행해주세요.')
         return
       }
 
       // 기타 에러 처리
       setError(errorMessage)
-
     } catch (error: any) {
       console.error('비밀번호 찾기 API 에러:', error)
-      
+
       // API 에러 응답 처리
       const errorData = error.response?.data
-      const errorMessage = errorData?.message || '인증번호 발송 중 오류가 발생했습니다.'
-      
+      const errorMessage =
+        errorData?.message || '인증번호 발송 중 오류가 발생했습니다.'
+
       // 가입되지 않은 이메일인 경우
-      if (errorData?.code === '404' || 
-          errorMessage.includes('가입되지 않은 이메일') ||
-          errorMessage.includes('존재하지 않는 사용자')) {
+      if (
+        errorData?.code === '404' ||
+        errorMessage.includes('가입되지 않은 이메일') ||
+        errorMessage.includes('존재하지 않는 사용자')
+      ) {
         setError('가입되지 않은 이메일입니다. 회원가입을 먼저 진행해주세요.')
         return
       }
@@ -113,22 +124,26 @@ const FindPassword: React.FC = () => {
       const response = (await verifyCode({
         email,
         code: verificationCode
-      })) as ApiResponse<VerifyCodeResponse>
+      })) as VerifyCodeResponse
 
       // API 응답 상세 로깅
-      console.log('인증번호 확인 API 응답:', response)
-      console.log(response.data.verified)
-      // status가 success인 경우에만 성공으로 처리
-      if (response.status === 'success') {
-        console.log('인증 성공')
+      console.log('인증번호 확인 API 응답 전체:', response)
+      console.log('status:', response.status)
+      console.log('code:', response.code)
+      console.log('message:', response.message)
+      console.log('data:', response.data)
+
+      // status가 success이고 data.verified가 true인 경우에만 성공으로 처리
+      if (response.status === 'success' && response.data.verified === true) {
+        console.log('인증 성공 - 다음 단계로 이동')
+        setError('') // 에러 메시지 초기화
         setStep(3)
         return
       }
 
-      // status가 error인 경우
-      console.log('인증 실패:', response)
+      // status가 error이거나 verified가 false인 경우
+      console.log('인증 실패 - 응답:', response)
       setError(response.message || '인증번호가 일치하지 않습니다.')
-
     } catch (error: any) {
       console.error('인증번호 확인 중 에러:', {
         error,
@@ -137,7 +152,8 @@ const FindPassword: React.FC = () => {
       })
 
       // API 에러 응답 처리
-      const errorMessage = error.response?.data?.message || '인증번호 확인 중 오류가 발생했습니다.'
+      const errorMessage =
+        error.response?.data?.message || '인증번호 확인 중 오류가 발생했습니다.'
       setError(errorMessage)
     } finally {
       setIsLoading(false)
@@ -160,15 +176,31 @@ const FindPassword: React.FC = () => {
       const response = (await resetPassword({
         email,
         newPassword
-      })) as ApiResponse<null>
+      })) as { status: string; code: string; message: string; data: null }
 
-      if (response.status === 'success') {
+      // API 응답 상세 로깅
+      console.log('비밀번호 재설정 API 응답 전체:', response)
+
+      if (response?.status === 'success') {
+        console.log('비밀번호 재설정 성공 - 로그인 페이지로 이동')
         navigate('/login', { replace: true })
-      } else {
-        setError(response.message || '비밀번호 변경 중 오류가 발생했습니다.')
+        return
       }
-    } catch (error) {
-      setError('비밀번호 변경 중 오류가 발생했습니다.')
+
+      // status가 error인 경우
+      console.log('비밀번호 재설정 실패:', response)
+      setError(response?.message || '비밀번호 변경 중 오류가 발생했습니다.')
+    } catch (error: any) {
+      console.error('비밀번호 재설정 중 에러:', {
+        error,
+        response: error.response?.data,
+        status: error.response?.status
+      })
+
+      // API 에러 응답 처리
+      const errorMessage =
+        error.response?.data?.message || '비밀번호 변경 중 오류가 발생했습니다.'
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
