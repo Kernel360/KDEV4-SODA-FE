@@ -1,4 +1,5 @@
 import { client } from '../api/client'
+import type { MemberStatus } from '../types/member'
 
 export const memberService = {
   // 마이페이지 정보 조회
@@ -38,5 +39,17 @@ export const memberService = {
       console.error('Error updating my info:', error)
       throw error
     }
+  },
+
+  async updateMemberStatus(memberId: number, newStatus: MemberStatus) {
+    try {
+      const response = await client.patch(`/members/${memberId}/status`, {
+        newStatus
+      })
+      return response.data
+    } catch (error) {
+      console.error('Failed to update member status:', error)
+      throw error
+    }
   }
-} 
+}
