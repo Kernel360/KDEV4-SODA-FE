@@ -72,7 +72,8 @@ const Login: React.FC = () => {
           role: response.data.data.role.toUpperCase() as 'ADMIN' | 'USER',
           firstLogin: response.data.data.firstLogin,
           email: '',
-          company: response.data.data.company
+          company: response.data.data.company,
+          status: 'AVAILABLE'
         }
         setUser(userData)
         showToast('환영합니다!', 'success')

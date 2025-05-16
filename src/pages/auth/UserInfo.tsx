@@ -97,6 +97,13 @@ const UserInfo: React.FC = () => {
       return
     }
 
+    // 현재 사용자의 아이디와 동일한 경우
+    if (user?.authId === id) {
+      setIdVerified(true)
+      setIdError('')
+      return
+    }
+
     setIsCheckingId(true)
     setIdError('')
     setIdVerified(false)

@@ -5,10 +5,16 @@ type ToastType = 'success' | 'error' | 'info' | 'warning'
 
 interface ToastOptions {
   onClick?: () => void
+  duration?: number
 }
 
 interface ToastContextType {
-  showToast: (message: string, type: ToastType, options?: ToastOptions) => void
+  showToast: (
+    message: string,
+    type: ToastType,
+    duration?: number,
+    options?: ToastOptions
+  ) => void
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined)
@@ -29,11 +35,18 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState('')
   const [type, setType] = useState<ToastType>('info')
+  const [duration, setDuration] = useState(1000)
   const [options, setOptions] = useState<ToastOptions>({})
 
-  const showToast = (message: string, type: ToastType, options?: ToastOptions) => {
+  const showToast = (
+    message: string,
+    type: ToastType,
+    duration: number = 1000,
+    options?: ToastOptions
+  ) => {
     setMessage(message)
     setType(type)
+    setDuration(duration)
     setOptions(options || {})
     setOpen(true)
   }
@@ -54,14 +67,14 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
       {children}
       <Snackbar
         open={open}
-        autoHideDuration={3000}
+        autoHideDuration={duration}
         onClose={handleClose}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
         <Alert
           onClose={handleClose}
           onClick={handleClick}
           severity={type}
-          sx={{ 
+          sx={{
             width: '100%',
             cursor: options.onClick ? 'pointer' : 'default'
           }}>
