@@ -4,6 +4,7 @@ const baseURL = 'https://api.s0da.co.kr/'
 
 export const client = axios.create({
   baseURL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }
